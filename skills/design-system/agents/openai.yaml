@@ -1,0 +1,4 @@
+interface:
+  display_name: "Design System"
+  short_description: "Build consistent, accessible web interfaces"
+  default_prompt: "Use $design-system to implement the interface using the project's visual and interaction conventions."

@@ -1,0 +1,7 @@
+# Payments
+
+`payment_charges` stores one immutable USD-cent charge per permanent dancer UUID. `payment_batches` unique IDs prevent repeat issuance; `payment_audit` records issue/report/verify/reject/waive with version and actor. Migration0004 and features/payments own this workflow.
+
+Only active admins issue/manage; only the assigned active dancer reports payment (including admins' own charges). Ordinary dancers read only their own charge/audit. Unpaid and reported count toward outstanding; verified and waived move to history. Rejection and waiver require an explanation. Every transition checks the expected version and current state atomically. Fix an incorrect charge by waiver/reissue, never silently changing its amount.
+
+Payments do not transfer money. Admins verify against actual team payment records. Home always filters to the current dancer even when they have admin access. Source team/group/segment membership snapshots at issue time; later membership changes preserve obligations but deactivation revokes access. Local tests and fixture browser verification are separate from M7 real hosted checks.

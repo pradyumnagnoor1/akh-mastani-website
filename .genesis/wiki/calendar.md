@@ -1,0 +1,11 @@
+# Practice calendar
+M5 locally complete with independent review. Google Calendar owns schedule edits; the website reads a private OAuth connection using server-only environment values. Exact setup is docs/calendar-setup.md.
+
+calendar_snapshot stores a complete past30/future180day snapshot, source fingerprint, last-success/error, cooldown and fenced30s lease. Google recurrence expansion is fully paginated under capacity/deadline; failed/truncated refresh preserves previous data. All-day dates remain dates, timed instances use actual instants and Chicago display including DST. Requests trigger refresh after300s; calendar page polls while visible/when focused. No background freshness guarantee or cron.
+
+Reads use current member session and RLS; privileged writes only calendar RPCs. Privileged key itself is project-wide and isolated server-side. Recheck active membership after refresh before returning. API no-store; source-change cache hidden. Home reuses same adapter. No live OAuth or hosted provider integration claimed.
+
+## Website connection extension
+User replaced manual Playground setup with Admin → Connect Google Calendar. Migration0006 persists singleton connection version, AES-GCM encrypted token and one-use10min OAuth attempts. Start/disconnect POST same-origin and current-admin-only; callback encryptedHttpOnlycookie state/PKCE/admin binding, provider code exchange and calendar access verification before CAS save. Reconnect/disconnect clears cache and locks/fences old source claims. Token key lives in server env CALENDAR_TOKEN_ENCRYPTION_KEY; keep recoverable separately. Googleclient credentials and Supabase secret still required, manual refreshtoken env removed. New callback /api/calendar/oauth/callback must be registered in Google. Cancellation/failure preserves current connection. No live authorization verified.
+
+User display refinement: Practice Calendar renders at most10 events total. Prioritize the next10 upcoming events; if fewer, earlier-practices section uses the remaining slots for most recent past events. Full sync window remains intact for freshness/complete replacement. User reports Google connect works; hosted two-account/restore acceptance remains outstanding.

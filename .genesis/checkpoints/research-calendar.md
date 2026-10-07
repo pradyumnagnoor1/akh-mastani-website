@@ -1,0 +1,8 @@
+# Read-only calendar research (for M5)
+- Use OAuth offline calendar.events.readonly separately from dancer sign-in, configured calendar ID, server-only secrets. Private calendar link alone is insufficient authorization.
+- Request-driven300sec freshness while used, visible-page polling/focus refresh. Vercel Hobby cron only daily; no promise of continuous5min background sync.
+- Full bounded-window replacement (past30/future180 days), singleEvents=true, showDeleted=false, orderBy=startTime, explicit America/Chicago, follow page tokens (including empty pages), validate all pages before publish, cap1000 instances. ID keys preserve recurring instances, date-only all-day dates and exclusive ends retained.
+- Supabase durable snapshot + atomic30sec lease/15sec deadline, fail cooldown, sanitized errors, source fingerprint. Cache writes through server-only service_role RPC; secret key bypasses RLS project-wide, never claim calendar-scoped. Cache reads active-member RLS. Old cache not exposed after source change.
+- External OAuth Testing Calendar tokens expire7days; setup must resolve consent publishing for year-long sustainability.
+- Primary sources: https://vercel.com/docs/cron-jobs/usage-and-pricing ; https://developers.google.com/workspace/calendar/api/v3/reference/events/list ; https://developers.google.com/workspace/calendar/api/v3/reference/events ; https://developers.google.com/identity/protocols/oauth2/web-server ; https://developers.google.com/identity/protocols/oauth2 ; https://supabase.com/docs/guides/getting-started/api-keys
+- Research agent calendar_research, no implementation performed while M4 active. Live Google/Vercel/Supabase checks remain M7.

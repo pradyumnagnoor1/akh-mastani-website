@@ -1,0 +1,11 @@
+node_modules/
+.next/
+.env*
+!.env.example
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+.DS_Store
+.next-e2e/
+.next-e2e-segments/

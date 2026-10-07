@@ -1,0 +1,4 @@
+# Architecture
+A modular Next.js application. Domain rules have no framework imports. Server adapters call Supabase using the signed-in user's session and database RLS. Supabase is authoritative for identity, membership and permission. Google Calendar owns schedules. Browser -> Next.js -> Supabase/Google; no circular dependency.
+Trust boundaries: public visitors; authenticated but unapproved university users; active dancers; manually authorized admins; trusted database operator. Threats: non-team access, forged name/role metadata, direct API privilege escalation, revoked-member access, cross-member payment disclosure.
+Fail closed on unavailable identity/database. External fetches have bounded timeouts; do not retry mutations blindly. Cached calendar data will be labeled stale. No application AI/LLM processing is required.

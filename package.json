@@ -1,0 +1,46 @@
+{
+  "name": "akh-mastani-hq",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "check": "npm run typecheck && npm run lint && npm test && npm run build",
+    "format": "prettier --write src tests *.ts *.mjs *.json docs/*.md",
+    "format:check": "prettier --check src tests *.ts *.mjs *.json docs/*.md",
+    "test:e2e:segments": "playwright test --config=playwright.segments.config.ts --grep segments",
+    "test:e2e:communication": "playwright test --config=playwright.segments.config.ts --grep communication",
+    "test:e2e:payments": "playwright test --config=playwright.segments.config.ts --grep payments",
+    "test:e2e:calendar": "playwright test --config=playwright.segments.config.ts --grep calendar",
+    "test:e2e:operations": "playwright test --config=playwright.segments.config.ts --grep operations",
+    "test:e2e:team": "playwright test --config=playwright.segments.config.ts"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.117.3",
+    "lucide-react": "^1.52.0",
+    "next": "^16.4.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^26.6.4",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.4.0",
+    "prettier": "^3.9.9",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.3"
+  },
+  "type": "module"
+}

@@ -1,0 +1,86 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AKH Mastani — definition of done</title><style>body{font:16px/1.6 system-ui;max-width:1000px;margin:40px auto;padding:24px;color:#eee;background:#11111a}pre{white-space:pre-wrap}h1,h2{color:#aaa4ff}</style><body><h1>AKH Mastani — definition of done</h1><h2>1. Cognitive job and diagnostic</h2><p>New conventional web application; no AI product components; network boundaries to Supabase and Google; private identity, payment and membership data; starting in phases 0–1.</p><p>Inputs: verified Google identity, dancer name, admin content, segment PDFs and assignments, task completions, payment reports, calendar events. Outputs: authorized personal/team views and auditable changes. Autonomy: deterministic application behavior; people create content, authorize admins and verify payments. No autonomous financial or membership decisions. Failure tolerance: fail closed for access, preserve pending payments and history; label stale schedules; never grant admin from a first login.</p><h2>2. Definition of done</h2><p>Canonical phase gates are reproduced below. AI-only clauses (prompts, models, tokens, semantic caches, agent spans, shadow model deployments) do not apply to this non-AI product. Containerization is replaced by the explicitly requested managed Vercel/Supabase deployment. Reliability is demonstrated with bounded calls, retry-safe transitions, failure tests and documented recovery. Project acceptance criteria below are the executable interpretation.</p><ul><li><b>Phase 0 Cognitive Design</b><pre>Gate: Cognitive job is written down. Autonomy level is explicit. Failure modes listed.</pre></li><li><b>Phase 1 System Architecture Design</b><pre>Gate: Architecture style chosen with justification. Service graph exists. Boundary
+types stated (source / deployment / process / service). No cycles in dependency graph.</pre></li><li><b>Phase 2 Frontend Engineering</b><pre>Gate: UX paradigm chosen. Streaming or SSE strategy defined. HITL touchpoints mapped.</pre></li><li><b>Phase 3 Backend Engineering &amp; API Layer</b><pre>Gate: Service modules defined. At least one state machine drawn with explicit states.
+Every outbound call has a timeout strategy.</pre></li><li><b>Phase 10 Observability &amp; Tracing</b><pre>Gate: Every agent span captures latency + token count + tool result + cost.
+Alerts on p99 latency, error rate, and cost drift. Prompt traces searchable.</pre></li><li><b>Phase 11 Security Architecture</b><pre>Gate: Threat model exists with specific adversary categories. Prompt injection
+mitigated with instruction hierarchy and sanitization. RBAC implemented. Audit
+trails are append-only and tamper-evident.</pre></li><li><b>Phase 12 Reliability Engineering</b><pre>Gate: Every outbound call has circuit breaker + timeout + retry with idempotency.
+Checkpointing strategy allows resumption after crash. No operation has side effects
+on retry that it didn&#x27;t have on first execution.</pre></li><li><b>Phase 13 Infrastructure &amp; Deployment</b><pre>Gate: All services containerized. Queue strategy chosen. Model serving decision made.
+Semantic caching reduces token spend on repeat queries.</pre></li><li><b>Phase 14 Data Engineering Layer</b><pre>Gate: Pipelines are idempotent and rerunnable. Schema changes are backward-compatible
+for at least one full deployment cycle. Knowledge graph exists if reasoning requires
+entity relationships.</pre></li><li><b>Phase 15 Governance &amp; Compliance</b><pre>Gate: Audit trail covers every agent action. Compliance requirements mapped to
+specific controls. Explainability mechanism exists for user-facing decisions.</pre></li><li><b>Phase 16 Economics &amp; Cost Control</b><pre>Gate: Cost attribution is wired per span. Model routing reduces cost on at least
+20% of requests vs naive single-model approach. Cache hit rate tracked and &gt; 0%.</pre></li><li><b>Phase 17 Developer Experience</b><pre>Gate: Failed runs can be replayed locally. Prompt changes can be A/B tested
+without full deployment. Eval results visible to the whole team.</pre></li><li><b>Phase 18 CI/CD for AI Systems</b><pre>Gate: No prompt or model change deploys without passing eval gates. Shadow mode
+ran for &gt;= 24 hours. Rollback takes &lt; 5 minutes.</pre></li><li><b>Phase 19 Human-in-the-Loop Systems</b><pre>Gate: Every high-stakes action has an approval gate. Confidence threshold for
+escalation is defined and tested. Feedback mechanism routes corrections to eval system.</pre></li></ul><h2>3. Locked implementation plan</h2><pre># AKH Mastani implementation plan
+
+Goal: a private team hub with stable member identity, dancer participation plus manually granted admin rights, and at least one year of maintainable operation.
+Execution: Genesis L1 BUILD / L2 DEBUG / L3 RESEARCH / independent L4 VERIFY. Use writing-plans for decomposition; Genesis governs execution and its quiz gate.
+Stack: Next.js/TypeScript on Vercel, Supabase Auth/Postgres/private Storage, Google Calendar read-only synchronization.
+
+## Brainstorm
+A. Managed modular application (chosen): one Next.js application plus Supabase and Google Calendar. Strengths: one deployable codebase; relational permission rules. Weaknesses: external service setup; provider integration maintenance.
+B. Custom API and self-managed database: separately operate frontend, API, and PostgreSQL. Strengths: full control; portability. Weaknesses: more services; increased maintenance for student handover.
+C. Linked forms and spreadsheets: compose existing Google tools. Strengths: quick initial configuration; familiar tools. Weaknesses: fragmented experience; difficult private per-member workflows.
+Choice: A fits the user&#x27;s Vercel preference and year-long maintenance requirement with the fewest managed components.
+
+## M1 — Identity and application foundation
+Outcome: runnable responsive app with Google authentication integration, exact-domain checks, one-time name onboarding, pending/active/inactive membership, member roster and admin approval, and independent admin grants.
+Freeze boundary: root configuration, src/**, tests/**, supabase/migrations/0001_identity.sql, scripts/**, docs/**, .github/**, .genesis/**. Do not modify the reference image or global skills.
+Skills: canon + writing-plans + test-driven-development + security-engineering + design-system + requesting-code-review.
+Demo: `npm run check` and `npm run test:e2e`.
+Acceptance: unauthorized users cannot read roster data; ordinary members cannot grant admin or approve members; inactive users lose access despite an existing session; display-name completion is saved once; admins retain personal dancer identity. Unconfigured deployments show a setup state and never a fake working login. Real Google/Supabase validation remains an explicit M7 gate.
+Steps:
+- [ ] Write behavioral tests for domain eligibility, access destinations, and name validation; observe failures, implement policies.
+- [ ] Write SQL permission tests against an embedded PostgreSQL engine; implement migration and RPCs, test direct forbidden operations.
+- [ ] Configure Next.js and server-side Supabase clients with verified identity checks and bounded calls.
+- [ ] Implement login/callback, onboarding, membership status, sign-out, protected Home, roster and admin membership view.
+- [ ] Render at mobile/desktop widths, verify keyboard navigation and unconfigured access behavior.
+- [ ] Run quality checks; obtain independent verdict and three user answers before marking complete.
+
+## M2 — Segments and formation documents
+Outcome: admins manage named segments, assigned members, and private PDFs; roster and Home reflect membership.
+Freeze: src/features/segments/**, src/app/**, src/components/**, supabase/migrations/0002_segments.sql, tests/**, docs/**, .genesis/checkpoints/** and progress notes.
+Demo: `npm run check &amp;&amp; npm run test:e2e -- --grep segments`.
+Acceptance: private PDF access; add/remove/rename segments; member assignment; upload/replace/open/download; no duplicate membership source.
+Skills: canon + design-system + data-systems-engineering + security-engineering + test-driven-development.
+
+## M3 — Announcements and tasks
+Outcome: targeted communication and individual/shared task completion.
+Freeze: src/features/communication/**, src/app/**, src/components/**, supabase/migrations/0003_communication.sql, tests/**, docs/**, progress notes.
+Demo: `npm run check &amp;&amp; npm run test:e2e -- --grep communication`.
+Acceptance: individual/selected/group/segment/team audiences; snapshot recipients; independent completions; shared completion author; admin edit/reopen/archive; permission tests.
+Skills: canon + design-system + data-systems-engineering + test-driven-development.
+
+## M4 — Payment verification
+Outcome: admins issue fines/charges and verify dancer payment reports.
+Freeze: src/features/payments/**, src/app/**, src/components/**, supabase/migrations/0004_payments.sql, tests/**, docs/**, progress notes.
+Demo: `npm run check &amp;&amp; npm run test:e2e -- --grep payments`.
+Acceptance: unpaid -&gt; reported -&gt; verified, rejected -&gt; unpaid, waiver with reason; verified charges leave outstanding balance but remain in history; own-record privacy, atomic transitions, duplicate submission protection. No actual money transfer.
+Skills: canon + security-engineering + data-systems-engineering + test-driven-development.
+
+## M5 — Calendar synchronization
+Outcome: read-only team schedule with five-minute freshness target and stale-data fallback.
+Freeze: src/features/calendar/**, src/app/**, src/components/**, supabase/migrations/0005_calendar.sql, tests/**, docs/**, vercel.json, progress notes.
+Demo: `npm run check &amp;&amp; npm run test:e2e -- --grep calendar`.
+Acceptance: private calendar authorization, changed/cancelled/recurring events, time zone, bounded retries, last-success timestamp, cached fallback, server-only credentials.
+Skills: canon + distributed-systems + production-readiness + test-driven-development.
+
+## M6 — Integrated dashboard and operations
+Outcome: unified personal Home, admin summaries, monitoring, backups, exports, and handover docs.
+Freeze: src/**, tests/**, docs/**, scripts/**, .github/**, root config, progress notes.
+Demo: `npm run check &amp;&amp; npm run test:e2e`.
+Acceptance: all approved pages work; no Attendance/Benching/Dues/Reimbursements; admin remains dancer; documented backup/restore and ownership; privacy and cross-page tests pass.
+Skills: canon + design-system + production-readiness + security-engineering.
+
+## M7 — Live setup and release validation
+Outcome: configured production services and user-reviewed release.
+Freeze: configuration, deployment/runbooks, corrective fixes with recorded scope, progress notes.
+Demo: `npm run check &amp;&amp; npm run test:e2e` plus documented two-account live smoke checks and restore exercise.
+Acceptance: actual TAMU OAuth, initial manual admin grant, second dancer access denial checks, protected file delivery, calendar synchronization, Vercel deployment, secrets and backup ownership verified. Automated local checks do not satisfy this live gate.
+Skills: canon + production-readiness + security-engineering.
+
+## Progress
+M1 started. No milestone complete yet.
+</pre></body></html>

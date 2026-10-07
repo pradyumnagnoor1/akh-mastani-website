@@ -1,0 +1,4 @@
+interface:
+  display_name: "Coding Orchestrator"
+  short_description: "Route development through the active engineering workflow"
+  default_prompt: "Use $coding-orchestrator to select the skills and next step for the current milestone."
