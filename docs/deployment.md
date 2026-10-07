@@ -1,6 +1,21 @@
 # Vercel deployment
 
-This is a release runbook, not evidence of a deployment. No Supabase project has been created for these local milestones. Record the actual project IDs, domain, owners, deployed commit, migration versions, and live acceptance results in the private handover record when provisioning occurs.
+This is a release runbook, not evidence of completed production validation. The user reports the Google Calendar connection works and supplied `https://akh-mastani.vercel.app` as the production address. Record the actual project IDs, domain, owners, deployed commit, migration versions, and live acceptance results in the private handover record when provisioning occurs.
+
+## Production address
+
+Production origin: `https://akh-mastani.vercel.app`.
+
+Set `APP_ORIGIN=https://akh-mastani.vercel.app` in Vercel Production environment settings and redeploy. Keep local APP_ORIGIN unchanged for local development. Copy the existing server credentials, including the same CALENDAR_TOKEN_ENCRYPTION_KEY when using the same Supabase project; a different encryption key cannot read the saved calendar token.
+
+In Supabase Authentication URL Configuration:
+
+- Site URL: `https://akh-mastani.vercel.app`
+- Allowed redirect URL: `https://akh-mastani.vercel.app/auth/callback`
+
+In the calendar Google OAuth client's Authorized redirect URIs, add `https://akh-mastani.vercel.app/api/calendar/oauth/callback`. The dancer sign-in OAuth client keeps the exact Supabase Google-provider callback (`https://PROJECT-REF.supabase.co/auth/v1/callback`), not the website callback. Retain local callbacks if still developing.
+
+The public browsing tool could not access this domain during setup; this is not evidence of a successful or failed deployment. Validate the actual site after redeployment.
 
 ## Provision and configure
 

@@ -47,14 +47,10 @@ export async function CommunicationList({
     <>
       <div className="page-heading heading-with-action">
         <div>
-          <p className="eyebrow">KEEP THE TEAM IN STEP</p>
-          <h1>
-            {headingFor(kind)}
-            <span className="accent">.</span>
-          </h1>
+          <h1>{headingFor(kind)}</h1>
           <p className="muted">
             {kind === "task"
-              ? "Your next steps, together."
+              ? "Your assigned tasks."
               : "The latest updates for your team."}
           </p>
         </div>
@@ -143,7 +139,7 @@ export async function CommunicationList({
               {tab === "archive"
                 ? "Nothing archived"
                 : tab === "mine"
-                  ? "You’re all caught up"
+                  ? "No open to-dos"
                   : "Ready for the next update"}
             </h2>
             <p className="muted">
@@ -320,9 +316,8 @@ export async function CommunicationEditor({
         </Link>
         <h1>
           {id ? "Edit" : "New"} {kind === "task" ? "to-do" : "announcement"}
-          <span className="accent">.</span>
         </h1>
-        <p className="muted">A clear message. The right dancers.</p>
+        <p className="muted">Enter the details and select recipients.</p>
       </div>
       <CommunicationForm
         {...editor}

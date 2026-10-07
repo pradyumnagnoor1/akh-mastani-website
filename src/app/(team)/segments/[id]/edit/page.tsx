@@ -31,10 +31,7 @@ export default async function EditSegment({
         <Link className="back-link" href={`/segments/${id}`}>
           ← {segment.name}
         </Link>
-        <p className="eyebrow">KEEP EVERYONE IN STEP</p>
-        <h1>
-          Edit segment<span className="accent">.</span>
-        </h1>
+        <h1>Edit segment</h1>
         <p className="muted">
           Update the name, formation document, or assigned dancers.
         </p>

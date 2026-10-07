@@ -15,13 +15,8 @@ export default async function Admin() {
   return (
     <>
       <div className="page-heading">
-        <p className="eyebrow">A LITTLE ORGANIZING. A LOT MORE DANCING.</p>
-        <h1>
-          Team management<span className="accent">.</span>
-        </h1>
-        <p className="muted">
-          Manage access while keeping your own place on the team.
-        </p>
+        <h1>Team management</h1>
+        <p className="muted">Manage membership and team information.</p>
       </div>
       <AdminSummary />
       <section className="panel my-segments">

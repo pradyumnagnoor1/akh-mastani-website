@@ -14,7 +14,6 @@ import {
   Menu,
   X,
   LogOut,
-  ArrowUpRight,
 } from "lucide-react";
 import { Brand } from "./brand";
 import { signOut } from "@/features/identity/actions";
@@ -124,13 +123,7 @@ export function AppShell({
       <aside className="sidebar">
         <Brand />
         {links}
-        <div className="sidebar-bottom">
-          <div className="team-note">
-            <span>IN STEP. TOGETHER.</span>
-            <ArrowUpRight size={18} />
-          </div>
-          {account}
-        </div>
+        <div className="sidebar-bottom">{account}</div>
       </aside>
       <header className="mobile-header">
         <Brand compact />

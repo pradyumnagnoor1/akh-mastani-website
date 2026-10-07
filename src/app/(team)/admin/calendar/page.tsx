@@ -40,10 +40,7 @@ export default async function CalendarConnection({
         ← Team management
       </Link>
       <div className="page-heading">
-        <p className="eyebrow">ONE CONNECTION FOR THE TEAM</p>
-        <h1>
-          Connect Google Calendar<span className="accent">.</span>
-        </h1>
+        <h1>Connect Google Calendar</h1>
         <p className="muted">
           Authorize the team’s practice calendar once. Every approved dancer
           sees its schedule.

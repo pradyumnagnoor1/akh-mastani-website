@@ -3,7 +3,7 @@ import { CalendarHome } from "@/components/calendar-home";
 import Link from "next/link";
 import { PaymentHome } from "@/components/payment-home";
 import { CommunicationHome } from "@/components/communication-home";
-import { ArrowUpRight, Users, ShieldCheck, Music2 } from "lucide-react";
+import { ArrowUpRight, Users, ShieldCheck } from "lucide-react";
 import { segmentData } from "@/features/segments/queries";
 export const maxDuration = 60;
 export default async function Home() {
@@ -23,32 +23,8 @@ export default async function Home() {
   return (
     <>
       <div className="page-heading">
-        <p className="eyebrow">YOUR TEAM SPACE</p>
-        <h1>
-          Hey, {member.display_name?.split(" ")[0]}
-          <span className="accent">.</span>
-        </h1>
-        <p className="muted">Your people. Your place. All together.</p>
+        <h1>Home</h1>
       </div>
-      <section className="welcome-banner">
-        <div>
-          <span className="pill">
-            <Music2 size={14} /> AKH MASTANI
-          </span>
-          <h2>
-            Every dancer.
-            <br />
-            Part of something bigger.
-          </h2>
-          <p>You’re in the team space. Start by finding your teammates.</p>
-          <Link href="/roster" className="button light">
-            Meet the team <ArrowUpRight size={18} />
-          </Link>
-        </div>
-        <span className="banner-art" aria-hidden="true">
-          ✦
-        </span>
-      </section>
       {member.is_admin && <AdminSummary />}
       <CommunicationHome />
       <PaymentHome />
@@ -57,9 +33,9 @@ export default async function Home() {
         <Link href="/roster" className="panel summary-card">
           <Users className="accent" />
           <span className="metric">{count ?? 0}</span>
-          <h3>Dancers in step</h3>
+          <h3>Team members</h3>
           <p className="muted">
-            Explore the team roster <ArrowUpRight size={15} />
+            View roster <ArrowUpRight size={15} />
           </p>
         </Link>
         <section className="panel">
@@ -107,10 +83,7 @@ export default async function Home() {
             </Link>
           ))
         ) : (
-          <p className="muted small">
-            Your admins haven’t assigned you to a segment yet. You can still
-            explore the full set.
-          </p>
+          <p className="muted small">No segments assigned.</p>
         )}
       </section>
       {member.is_admin && (

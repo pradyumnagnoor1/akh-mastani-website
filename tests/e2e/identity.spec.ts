@@ -7,14 +7,12 @@ test("unconfigured sign-in is honest, accessible and fits the screen", async ({
   const response = await page.goto("/login");
   expect(response?.status()).toBe(200);
   await expect(
-    page.getByRole("heading", { name: "Many dancers. One rhythm." }),
+    page.getByRole("heading", { name: "Team sign-in" }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Continue with Google" }),
   ).toBeDisabled();
-  await expect(
-    page.getByText("We’re getting the team space ready."),
-  ).toBeVisible();
+  await expect(page.getByText("Sign-in is unavailable.")).toBeVisible();
   await page.keyboard.press("Tab");
   await expect(
     page.getByRole("link", { name: "Skip to content" }),

@@ -6,10 +6,7 @@ export default async function Page() {
   return (
     <>
       <div className="page-heading">
-        <p className="eyebrow">ADMIN / PAYMENTS</p>
-        <h1>
-          Issue charges<span className="accent">.</span>
-        </h1>
+        <h1>Issue charges</h1>
         <p className="muted">
           Set the amount and preview exactly who will receive a charge.
         </p>

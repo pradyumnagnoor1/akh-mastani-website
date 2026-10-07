@@ -16,13 +16,8 @@ export default async function NewSegment() {
         <Link className="back-link" href="/segments">
           ← Set design
         </Link>
-        <p className="eyebrow">MAKE ROOM FOR THE NEXT MOMENT</p>
-        <h1>
-          A new segment<span className="accent">.</span>
-        </h1>
-        <p className="muted">
-          Add the formations and bring your lineup together.
-        </p>
+        <h1>A new segment</h1>
+        <p className="muted">Add a formation PDF and assign dancers.</p>
       </div>
       <SegmentForm
         id={crypto.randomUUID()}

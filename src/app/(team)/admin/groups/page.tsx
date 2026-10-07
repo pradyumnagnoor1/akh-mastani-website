@@ -10,9 +10,7 @@ export default async function GroupsPage() {
           <Link className="back-link" href="/admin">
             ← Admin
           </Link>
-          <h1>
-            Saved groups<span className="accent">.</span>
-          </h1>
+          <h1>Saved groups</h1>
           <p className="muted">
             Reusable dancer groups for announcements and to-dos.
           </p>

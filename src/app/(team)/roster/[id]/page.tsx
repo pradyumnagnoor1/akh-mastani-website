@@ -41,7 +41,6 @@ export default async function MemberDetail({
         ← Team roster
       </Link>
       <div className="page-heading">
-        <p className="eyebrow">DANCER PROFILE</p>
         <h1>{person.display_name ?? "Name pending"}</h1>
         <p className="muted">{person.email}</p>
         <span className="badge">

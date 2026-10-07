@@ -20,9 +20,9 @@ export default async function Membership() {
           <Clock3 />
         </div>
         <p className="eyebrow">
-          {inactive ? "MEMBERSHIP INACTIVE" : "YOU’RE ON THE LIST"}
+          {inactive ? "MEMBERSHIP INACTIVE" : "APPROVAL PENDING"}
         </p>
-        <h1>{inactive ? "Access is paused." : "Almost in step."}</h1>
+        <h1>{inactive ? "Access deactivated" : "Awaiting approval"}</h1>
         <p className="muted">
           {inactive
             ? "Your team access has been deactivated. Contact your team admin if this is unexpected."

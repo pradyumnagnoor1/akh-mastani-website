@@ -13,12 +13,7 @@ export default async function Onboarding() {
     <main id="main" className="center-page">
       <Brand />
       <section className="setup-card">
-        <p className="eyebrow">LET’S MAKE IT OFFICIAL</p>
-        <h1>
-          What should we
-          <br />
-          call you?
-        </h1>
+        <h1>Enter your name</h1>
         <p className="muted">
           Your name connects your place on the roster with your segments, tasks,
           and payments.

@@ -38,7 +38,7 @@ export async function CommunicationHome() {
             </Link>
           ))
         ) : (
-          <p className="muted">You’re all caught up.</p>
+          <p className="muted">No open to-dos.</p>
         )}
       </section>
       <section className="panel">

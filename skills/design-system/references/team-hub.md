@@ -34,3 +34,6 @@ One-time onboarding asks for the member's name and shows the verified TAMU Googl
 Use one recipient picker pattern across tasks, announcements, and charges. Include clear individual/group/team selection and the number of affected members. Do not expose other dancers' balances in roster badges, tooltips, search results, or dashboard summaries visible to ordinary dancers.
 
 Show clear PDF loading/error states and an open/download fallback. Private files require protected access; a hidden URL is not access control. Use plain status labels and explicit action names such as “Report payment” and “Verify payment.”
+
+## User-authorized frontend refresh
+Use the supplied `IMG_3739.jpeg` logo, served as `/team-logo.jpeg`, in shared branding. Keep the dark/violet palette and accessible navigation. Use concise page titles, functional instructions and explicit statuses. The landing page is a compact sign-in card; Home starts directly with personal information and admin summaries. No motivational slogans, decorative hero banners or duplicate brand taglines.

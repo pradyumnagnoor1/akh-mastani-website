@@ -67,10 +67,7 @@ export default async function Page({
     <>
       <div className="page-heading heading-with-action">
         <div>
-          <p className="eyebrow">KEEPING THINGS CLEAR</p>
-          <h1>
-            Payments<span className="accent">.</span>
-          </h1>
+          <h1>Payments</h1>
           <p className="muted">
             Report your payments, then track admin verification.
           </p>

@@ -1,13 +1,16 @@
+import Image from "next/image";
+
 export function Brand({ compact = false }: { compact?: boolean }) {
   return (
-    <div className="brand">
-      <span className="brand-mark" aria-hidden="true">
-        M<span>✦</span>
-      </span>
-      <div>
-        <strong>AKH MASTANI</strong>
-        {!compact && <small>ONE TEAM. EVERY BEAT.</small>}
-      </div>
+    <div className={`brand${compact ? " brand-compact" : ""}`}>
+      <Image
+        className="brand-logo"
+        src="/team-logo.jpeg"
+        width={48}
+        height={50}
+        alt=""
+      />
+      <strong>AKH MASTANI</strong>
     </div>
   );
 }

@@ -32,9 +32,7 @@ test("segments: dancer sees formations, assignments and personal roster links", 
 }, info) => {
   await login(context, request, "dancer");
   await page.goto("/segments");
-  await expect(
-    page.getByRole("heading", { name: "Set design." }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Set design" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Add segment" })).toHaveCount(0);
   await page
     .getByRole("link")
@@ -42,7 +40,7 @@ test("segments: dancer sees formations, assignments and personal roster links", 
       has: page.getByRole("heading", { name: "Opening", exact: true }),
     })
     .click();
-  await expect(page.getByRole("heading", { name: "Opening." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Opening" })).toBeVisible();
   await expect(page.getByRole("main").getByText("Anika Dancer")).toBeVisible();
   const documentResponse = await context.request.get(
     "/segments/00000000-0000-4000-8000-000000000010/document",

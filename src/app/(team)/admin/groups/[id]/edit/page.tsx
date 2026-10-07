@@ -17,9 +17,7 @@ export default async function EditGroup({
         <Link className="back-link" href="/admin/groups">
           ← Saved groups
         </Link>
-        <h1>
-          Edit group<span className="accent">.</span>
-        </h1>
+        <h1>Edit group</h1>
       </div>
       <GroupForm
         id={id}

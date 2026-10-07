@@ -9,9 +9,7 @@ export default async function NewGroup() {
         <Link className="back-link" href="/admin/groups">
           ← Saved groups
         </Link>
-        <h1>
-          New group<span className="accent">.</span>
-        </h1>
+        <h1>New group</h1>
       </div>
       <GroupForm id={crypto.randomUUID()} people={people} />
     </>

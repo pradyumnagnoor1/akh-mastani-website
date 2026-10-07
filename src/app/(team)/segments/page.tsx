@@ -22,13 +22,8 @@ export default async function Segments({
     <>
       <div className="page-heading heading-with-action">
         <div>
-          <p className="eyebrow">EVERY POSITION HAS A PURPOSE</p>
-          <h1>
-            Set design<span className="accent">.</span>
-          </h1>
-          <p className="muted">
-            The formations. The people. The complete picture.
-          </p>
+          <h1>Set design</h1>
+          <p className="muted">Formation PDFs and dancer assignments.</p>
         </div>
         {member.is_admin && (
           <Link className="button primary" href="/segments/new">
@@ -107,7 +102,7 @@ export default async function Segments({
             {archived
               ? "Removed segments will appear here for admins."
               : member.is_admin
-                ? "Add a segment, its formation PDF, and the dancers who bring it to life."
+                ? "Add a segment, its formation PDF, and assigned dancers."
                 : "Your admins will add segments and formation documents here."}
           </p>
           {member.is_admin && !archived && (

@@ -30,14 +30,9 @@ export default async function SegmentDetail({
             ← Set design
           </Link>
           <p className="eyebrow">
-            {segment.archived_at
-              ? "ARCHIVED SEGMENT"
-              : "THE FORMATIONS & THE PEOPLE"}
+            {segment.archived_at ? "ARCHIVED SEGMENT" : "SEGMENT"}
           </p>
-          <h1>
-            {segment.name}
-            <span className="accent">.</span>
-          </h1>
+          <h1>{segment.name}</h1>
           <p className="muted">
             {dancers.length} active dancers · Formation PDF
           </p>

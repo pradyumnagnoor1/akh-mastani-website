@@ -22,11 +22,8 @@ export default async function Roster({
   return (
     <>
       <div className="page-heading">
-        <p className="eyebrow">THE PEOPLE BEHIND THE PERFORMANCE</p>
-        <h1>
-          One team<span className="accent">.</span>
-        </h1>
-        <p className="muted">Find your people in the AKH Mastani roster.</p>
+        <h1>Roster</h1>
+        <p className="muted">Members and segment assignments.</p>
       </div>
       <section className="panel">
         <div className="section-toolbar">
