@@ -85,7 +85,16 @@
     "supabase/migrations/0002_segments.sql",
     "supabase/migrations/0003_communication.sql",
     "supabase/migrations/0004_payments.sql",
-    "supabase/migrations/0007_push_notifications.sql"
+    "supabase/migrations/0007_push_notifications.sql",
+    "src/features/featured-events/actions.ts",
+    "src/features/featured-events/queries.ts",
+    "src/features/featured-events/policy.ts",
+    "src/features/featured-events/types.ts",
+    "src/components/featured-events.tsx",
+    "src/components/featured-event-form.tsx",
+    "src/app/(team)/calendar/featured/new/page.tsx",
+    "src/app/(team)/calendar/featured/[id]/edit/page.tsx",
+    "src/app/(team)/payments/[id]/edit/page.tsx"
   ],
   "edges": [
     [
@@ -615,6 +624,50 @@
     [
       "src/lib/supabase/server.ts",
       "src/features/identity/session.ts"
+    ],
+    [
+      "src/features/featured-events/queries.ts",
+      "src/components/featured-events.tsx"
+    ],
+    [
+      "src/features/featured-events/types.ts",
+      "src/components/featured-events.tsx"
+    ],
+    [
+      "src/components/featured-events.tsx",
+      "src/app/(team)/calendar/page.tsx"
+    ],
+    [
+      "src/components/featured-events.tsx",
+      "src/app/(team)/home/page.tsx"
+    ],
+    [
+      "src/features/featured-events/actions.ts",
+      "src/components/featured-event-form.tsx"
+    ],
+    [
+      "src/features/featured-events/policy.ts",
+      "src/features/featured-events/actions.ts"
+    ],
+    [
+      "src/features/identity/session.ts",
+      "src/features/featured-events/actions.ts"
+    ],
+    [
+      "src/features/identity/session.ts",
+      "src/features/featured-events/queries.ts"
+    ],
+    [
+      "src/components/featured-event-form.tsx",
+      "src/app/(team)/calendar/featured/new/page.tsx"
+    ],
+    [
+      "src/components/featured-event-form.tsx",
+      "src/app/(team)/calendar/featured/[id]/edit/page.tsx"
+    ],
+    [
+      "src/components/payment-forms.tsx",
+      "src/app/(team)/payments/[id]/edit/page.tsx"
     ]
   ],
   "invariants": {
@@ -622,11 +675,12 @@
     "participation": "Admin is an additional permission on the same permanent dancer UUID. Display names are never identity keys.",
     "authorization": "Current database membership gates all protected data access; inactive sessions cannot read the roster.",
     "boundaries": "Pure identity domain policies import no framework, database or HTTP code.",
-    "payments": "Own-charge privacy; admins remain dancers. USD cents immutable; report stays outstanding until versioned admin verification. Reject/waive require reasons. Batch uniqueness and version checks prevent double submission; append-only history retained.",
+    "payments": "Own-charge privacy; admins remain dancers. Settled USD cents immutable; outstanding charge edits require explanation and before/after audit, invalidate prior report. Deleted charges leave balances while keeping UUID/history; report stays outstanding until versioned admin verification. Reject/waive require reasons. Batch uniqueness and version checks prevent double submission; append-only history retained.",
     "privacy": "PDF reads require current active membership and authenticated Storage download operation; signing is denied. Future task/payment visibility restricted to authorized assignees/admins.",
     "segments": "One permanent-ID assignment set drives segment lineup, roster and Home; stale edits cannot overwrite newer revisions.",
     "communication": "Recipients are immutable snapshots of permanent dancer IDs. Active assignees acknowledge/complete only themselves; shared completion preserves its actor. Admin content edits and reopen/archive are versioned; admin is also dancer.",
-    "notifications": "Optin per-device delivery requires current verifiedactiveTAMU membership and existing captured audience. Generic LockScreen copy; no private offlinecache. Mount never registers subscriptions. Deactivation/signup/signout cannot grant permissions; workers use service-only fenced leases/retries and immediate source eligibility. Timedreminders require scheduler and current freshcalendar."
+    "notifications": "Optin per-device delivery requires current verifiedactiveTAMU membership and existing captured audience. Announcement titles explicitly authorized on LockScreen; bodies/payment details stay generic. Featured-event updates require current active membership; deletion invalidates source delivery. No private offlinecache. Mount never registers subscriptions. Deactivation/signup/signout cannot grant permissions; workers use service-only fenced leases/retries and immediate source eligibility. Timedreminders require scheduler and current freshcalendar.",
+    "featured_events": "Independent custom events use Central dates/optional local times, active-team reads and admin-only versioned CRUD with soft-delete/audit. Google source stays read-only; ten-Google-event display cap and five-minute cache unchanged."
   },
   "freeze_boundary": [
     "src/**",
@@ -641,6 +695,7 @@
     "supabase/migrations/0003_communication.sql",
     "supabase/migrations/0004_payments.sql",
     "public/**",
-    "supabase/migrations/0007_push_notifications.sql"
+    "supabase/migrations/0007_push_notifications.sql",
+    "supabase/migrations/0008_management_featured_events.sql"
   ]
 }

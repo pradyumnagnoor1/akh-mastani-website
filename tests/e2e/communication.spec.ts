@@ -68,7 +68,7 @@ test("communication: targeted announcement acknowledgment, edit and archive", as
     dancer.getByText("You’ve read this announcement."),
   ).toBeVisible();
   await expect(
-    dancer.getByRole("button", { name: "Archive item" }),
+    dancer.getByRole("button", { name: "Delete announcement" }),
   ).toHaveCount(0);
   await page.reload();
   await expect(
@@ -82,7 +82,8 @@ test("communication: targeted announcement acknowledgment, edit and archive", as
   await expect(
     page.getByRole("heading", { name: title + " revised", exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Archive item" }).click();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Delete announcement" }).click();
   await expect(
     page.getByRole("button", { name: "Restore item" }),
   ).toBeVisible();
@@ -92,7 +93,7 @@ test("communication: targeted announcement acknowledgment, edit and archive", as
   ).toHaveCount(0);
   await page.getByRole("button", { name: "Restore item" }).click();
   await expect(
-    page.getByRole("button", { name: "Archive item" }),
+    page.getByRole("button", { name: "Delete announcement" }),
   ).toBeVisible();
   await dancerContext.close();
 });

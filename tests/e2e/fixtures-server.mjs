@@ -75,6 +75,12 @@ await db.exec(
 await db.exec(
   readFileSync("supabase/migrations/0007_push_notifications.sql", "utf8"),
 );
+await db.exec(
+  readFileSync(
+    "supabase/migrations/0008_management_featured_events.sql",
+    "utf8",
+  ),
+);
 for (const person of users.values()) {
   await db.query(
     `insert into auth.users values($1,$2,now(),'{"provider":"google"}')`,
@@ -278,6 +284,27 @@ createServer((req, res) => {
             "recipient_ids",
             "source_id",
           ],
+          manage_payment_charge: [
+            "target_id",
+            "expected_version",
+            "operation",
+            "amount",
+            "charge_reason",
+            "payment_instructions",
+            "due_date",
+            "note",
+          ],
+          save_featured_event: [
+            "target_id",
+            "expected_version",
+            "event_title",
+            "event_description",
+            "event_day",
+            "event_time",
+            "event_location",
+            "event_url",
+          ],
+          delete_featured_event: ["target_id", "expected_version"],
           transition_payment: [
             "target_id",
             "expected_version",
@@ -331,6 +358,28 @@ createServer((req, res) => {
       if (url.pathname.startsWith("/rest/v1/")) {
         const table = url.pathname.split("/").pop();
         const allowed = {
+          featured_events: [
+            "id",
+            "title",
+            "description",
+            "event_date",
+            "start_time",
+            "location",
+            "event_link",
+            "version",
+            "deleted_at",
+            "created_by",
+            "created_at",
+            "updated_at",
+          ],
+          featured_event_audit: [
+            "id",
+            "event_id",
+            "actor_id",
+            "action",
+            "details",
+            "created_at",
+          ],
           calendar_snapshot: [
             "id",
             "source_fingerprint",
@@ -453,6 +502,14 @@ createServer((req, res) => {
           sql += ` limit ${limit}`;
         if (Number.isInteger(offset) && offset > 0) sql += ` offset ${offset}`;
         const result = await db.query(sql, values);
+        // PostgREST represents DATE as YYYY-MM-DD; PGlite decodes it as Date.
+        for (const field of result.fields) {
+          if (field.dataTypeID === 1082)
+            for (const row of result.rows) {
+              if (row[field.name] instanceof Date)
+                row[field.name] = row[field.name].toISOString().slice(0, 10);
+            }
+        }
         const headers = {
           "Content-Range": `0-${Math.max(0, result.rows.length - 1)}/${result.rows.length}`,
         };

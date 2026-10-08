@@ -1430,3 +1430,7 @@ html {
     animation: none;
   }
 }
+
+.featured-events {
+  margin-bottom: 24px;
+}

@@ -1,3 +1,4 @@
+import { FeaturedEvents } from "@/components/featured-events";
 import { NotificationSettings } from "@/components/notification-settings";
 import { AdminSummary } from "@/components/admin-summary";
 import { CalendarHome } from "@/components/calendar-home";
@@ -29,6 +30,7 @@ export default async function Home() {
       {member.is_admin && <AdminSummary />}
       <CommunicationHome />
       <PaymentHome />
+      <FeaturedEvents compact />
       <CalendarHome />
       <NotificationSettings />
       <div className="home-grid">

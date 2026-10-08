@@ -181,7 +181,7 @@ export function NotificationSettings() {
       </div>
       <p className="muted small">
         Get announcements, your to-dos, payment updates and practices on this
-        device.
+        device. Announcement titles appear in notifications.
       </p>
       {!installed && (
         <p className="muted small">

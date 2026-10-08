@@ -2,7 +2,11 @@
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { SubmitButton } from "./forms";
-import { issuePayments, transitionPayment } from "@/features/payments/actions";
+import {
+  issuePayments,
+  transitionPayment,
+  managePaymentCharge,
+} from "@/features/payments/actions";
 import {
   formatMoney,
   type Charge,
@@ -183,8 +187,8 @@ export function PaymentForm({
           onChange={(e) => setDue(e.target.value)}
         />
         <p className="muted small">
-          Charges retain their original amount and reason. To correct a charge,
-          waive it with an explanation and issue a replacement.
+          Admins can edit outstanding charges or delete a charge with an
+          explanation. Payment activity retains previous details.
         </p>
       </section>
       <section className="panel stack">
@@ -319,6 +323,134 @@ export function PaymentAction({
         </p>
       )}
       <SubmitButton>{label}</SubmitButton>
+      <Feedback state={state} />
+    </form>
+  );
+}
+
+export function EditPaymentForm({ charge }: { charge: Charge }) {
+  const [state, action] = useActionState(managePaymentCharge, {
+    error: null,
+  } as FormState);
+  const [fields, setFields] = useState({
+    reason: charge.reason,
+    amount: (charge.amount_cents / 100).toFixed(2),
+    instructions: charge.instructions,
+    due_on: charge.due_on ?? "",
+    note: "",
+  });
+  return (
+    <form
+      action={action}
+      className="panel stack"
+      onReset={(e) => e.preventDefault()}
+    >
+      <input type="hidden" name="id" value={charge.id} />
+      <input type="hidden" name="version" value={charge.version} />
+      <input type="hidden" name="operation" value="update" />
+      <label htmlFor="charge-reason">Reason</label>
+      <input
+        id="charge-reason"
+        name="reason"
+        required
+        maxLength={160}
+        value={fields.reason}
+        onChange={(e) => setFields({ ...fields, reason: e.target.value })}
+      />
+      <label htmlFor="charge-amount">Amount (USD)</label>
+      <input
+        id="charge-amount"
+        name="amount"
+        type="number"
+        min="0.01"
+        max="10000"
+        step="0.01"
+        required
+        value={fields.amount}
+        onChange={(e) => setFields({ ...fields, amount: e.target.value })}
+      />
+      <label htmlFor="charge-instructions">Payment instructions</label>
+      <textarea
+        id="charge-instructions"
+        name="instructions"
+        required
+        rows={4}
+        maxLength={3000}
+        value={fields.instructions}
+        onChange={(e) => setFields({ ...fields, instructions: e.target.value })}
+      />
+      <label htmlFor="charge-due">Due date (optional)</label>
+      <input
+        id="charge-due"
+        name="due_on"
+        type="date"
+        value={fields.due_on}
+        onChange={(e) => setFields({ ...fields, due_on: e.target.value })}
+      />
+      <label htmlFor="charge-explanation">Change explanation</label>
+      <textarea
+        value={fields.note}
+        onChange={(e) => setFields({ ...fields, note: e.target.value })}
+        id="charge-explanation"
+        name="note"
+        required
+        maxLength={1000}
+        rows={2}
+      />
+      {charge.status === "reported" && (
+        <p className="notice">
+          Changing this charge cancels the current payment report. The dancer
+          must report payment again before verification.
+        </p>
+      )}
+      <p className="muted small">
+        The assigned dancer stays the same. Previous details remain in payment
+        activity.
+      </p>
+      <Feedback state={state} />
+      <div className="actions">
+        <SubmitButton>Save charge</SubmitButton>
+        <Link href={`/payments/${charge.id}`} className="button secondary">
+          Cancel
+        </Link>
+      </div>
+    </form>
+  );
+}
+export function DeletePaymentForm({ charge }: { charge: Charge }) {
+  const [state, action] = useActionState(managePaymentCharge, {
+    error: null,
+  } as FormState);
+  const [note, setNote] = useState("");
+  return (
+    <form
+      action={action}
+      onReset={(e) => e.preventDefault()}
+      className="panel stack"
+      onSubmit={(e) => {
+        if (
+          !window.confirm(
+            "Delete this charge? It will leave outstanding balances. Payment activity will be retained.",
+          )
+        )
+          e.preventDefault();
+      }}
+    >
+      <h3>Delete charge</h3>
+      <input type="hidden" name="id" value={charge.id} />
+      <input type="hidden" name="version" value={charge.version} />
+      <input type="hidden" name="operation" value="delete" />
+      <label htmlFor="delete-charge-note">Deletion reason</label>
+      <textarea
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        id="delete-charge-note"
+        name="note"
+        required
+        maxLength={1000}
+        rows={2}
+      />
+      <SubmitButton className="button secondary">Delete charge</SubmitButton>
       <Feedback state={state} />
     </form>
   );

@@ -6,7 +6,7 @@ import {
   paymentStatus,
   type PaymentAudit,
 } from "@/features/payments/types";
-import { PaymentAction } from "@/components/payment-forms";
+import { PaymentAction, DeletePaymentForm } from "@/components/payment-forms";
 import { collectPages } from "@/features/communication/pagination";
 export default async function Page({
   params,
@@ -66,6 +66,17 @@ export default async function Page({
           </p>
         )}
       </section>
+      {member.is_admin &&
+        (charge.status === "unpaid" || charge.status === "reported") && (
+          <div className="actions">
+            <Link
+              href={`/payments/${charge.id}/edit`}
+              className="button secondary"
+            >
+              Edit charge
+            </Link>
+          </div>
+        )}
       <div className="payment-actions">
         {charge.member_id === member.id && charge.status === "unpaid" && (
           <PaymentAction
@@ -97,6 +108,9 @@ export default async function Page({
             />
           )}
       </div>
+      {member.is_admin && charge.status !== "deleted" && (
+        <DeletePaymentForm key={`delete-${charge.version}`} charge={charge} />
+      )}
       <section className="panel stack">
         <h2>Payment activity</h2>
         {history.map((event) => (
@@ -108,6 +122,8 @@ export default async function Page({
                 verify: "Payment verified",
                 reject: "Report rejected",
                 waive: "Charge waived",
+                update: "Charge updated",
+                delete: "Charge deleted",
               }[event.action] ?? event.action}
             </strong>
             <p className="muted small">
@@ -117,6 +133,27 @@ export default async function Page({
                 .replace("T", " ")}{" "}
               UTC
             </p>
+            {event.action === "update" && (
+              <p className="muted small">
+                {formatMoney(
+                  Number(
+                    (
+                      event.details.before as
+                        { amount_cents?: number } | undefined
+                    )?.amount_cents ?? 0,
+                  ),
+                )}{" "}
+                →{" "}
+                {formatMoney(
+                  Number(
+                    (
+                      event.details.after as
+                        { amount_cents?: number } | undefined
+                    )?.amount_cents ?? 0,
+                  ),
+                )}
+              </p>
+            )}
             {event.note && <p className="preserve-lines">{event.note}</p>}
           </div>
         ))}

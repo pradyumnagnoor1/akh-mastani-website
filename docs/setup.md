@@ -119,3 +119,7 @@ Required live checks: charge two different dancers, prove each cannot fetch the 
 ## Home Screen notifications
 
 After the core setup, apply migration0007 and follow [notifications setup](notifications.md) for the VAPID keys, private scheduler secret and five-minute reminder job. Google Calendar scopes do not change.
+
+## Admin management and featured events
+
+Apply `supabase/migrations/0008_management_featured_events.sql` once after0007 before deploying this version. Follow [management setup and checks](management.md). No additional credentials or scheduledjobs are required.

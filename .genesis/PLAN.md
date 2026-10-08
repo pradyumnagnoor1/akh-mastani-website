@@ -79,3 +79,7 @@ Home Screen/Web Push extension locally complete: 204 tests and48 browser flows; 
 
 ## User-authorized extension — Automatic and pull refresh
 Shared all-page30second visible/online soft refresh, resume/reconnect update, top-only mobile pull circle, draft/modal/submission protection. Freeze: rootlayout/shared clientcomponents/styles, calendarpresentation, browserchecks/config, refreshdocs/Genesisnotes. Retain upstreamcalendarcache, private server authorization and existing productpages. Local completion evidence: checkpoints/page-refresh.md; hosted deployment and physicalSafari gesture check remain separate.
+
+
+## User-authorized extension — Admin CRUD and featured events
+Explicit communication/group delete controls preserve archival history. Add auditable outstandingpayment edit/delete, title-bearing announcement pushes and custom featured-event CRUD with Calendar/Home display. Freeze src/**, additive migration0008, tests/config, docs andGenesisnotes. Current requirement supersedes original immutable-outstandingcharge and fullygenericannouncement preview assumptions. Settledamounts/UUID/audit/permission invariants remain. Local evidence checkpoints/crud-featured.md; apply migration0008 before code deployment and verify actualpush separately.

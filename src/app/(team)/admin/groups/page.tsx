@@ -35,7 +35,7 @@ export default async function GroupsPage() {
                 <h2>{group.name}</h2>
                 <span className="badge">
                   {group.archived_at
-                    ? "Archived"
+                    ? "Deleted"
                     : `${names.length} active dancers`}
                 </span>
               </div>

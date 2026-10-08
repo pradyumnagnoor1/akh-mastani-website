@@ -341,7 +341,19 @@ export function CommunicationAction({
     { error: null } as FormState,
   );
   return (
-    <form action={action} className="communication-action">
+    <form
+      action={action}
+      className="communication-action"
+      onSubmit={(e) => {
+        if (
+          operation === "archive" &&
+          !window.confirm(
+            "Delete this item? It will be removed for dancers. Its history can be restored by an admin.",
+          )
+        )
+          e.preventDefault();
+      }}
+    >
       <input type="hidden" name="id" value={post.id} />
       <input type="hidden" name="version" value={post.version} />
       <input type="hidden" name="operation" value={operation} />
@@ -435,10 +447,20 @@ export function ArchiveGroup({ group }: { group: CommunicationGroup }) {
     error: null,
   } as FormState);
   return (
-    <form action={action}>
+    <form
+      action={action}
+      onSubmit={(e) => {
+        if (
+          !window.confirm(
+            `Delete the group “${group.name}”? Existing assignments will remain unchanged.`,
+          )
+        )
+          e.preventDefault();
+      }}
+    >
       <input type="hidden" name="id" value={group.id} />
       <input type="hidden" name="version" value={group.version} />
-      <SubmitButton className="button secondary">Archive group</SubmitButton>
+      <SubmitButton className="button secondary">Delete group</SubmitButton>
       <Feedback state={state} />
     </form>
   );

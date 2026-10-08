@@ -11,6 +11,7 @@ export default defineConfig({
     "calendar-connect.spec.ts",
     "pwa.spec.ts",
     "refresh.spec.ts",
+    "management.spec.ts",
   ],
   workers: 1,
   reporter: "list",

@@ -32,6 +32,15 @@ export const EXPORT_TABLES = {
       "id,batch_id,member_id,amount_cents,reason,instructions,due_on,status,version,reported_at,report_note,review_note,verified_at,created_at,created_by",
     order: ["id"],
   },
+  featured_events: {
+    columns:
+      "id,title,description,event_date,start_time,location,event_link,version,deleted_at,created_by,created_at,updated_at",
+    order: ["id"],
+  },
+  featured_event_audit: {
+    columns: "id,event_id,actor_id,action,details,created_at",
+    order: ["id"],
+  },
   payment_audit: {
     columns: "id,charge_id,actor_id,action,note,details,created_at",
     order: ["id"],

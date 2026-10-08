@@ -37,6 +37,9 @@ for (const path of [
   "/announcements",
   "/todos",
   "/admin/groups",
+  "/calendar/featured/new",
+  "/calendar/featured/00000000-0000-4000-8000-000000000010/edit",
+  "/payments/00000000-0000-4000-8000-000000000010/edit",
 ]) {
   test(`unconfigured ${path} does not reveal team information`, async ({
     page,

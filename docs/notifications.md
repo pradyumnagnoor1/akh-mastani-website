@@ -15,7 +15,7 @@ The app is installable with the supplied Mastani logo. Approved dancers opt in o
 
 All-day calendar events do not send practice reminders. Since the calendar is a team practice calendar, every timed event is treated as a practice. The reminder uses a fresh snapshot of the connected calendar; snapshots older than15 minutes, disconnected calendars, and removed events are suppressed. After a refresh failure, the last successful snapshot remains eligible only within that15-minute freshness grace. Google edits are checked every five minutes when the scheduler runs; a change after the last successful refresh can still race with delivery.
 
-Notifications say **AKH Mastani** and a generic update message. Names, announcement text, task titles, fines, amounts and payment reasons are kept off the Lock Screen. Tapping opens the relevant protected item. Completed task updates, acknowledgment/completion activity, no-op saves and self-reported payments do not generate alerts. Initial membership approval cannot push because pending members cannot subscribe yet; they check their access by signing in.
+After migration0008, announcement notifications show the **announcement title** with a generic body. Other updates say **AKH Mastani**. Names, announcement bodies, task details, fines, amounts and payment reasons remain off the Lock Screen. Featured-event creation and changes send generic calendar updates. Tapping opens the relevant protected item. Completed task updates, acknowledgment/completion activity, no-op saves and self-reported payments do not generate alerts. Initial membership approval cannot push because pending members cannot subscribe yet; they check their access by signing in.
 
 ## Activate in production
 

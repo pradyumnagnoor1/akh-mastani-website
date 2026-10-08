@@ -106,3 +106,71 @@ export async function transitionPayment(
         : "Payment updated.",
   };
 }
+
+export async function managePaymentCharge(
+  _state: FormState,
+  form: FormData,
+): Promise<FormState> {
+  const { supabase } = await requireAdmin();
+  const operation = value(form, "operation");
+  let args;
+  try {
+    const id = value(form, "id"),
+      version = Number(form.get("version"));
+    validVersion(id, version);
+    if (!["update", "delete"].includes(operation))
+      throw new Error("Choose a valid action.");
+    const note = value(form, "note").trim();
+    if (!note || [...note].length > 1000)
+      throw new Error("Enter a change explanation of 1–1,000 characters.");
+    let reason = "",
+      instructions = "",
+      amount: number | null = null,
+      dueOn: string | null = null;
+    if (operation === "update") {
+      const input = validatePost({
+        title: value(form, "reason"),
+        body: value(form, "instructions"),
+        kind: "task",
+        mode: "individual",
+        audience: "team",
+        members: [],
+        sourceId: "",
+        dueOn: value(form, "due_on"),
+      });
+      if ([...input.body].length > 3000)
+        throw new Error(
+          "Payment instructions must be at most 3,000 characters.",
+        );
+      reason = input.title;
+      instructions = input.body;
+      amount = parseAmount(value(form, "amount"));
+      dueOn = input.dueOn;
+    }
+    args = {
+      target_id: id,
+      expected_version: version,
+      operation,
+      amount,
+      charge_reason: reason,
+      payment_instructions: instructions,
+      due_date: dueOn,
+      note,
+    };
+  } catch (error) {
+    return { error: (error as Error).message };
+  }
+  try {
+    const { error } = await supabase.rpc("manage_payment_charge", args);
+    if (error) return failure(error);
+  } catch {
+    return failure({ message: "network" });
+  }
+  schedulePush();
+  revalidatePath("/", "layout");
+  if (operation === "update") redirect(`/payments/${args.target_id}`);
+  return {
+    error: null,
+    success: "Charge deleted. Payment history is retained.",
+  };
+}

@@ -65,7 +65,8 @@ export function PageRefresh() {
       }
     };
     const reset = (event: Event) => {
-      if (event.target instanceof HTMLFormElement) dirty.delete(event.target);
+      if (!event.defaultPrevented && event.target instanceof HTMLFormElement)
+        dirty.delete(event.target);
     };
     const resume = () => refresh();
     const start = (event: TouchEvent) => {

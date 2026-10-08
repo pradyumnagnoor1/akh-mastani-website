@@ -6,7 +6,7 @@ export type Charge = {
   reason: string;
   instructions: string;
   due_on: string | null;
-  status: "unpaid" | "reported" | "verified" | "waived";
+  status: "unpaid" | "reported" | "verified" | "waived" | "deleted";
   version: number;
   reported_at: string | null;
   report_note: string | null;
@@ -33,6 +33,7 @@ export const paymentStatus = {
   reported: "Awaiting verification",
   verified: "Verified",
   waived: "Waived",
+  deleted: "Deleted",
 };
 export const outstanding = (charge: Charge) =>
   charge.status === "unpaid" || charge.status === "reported";

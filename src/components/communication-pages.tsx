@@ -76,7 +76,7 @@ export async function CommunicationList({
               className={tab === "archive" ? "active" : ""}
               href={`${base}?view=archive`}
             >
-              Archive
+              Deleted
             </Link>
           </nav>
           <Link className="text-button" href="/admin/groups">
@@ -137,7 +137,7 @@ export async function CommunicationList({
           <section className="panel empty-state">
             <h2>
               {tab === "archive"
-                ? "Nothing archived"
+                ? "Nothing deleted"
                 : tab === "mine"
                   ? "No open to-dos"
                   : "Ready for the next update"}
@@ -146,7 +146,7 @@ export async function CommunicationList({
               {tab === "mine"
                 ? `No active ${kind === "task" ? "to-dos" : "announcements"} have been assigned to you.`
                 : tab === "archive"
-                  ? "Archived items will appear here with their history."
+                  ? "Deleted items appear here with their history."
                   : "Create an item to bring the team up to date."}
             </p>
           </section>
@@ -190,7 +190,7 @@ export async function CommunicationDetail({
         <p className="eyebrow">{post.audience_label}</p>
         <h1>{post.title}</h1>
         <div className="communication-meta">
-          {post.archived_at && <span className="badge">Archived</span>}
+          {post.archived_at && <span className="badge">Deleted</span>}
           <span className="badge">
             {post.completion_mode === "shared"
               ? "One completion for everyone"
@@ -288,7 +288,13 @@ export async function CommunicationDetail({
             <CommunicationAction
               post={post}
               operation={post.archived_at ? "restore" : "archive"}
-              label={post.archived_at ? "Restore item" : "Archive item"}
+              label={
+                post.archived_at
+                  ? "Restore item"
+                  : kind === "task"
+                    ? "Delete to-do"
+                    : "Delete announcement"
+              }
             />
           </div>
         </section>

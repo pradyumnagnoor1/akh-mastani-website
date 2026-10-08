@@ -57,3 +57,7 @@ For a bad app deployment, stop promotion and redeploy the last known compatible 
 ## Home Screen app and Web Push
 
 Apply migration0007 before publishing the PWA extension. Add the four notification variables described in [notifications.md](notifications.md) and redeploy. The scheduler endpoint needs Fluid compute for its120-second allowance; the existing team routes use60 seconds. Supabase Cron is configured separately; no five-minute Vercel Hobby cron is included. Physical iPhone installation and a targeted Lock Screen push are required release checks.
+
+## Management and featured events
+
+Apply migration0008 after0007 before deploying the management extension. See [management.md](management.md) for payment correction/deletion semantics, featured event setup and title-bearing notification acceptance. No newenvironment variables are required.

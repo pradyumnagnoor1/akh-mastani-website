@@ -1,4 +1,5 @@
 # Project knowledge
+- [Admin CRUD and featured events](../../docs/management.md)
 - [Shared page updates](../../docs/page-refresh.md)
 - [Home Screen notifications](notifications.md)
 - [Calendar](calendar.md)

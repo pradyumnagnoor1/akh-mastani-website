@@ -134,7 +134,7 @@ export async function manageCommunication(
       operation === "reopen"
         ? "Reopened."
         : operation === "archive"
-          ? "Archived."
+          ? "Deleted."
           : "Restored.",
   };
 }
