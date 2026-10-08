@@ -1374,3 +1374,13 @@ label {
 .calendar-connection-details {
   overflow-wrap: anywhere;
 }
+
+.notification-settings {
+  margin-bottom: 1.5rem;
+}
+.notification-settings p {
+  margin-bottom: 0.75rem;
+}
+.notification-settings button {
+  min-height: 44px;
+}

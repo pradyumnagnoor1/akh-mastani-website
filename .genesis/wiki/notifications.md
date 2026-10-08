@@ -1,0 +1,11 @@
+# Home Screen app and Web Push
+
+User-authorized extension: manifest/PNG icons, Apple metadata and global service worker. Only public generic offline.html is cached; all team data remains network/auth-bound. Home notification controls request browser permission only after an explicit button gesture. Mount reads actual server registration status; it never registers a device or undoes disable.
+
+Migration0007 owns push_subscriptions and transactional per-device push_jobs. Narrow authenticated RPCs register/unregister/currentowned-device status; all raw table access and worker functions denied to dancers/admins. Service worker dispatch RPCs check verifiedactiveTAMU identity, capturedrecipients, source validity, expiry, token and subscriptionUUID ownership. Deactivation deletes subscriptions; signout clearscurrentdevice by HttpOnlyUUID cookie. Five-device cap, providerallowlist/curvekey validation and no privileged browser keys.
+
+Triggers capture created/edited/reopened communication, payment creation/review and segment assignments/PDF updates. No task completion spam or self-report alerts. Initial approval cannotnotify an unsubscribedpending member. GenericLockScreen messages open source-specificprotectedlinks.
+
+Next after drains outbox after successful mutations. Worker bounded20jobs/concurrency10/5secoutbound, tokenfenced60sec leases, max5 retry and invalidendpoint cleanup. Stabletags mitigate duplicates; exactlyonce or exactdeliverytime notpromised. Cron refreshes Google using existing connection, enqueues due reminders fromCentral09:00 and timedpractice30–60min beforestart; cacheeligiblewithin15min andonlymatchingactivecalendar. Migration tests cover cancellation/targeting/permissions/retries.
+
+Setup: docs/notifications.md. npm run push:setup writes ignored.env.local without printingsecrets and preservesVAPIDpair. FourVercelenv variables and appliedmigration0007 required; SupabaseCron+Vault every5min. pg_net queuedheaders canbe readbydatabaseroles; onlynarrowCRONsecretallowed, neverSupabasesecret/VAPIDprivate. Cronendpoint120secrequiresFluidcompute; reminders startoffline onlywithconfiguredscheduler. PhysicaliPhoneLockScreenacceptance remains external.

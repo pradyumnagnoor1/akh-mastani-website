@@ -1,5 +1,7 @@
 "use server";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { schedulePush } from "@/features/notifications/dispatch";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { authConfig, supabaseConfig } from "@/lib/config";
@@ -24,6 +26,18 @@ export async function signIn() {
 export async function signOut() {
   if (supabaseConfig()) {
     const supabase = await createClient();
+    const store = await cookies();
+    const device = store.get("mastani-push-device")?.value;
+    if (device && /^[0-9a-f-]{36}$/i.test(device)) {
+      const removed = await supabase.rpc("push_unregister_device", {
+        p_id: device,
+      });
+      if (removed.error)
+        throw new Error(
+          "Unable to disable this device’s notifications. Try signing out again.",
+        );
+    }
+    store.delete("mastani-push-device");
     const { error } = await supabase.auth.signOut({ scope: "local" });
     if (error) throw new Error("Unable to sign out. Please try again.");
   }
@@ -46,6 +60,7 @@ export async function saveName(
   });
   if (error)
     return { error: "Your name could not be saved. Please try again." };
+  schedulePush();
   revalidatePath("/", "layout");
   redirect(member?.status === "active" ? "/home" : "/membership");
 }
@@ -81,6 +96,7 @@ export async function manageMember(
       error:
         "The change could not be saved. Check that the member has completed setup and try again.",
     };
+  schedulePush();
   revalidatePath("/", "layout");
   return { error: null, success: "Member updated." };
 }

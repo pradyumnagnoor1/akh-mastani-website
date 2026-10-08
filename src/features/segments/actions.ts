@@ -1,4 +1,5 @@
 "use server";
+import { schedulePush } from "@/features/notifications/dispatch";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/features/identity/session";
@@ -98,6 +99,7 @@ export async function saveSegment(
           : "We could not confirm the save. Refresh the segment list before retrying.",
     };
   }
+  schedulePush();
   revalidatePath("/", "layout");
   redirect(`/segments/${id}`);
 }
@@ -124,6 +126,7 @@ export async function removeSegment(
       error:
         "We could not confirm removal. Refresh before retrying; the segment may have changed.",
     };
+  schedulePush();
   revalidatePath("/", "layout");
   redirect("/segments");
 }

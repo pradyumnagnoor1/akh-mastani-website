@@ -115,3 +115,7 @@ Members report their own payment with an optional reference. Reported charges re
 Payment details and audit history are private to the assigned dancer and active admins. Admins retain their own dancer charges. Batch IDs and version checks prevent duplicate charges or transitions from repeated submissions; after a network error, refresh and inspect the existing records before retrying. Deactivation blocks access but preserves the charge history.
 
 Required live checks: charge two different dancers, prove each cannot fetch the other's charges/audit directly, report/reject/re-report/verify, confirm pending reports remain outstanding, test waiver reason and stale/double-click rejection, and deactivate an already-signed-in dancer. Confirm these against hosted Supabase before release.
+
+## Home Screen notifications
+
+After the core setup, apply migration0007 and follow [notifications setup](notifications.md) for the VAPID keys, private scheduler secret and five-minute reminder job. Google Calendar scopes do not change.

@@ -1,4 +1,5 @@
 "use server";
+import { schedulePush } from "@/features/notifications/dispatch";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin, requireMember } from "@/features/identity/session";
@@ -72,6 +73,7 @@ export async function saveCommunication(
   } catch {
     return failure({ message: "Network error" });
   }
+  schedulePush();
   revalidatePath("/", "layout");
   redirect(
     `/${input.kind === "task" ? "todos" : "announcements"}/${args.target_id}`,
@@ -94,6 +96,7 @@ export async function completeCommunication(
   } catch {
     return failure({ message: "Network error" });
   }
+  schedulePush();
   revalidatePath("/", "layout");
   return { error: null, success: "Saved." };
 }
@@ -123,6 +126,7 @@ export async function manageCommunication(
   } catch {
     return failure({ message: "Network error" });
   }
+  schedulePush();
   revalidatePath("/", "layout");
   return {
     error: null,
@@ -161,6 +165,7 @@ export async function saveGroup(
   } catch {
     return failure({ message: "Network error" });
   }
+  schedulePush();
   revalidatePath("/", "layout");
   redirect("/admin/groups");
 }
@@ -181,6 +186,7 @@ export async function archiveGroup(
   } catch {
     return failure({ message: "Network error" });
   }
+  schedulePush();
   revalidatePath("/", "layout");
   redirect("/admin/groups");
 }

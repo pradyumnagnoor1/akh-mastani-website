@@ -9,6 +9,7 @@ export default defineConfig({
     "calendar.spec.ts",
     "operations.spec.ts",
     "calendar-connect.spec.ts",
+    "pwa.spec.ts",
   ],
   workers: 1,
   reporter: "list",
@@ -48,6 +49,10 @@ export default defineConfig({
         GOOGLE_CALENDAR_CLIENT_SECRET: "fixture-secret",
         CALENDAR_TOKEN_ENCRYPTION_KEY:
           "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        NEXT_PUBLIC_VAPID_PUBLIC_KEY: "",
+        VAPID_PRIVATE_KEY: "",
+        VAPID_SUBJECT: "",
+        CRON_SECRET: "",
         SUPABASE_SECRET_KEY: "fixture-service-key",
         NEXT_DIST_DIR: ".next-e2e-segments",
         NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:3201",

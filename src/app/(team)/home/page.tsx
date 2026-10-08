@@ -1,3 +1,4 @@
+import { NotificationSettings } from "@/components/notification-settings";
 import { AdminSummary } from "@/components/admin-summary";
 import { CalendarHome } from "@/components/calendar-home";
 import Link from "next/link";
@@ -29,6 +30,7 @@ export default async function Home() {
       <CommunicationHome />
       <PaymentHome />
       <CalendarHome />
+      <NotificationSettings />
       <div className="home-grid">
         <Link href="/roster" className="panel summary-card">
           <Users className="accent" />

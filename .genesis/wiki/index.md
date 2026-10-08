@@ -1,4 +1,5 @@
 # Project knowledge
+- [Home Screen notifications](notifications.md)
 - [Calendar](calendar.md)
 - [Integration and operations](operations.md)
 - [Payments](payments.md)

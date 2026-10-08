@@ -72,6 +72,9 @@ await db.exec(readFileSync("supabase/migrations/0005_calendar.sql", "utf8"));
 await db.exec(
   readFileSync("supabase/migrations/0006_calendar_connection.sql", "utf8"),
 );
+await db.exec(
+  readFileSync("supabase/migrations/0007_push_notifications.sql", "utf8"),
+);
 for (const person of users.values()) {
   await db.query(
     `insert into auth.users values($1,$2,now(),'{"provider":"google"}')`,
@@ -239,6 +242,10 @@ createServer((req, res) => {
         const name = url.pathname.split("/").pop();
         const args = JSON.parse(body.toString() || "{}");
         const functions = {
+          push_device_registered: ["p_id"],
+          push_unregister_device: ["p_id"],
+          push_register_subscription: ["p_endpoint", "p_p256dh", "p_auth"],
+          push_unregister_subscription: ["p_endpoint"],
           active_member: [],
           calendar_read_connection: [],
           calendar_connection_status: [],

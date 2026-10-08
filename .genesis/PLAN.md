@@ -70,3 +70,8 @@ Skills: canon + production-readiness + security-engineering.
 M1 complete: independent APPROVE + user Q&A recorded. M2 complete with independent approval and user Q+A. M3 complete with independent approval and user-delegated review. M4 and M5 complete with independent approval and delegated review. M6 complete with independent approval, final regression verification and delegated review. M7 live service setup pending.
 
 Scope amendment authorized by user: Calendar Connect extension replaces manual refresh-token setup with admin OAuth management; locally implemented and independently approved. M7 live setup still pending.
+
+## User-authorized extension — Home Screen app and push
+Installable Home Screen PWA with optin targeted push. Freeze: src/**, public/**, supabase/migrations/0007_push_notifications.sql, tests/**, scripts/**, docs/**, configuration and Genesis notes. Verify private data never cached offline, active recipient enforcement, subscription isolation, durable bounded retries and mobile install/permission states. Next/Vercel server + Supabase outbox; recurring scheduler configured separately for reminders/retry.
+
+Home Screen/Web Push extension locally complete: 204 tests and48 browser flows; independent APPROVE and user-delegated quiz recorded. Migration0007/Vercel variables/SupabaseCron/physicaliPhone activation not performed; see docs/notifications.md.

@@ -1,4 +1,5 @@
 "use server";
+import { schedulePush } from "@/features/notifications/dispatch";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireMember, requireAdmin } from "@/features/identity/session";
@@ -59,6 +60,7 @@ export async function issuePayments(
   } catch {
     return failure({ message: "network" });
   }
+  schedulePush();
   revalidatePath("/", "layout");
   redirect("/payments?view=all");
 }
@@ -94,6 +96,7 @@ export async function transitionPayment(
   } catch {
     return failure({ message: "network" });
   }
+  schedulePush();
   revalidatePath("/", "layout");
   return {
     error: null,

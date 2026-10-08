@@ -3,6 +3,8 @@
   "generated": "2026-10-07",
   "note": "Kit graphizer ran, then generated build nodes were removed and source paths resolved to avoid basename collisions. edges=[imported,importer].",
   "nodes": [
+    "public/offline.html",
+    "public/sw.js",
     "src/app/(team)/admin/groups/[id]/edit/page.tsx",
     "src/app/(team)/admin/groups/new/page.tsx",
     "src/app/(team)/admin/groups/page.tsx",
@@ -25,25 +27,35 @@
     "src/app/(team)/todos/[id]/page.tsx",
     "src/app/(team)/todos/new/page.tsx",
     "src/app/(team)/todos/page.tsx",
+    "src/app/api/notifications/dispatch/route.ts",
     "src/app/auth/callback/route.ts",
     "src/app/error.tsx",
     "src/app/layout.tsx",
     "src/app/loading.tsx",
     "src/app/login/page.tsx",
+    "src/app/manifest.ts",
     "src/app/membership/page.tsx",
     "src/app/not-found.tsx",
     "src/app/onboarding/page.tsx",
     "src/app/page.tsx",
     "src/app/segments/[id]/document/route.ts",
+    "src/components/admin-summary.tsx",
     "src/components/app-shell.tsx",
     "src/components/brand.tsx",
+    "src/components/calendar-home.tsx",
     "src/components/communication-forms.tsx",
     "src/components/communication-home.tsx",
     "src/components/communication-pages.tsx",
     "src/components/forms.tsx",
+    "src/components/notification-device.ts",
+    "src/components/notification-settings.tsx",
     "src/components/payment-forms.tsx",
     "src/components/payment-home.tsx",
+    "src/components/pwa-registration.tsx",
     "src/components/segment-form.tsx",
+    "src/features/calendar/config.ts",
+    "src/features/calendar/google.ts",
+    "src/features/calendar/service.ts",
     "src/features/communication/actions.ts",
     "src/features/communication/pagination.ts",
     "src/features/communication/policy.ts",
@@ -52,6 +64,13 @@
     "src/features/identity/actions.ts",
     "src/features/identity/policy.ts",
     "src/features/identity/session.ts",
+    "src/features/notifications/actions.ts",
+    "src/features/notifications/config.ts",
+    "src/features/notifications/dispatch.ts",
+    "src/features/notifications/policy.ts",
+    "src/features/notifications/reminders.ts",
+    "src/features/notifications/service.ts",
+    "src/features/notifications/worker.ts",
     "src/features/payments/actions.ts",
     "src/features/payments/policy.ts",
     "src/features/payments/queries.ts",
@@ -65,44 +84,49 @@
     "supabase/migrations/0001_identity.sql",
     "supabase/migrations/0002_segments.sql",
     "supabase/migrations/0003_communication.sql",
-    "supabase/migrations/0004_payments.sql"
+    "supabase/migrations/0004_payments.sql",
+    "supabase/migrations/0007_push_notifications.sql"
   ],
   "edges": [
     [
-      "src/features/communication/queries.ts",
-      "src/app/(team)/admin/groups/[id]/edit/page.tsx"
+      "src/components/admin-summary.tsx",
+      "src/app/(team)/home/page.tsx"
+    ],
+    [
+      "src/components/app-shell.tsx",
+      "src/app/(team)/layout.tsx"
+    ],
+    [
+      "src/components/brand.tsx",
+      "src/app/login/page.tsx"
+    ],
+    [
+      "src/components/brand.tsx",
+      "src/app/membership/page.tsx"
+    ],
+    [
+      "src/components/brand.tsx",
+      "src/app/onboarding/page.tsx"
+    ],
+    [
+      "src/components/calendar-home.tsx",
+      "src/app/(team)/home/page.tsx"
     ],
     [
       "src/components/communication-forms.tsx",
       "src/app/(team)/admin/groups/[id]/edit/page.tsx"
     ],
     [
-      "src/features/communication/queries.ts",
-      "src/app/(team)/admin/groups/new/page.tsx"
-    ],
-    [
       "src/components/communication-forms.tsx",
       "src/app/(team)/admin/groups/new/page.tsx"
-    ],
-    [
-      "src/features/communication/queries.ts",
-      "src/app/(team)/admin/groups/page.tsx"
     ],
     [
       "src/components/communication-forms.tsx",
       "src/app/(team)/admin/groups/page.tsx"
     ],
     [
-      "src/features/identity/session.ts",
-      "src/app/(team)/admin/page.tsx"
-    ],
-    [
-      "src/components/forms.tsx",
-      "src/app/(team)/admin/page.tsx"
-    ],
-    [
-      "src/features/identity/policy.ts",
-      "src/app/(team)/admin/page.tsx"
+      "src/components/communication-home.tsx",
+      "src/app/(team)/home/page.tsx"
     ],
     [
       "src/components/communication-pages.tsx",
@@ -121,110 +145,6 @@
       "src/app/(team)/announcements/page.tsx"
     ],
     [
-      "src/components/payment-home.tsx",
-      "src/app/(team)/home/page.tsx"
-    ],
-    [
-      "src/components/communication-home.tsx",
-      "src/app/(team)/home/page.tsx"
-    ],
-    [
-      "src/features/segments/queries.ts",
-      "src/app/(team)/home/page.tsx"
-    ],
-    [
-      "src/features/identity/session.ts",
-      "src/app/(team)/layout.tsx"
-    ],
-    [
-      "src/components/app-shell.tsx",
-      "src/app/(team)/layout.tsx"
-    ],
-    [
-      "src/features/payments/queries.ts",
-      "src/app/(team)/payments/[id]/page.tsx"
-    ],
-    [
-      "src/features/payments/types.ts",
-      "src/app/(team)/payments/[id]/page.tsx"
-    ],
-    [
-      "src/components/payment-forms.tsx",
-      "src/app/(team)/payments/[id]/page.tsx"
-    ],
-    [
-      "src/features/communication/pagination.ts",
-      "src/app/(team)/payments/[id]/page.tsx"
-    ],
-    [
-      "src/features/communication/queries.ts",
-      "src/app/(team)/payments/new/page.tsx"
-    ],
-    [
-      "src/components/payment-forms.tsx",
-      "src/app/(team)/payments/new/page.tsx"
-    ],
-    [
-      "src/features/communication/pagination.ts",
-      "src/app/(team)/payments/page.tsx"
-    ],
-    [
-      "src/features/payments/queries.ts",
-      "src/app/(team)/payments/page.tsx"
-    ],
-    [
-      "src/features/payments/types.ts",
-      "src/app/(team)/payments/page.tsx"
-    ],
-    [
-      "src/features/segments/queries.ts",
-      "src/app/(team)/roster/page.tsx"
-    ],
-    [
-      "src/features/identity/policy.ts",
-      "src/app/(team)/roster/page.tsx"
-    ],
-    [
-      "src/features/identity/session.ts",
-      "src/app/(team)/segments/[id]/edit/page.tsx"
-    ],
-    [
-      "src/features/segments/queries.ts",
-      "src/app/(team)/segments/[id]/edit/page.tsx"
-    ],
-    [
-      "src/components/segment-form.tsx",
-      "src/app/(team)/segments/[id]/edit/page.tsx"
-    ],
-    [
-      "src/features/identity/policy.ts",
-      "src/app/(team)/segments/[id]/edit/page.tsx"
-    ],
-    [
-      "src/features/segments/queries.ts",
-      "src/app/(team)/segments/[id]/page.tsx"
-    ],
-    [
-      "src/components/segment-form.tsx",
-      "src/app/(team)/segments/[id]/page.tsx"
-    ],
-    [
-      "src/features/identity/session.ts",
-      "src/app/(team)/segments/new/page.tsx"
-    ],
-    [
-      "src/components/segment-form.tsx",
-      "src/app/(team)/segments/new/page.tsx"
-    ],
-    [
-      "src/features/identity/policy.ts",
-      "src/app/(team)/segments/new/page.tsx"
-    ],
-    [
-      "src/features/segments/queries.ts",
-      "src/app/(team)/segments/page.tsx"
-    ],
-    [
       "src/components/communication-pages.tsx",
       "src/app/(team)/todos/[id]/edit/page.tsx"
     ],
@@ -241,100 +161,104 @@
       "src/app/(team)/todos/page.tsx"
     ],
     [
-      "src/lib/supabase/server.ts",
-      "src/app/auth/callback/route.ts"
-    ],
-    [
-      "src/lib/config.ts",
-      "src/app/auth/callback/route.ts"
-    ],
-    [
-      "src/features/identity/policy.ts",
-      "src/app/auth/callback/route.ts"
-    ],
-    [
-      "src/components/brand.tsx",
-      "src/app/login/page.tsx"
+      "src/components/forms.tsx",
+      "src/app/(team)/admin/page.tsx"
     ],
     [
       "src/components/forms.tsx",
       "src/app/login/page.tsx"
     ],
     [
-      "src/features/identity/actions.ts",
-      "src/app/login/page.tsx"
-    ],
-    [
-      "src/lib/config.ts",
-      "src/app/login/page.tsx"
-    ],
-    [
-      "src/features/identity/session.ts",
-      "src/app/membership/page.tsx"
-    ],
-    [
-      "src/features/identity/policy.ts",
-      "src/app/membership/page.tsx"
-    ],
-    [
-      "src/features/identity/actions.ts",
-      "src/app/membership/page.tsx"
-    ],
-    [
-      "src/components/brand.tsx",
-      "src/app/membership/page.tsx"
-    ],
-    [
-      "src/components/brand.tsx",
-      "src/app/onboarding/page.tsx"
-    ],
-    [
       "src/components/forms.tsx",
       "src/app/onboarding/page.tsx"
     ],
     [
-      "src/features/identity/session.ts",
-      "src/app/onboarding/page.tsx"
+      "src/components/notification-device.ts",
+      "src/components/notification-settings.tsx"
     ],
     [
-      "src/features/identity/policy.ts",
-      "src/app/onboarding/page.tsx"
+      "src/components/notification-settings.tsx",
+      "src/app/(team)/home/page.tsx"
     ],
     [
-      "src/features/identity/actions.ts",
-      "src/app/onboarding/page.tsx"
+      "src/components/payment-forms.tsx",
+      "src/app/(team)/payments/[id]/page.tsx"
     ],
     [
-      "src/features/identity/session.ts",
-      "src/app/segments/[id]/document/route.ts"
+      "src/components/payment-forms.tsx",
+      "src/app/(team)/payments/new/page.tsx"
     ],
     [
-      "src/features/segments/policy.ts",
-      "src/app/segments/[id]/document/route.ts"
+      "src/components/payment-home.tsx",
+      "src/app/(team)/home/page.tsx"
     ],
     [
-      "src/features/identity/actions.ts",
-      "src/components/app-shell.tsx"
+      "src/components/pwa-registration.tsx",
+      "src/app/layout.tsx"
     ],
     [
-      "src/features/identity/policy.ts",
-      "src/components/app-shell.tsx"
+      "src/components/segment-form.tsx",
+      "src/app/(team)/segments/[id]/edit/page.tsx"
+    ],
+    [
+      "src/components/segment-form.tsx",
+      "src/app/(team)/segments/[id]/page.tsx"
+    ],
+    [
+      "src/components/segment-form.tsx",
+      "src/app/(team)/segments/new/page.tsx"
+    ],
+    [
+      "src/features/calendar/config.ts",
+      "src/features/notifications/reminders.ts"
+    ],
+    [
+      "src/features/calendar/google.ts",
+      "src/features/notifications/reminders.ts"
+    ],
+    [
+      "src/features/calendar/service.ts",
+      "src/features/notifications/reminders.ts"
     ],
     [
       "src/features/communication/actions.ts",
       "src/components/communication-forms.tsx"
     ],
     [
-      "src/features/communication/types.ts",
-      "src/components/communication-forms.tsx"
+      "src/features/communication/pagination.ts",
+      "src/app/(team)/payments/[id]/page.tsx"
     ],
     [
-      "src/features/identity/policy.ts",
-      "src/components/communication-forms.tsx"
+      "src/features/communication/pagination.ts",
+      "src/app/(team)/payments/page.tsx"
     ],
     [
-      "src/features/segments/policy.ts",
-      "src/components/communication-forms.tsx"
+      "src/features/communication/pagination.ts",
+      "src/features/payments/queries.ts"
+    ],
+    [
+      "src/features/communication/policy.ts",
+      "src/features/communication/actions.ts"
+    ],
+    [
+      "src/features/communication/policy.ts",
+      "src/features/payments/actions.ts"
+    ],
+    [
+      "src/features/communication/queries.ts",
+      "src/app/(team)/admin/groups/[id]/edit/page.tsx"
+    ],
+    [
+      "src/features/communication/queries.ts",
+      "src/app/(team)/admin/groups/new/page.tsx"
+    ],
+    [
+      "src/features/communication/queries.ts",
+      "src/app/(team)/admin/groups/page.tsx"
+    ],
+    [
+      "src/features/communication/queries.ts",
+      "src/app/(team)/payments/new/page.tsx"
     ],
     [
       "src/features/communication/queries.ts",
@@ -346,7 +270,35 @@
     ],
     [
       "src/features/communication/types.ts",
+      "src/components/communication-forms.tsx"
+    ],
+    [
+      "src/features/communication/types.ts",
       "src/components/communication-pages.tsx"
+    ],
+    [
+      "src/features/communication/types.ts",
+      "src/components/payment-forms.tsx"
+    ],
+    [
+      "src/features/communication/types.ts",
+      "src/features/communication/actions.ts"
+    ],
+    [
+      "src/features/identity/actions.ts",
+      "src/app/login/page.tsx"
+    ],
+    [
+      "src/features/identity/actions.ts",
+      "src/app/membership/page.tsx"
+    ],
+    [
+      "src/features/identity/actions.ts",
+      "src/app/onboarding/page.tsx"
+    ],
+    [
+      "src/features/identity/actions.ts",
+      "src/components/app-shell.tsx"
     ],
     [
       "src/features/identity/actions.ts",
@@ -354,51 +306,87 @@
     ],
     [
       "src/features/identity/policy.ts",
+      "src/app/(team)/admin/page.tsx"
+    ],
+    [
+      "src/features/identity/policy.ts",
+      "src/app/(team)/roster/page.tsx"
+    ],
+    [
+      "src/features/identity/policy.ts",
+      "src/app/(team)/segments/[id]/edit/page.tsx"
+    ],
+    [
+      "src/features/identity/policy.ts",
+      "src/app/(team)/segments/new/page.tsx"
+    ],
+    [
+      "src/features/identity/policy.ts",
+      "src/app/auth/callback/route.ts"
+    ],
+    [
+      "src/features/identity/policy.ts",
+      "src/app/membership/page.tsx"
+    ],
+    [
+      "src/features/identity/policy.ts",
+      "src/app/onboarding/page.tsx"
+    ],
+    [
+      "src/features/identity/policy.ts",
+      "src/components/app-shell.tsx"
+    ],
+    [
+      "src/features/identity/policy.ts",
+      "src/components/communication-forms.tsx"
+    ],
+    [
+      "src/features/identity/policy.ts",
       "src/components/forms.tsx"
     ],
     [
-      "src/features/payments/actions.ts",
-      "src/components/payment-forms.tsx"
-    ],
-    [
-      "src/features/payments/types.ts",
-      "src/components/payment-forms.tsx"
-    ],
-    [
-      "src/features/payments/policy.ts",
-      "src/components/payment-forms.tsx"
-    ],
-    [
       "src/features/identity/policy.ts",
       "src/components/payment-forms.tsx"
     ],
     [
-      "src/features/segments/policy.ts",
-      "src/components/payment-forms.tsx"
-    ],
-    [
-      "src/features/communication/types.ts",
-      "src/components/payment-forms.tsx"
-    ],
-    [
-      "src/features/payments/queries.ts",
-      "src/components/payment-home.tsx"
-    ],
-    [
-      "src/features/payments/types.ts",
-      "src/components/payment-home.tsx"
-    ],
-    [
-      "src/features/segments/actions.ts",
-      "src/components/segment-form.tsx"
-    ],
-    [
-      "src/features/segments/policy.ts",
+      "src/features/identity/policy.ts",
       "src/components/segment-form.tsx"
     ],
     [
       "src/features/identity/policy.ts",
-      "src/components/segment-form.tsx"
+      "src/features/communication/queries.ts"
+    ],
+    [
+      "src/features/identity/policy.ts",
+      "src/features/identity/actions.ts"
+    ],
+    [
+      "src/features/identity/session.ts",
+      "src/app/(team)/admin/page.tsx"
+    ],
+    [
+      "src/features/identity/session.ts",
+      "src/app/(team)/layout.tsx"
+    ],
+    [
+      "src/features/identity/session.ts",
+      "src/app/(team)/segments/[id]/edit/page.tsx"
+    ],
+    [
+      "src/features/identity/session.ts",
+      "src/app/(team)/segments/new/page.tsx"
+    ],
+    [
+      "src/features/identity/session.ts",
+      "src/app/membership/page.tsx"
+    ],
+    [
+      "src/features/identity/session.ts",
+      "src/app/onboarding/page.tsx"
+    ],
+    [
+      "src/features/identity/session.ts",
+      "src/app/segments/[id]/document/route.ts"
     ],
     [
       "src/features/identity/session.ts",
@@ -409,43 +397,19 @@
       "src/features/communication/queries.ts"
     ],
     [
-      "src/features/identity/policy.ts",
-      "src/features/communication/queries.ts"
-    ],
-    [
-      "src/features/segments/policy.ts",
-      "src/features/communication/queries.ts"
-    ],
-    [
-      "src/lib/supabase/server.ts",
+      "src/features/identity/session.ts",
       "src/features/identity/actions.ts"
     ],
     [
-      "src/lib/config.ts",
-      "src/features/identity/actions.ts"
-    ],
-    [
-      "src/lib/supabase/server.ts",
-      "src/features/identity/session.ts"
-    ],
-    [
-      "src/lib/config.ts",
-      "src/features/identity/session.ts"
+      "src/features/identity/session.ts",
+      "src/features/notifications/actions.ts"
     ],
     [
       "src/features/identity/session.ts",
       "src/features/payments/actions.ts"
     ],
     [
-      "src/features/communication/policy.ts",
-      "src/features/payments/actions.ts"
-    ],
-    [
       "src/features/identity/session.ts",
-      "src/features/payments/queries.ts"
-    ],
-    [
-      "src/features/communication/pagination.ts",
       "src/features/payments/queries.ts"
     ],
     [
@@ -457,12 +421,200 @@
       "src/features/segments/queries.ts"
     ],
     [
+      "src/features/notifications/actions.ts",
+      "src/components/notification-settings.tsx"
+    ],
+    [
+      "src/features/notifications/config.ts",
+      "src/app/api/notifications/dispatch/route.ts"
+    ],
+    [
+      "src/features/notifications/config.ts",
+      "src/features/notifications/actions.ts"
+    ],
+    [
+      "src/features/notifications/config.ts",
+      "src/features/notifications/dispatch.ts"
+    ],
+    [
+      "src/features/notifications/config.ts",
+      "src/features/notifications/service.ts"
+    ],
+    [
+      "src/features/notifications/dispatch.ts",
+      "src/app/api/notifications/dispatch/route.ts"
+    ],
+    [
+      "src/features/notifications/dispatch.ts",
+      "src/features/communication/actions.ts"
+    ],
+    [
+      "src/features/notifications/dispatch.ts",
+      "src/features/identity/actions.ts"
+    ],
+    [
+      "src/features/notifications/dispatch.ts",
+      "src/features/payments/actions.ts"
+    ],
+    [
+      "src/features/notifications/dispatch.ts",
+      "src/features/segments/actions.ts"
+    ],
+    [
+      "src/features/notifications/policy.ts",
+      "src/features/notifications/actions.ts"
+    ],
+    [
+      "src/features/notifications/policy.ts",
+      "src/features/notifications/worker.ts"
+    ],
+    [
+      "src/features/notifications/reminders.ts",
+      "src/app/api/notifications/dispatch/route.ts"
+    ],
+    [
+      "src/features/notifications/service.ts",
+      "src/features/notifications/dispatch.ts"
+    ],
+    [
+      "src/features/notifications/service.ts",
+      "src/features/notifications/reminders.ts"
+    ],
+    [
+      "src/features/notifications/worker.ts",
+      "src/features/notifications/dispatch.ts"
+    ],
+    [
+      "src/features/payments/actions.ts",
+      "src/components/payment-forms.tsx"
+    ],
+    [
+      "src/features/payments/policy.ts",
+      "src/components/payment-forms.tsx"
+    ],
+    [
+      "src/features/payments/policy.ts",
+      "src/features/payments/actions.ts"
+    ],
+    [
+      "src/features/payments/queries.ts",
+      "src/app/(team)/payments/[id]/page.tsx"
+    ],
+    [
+      "src/features/payments/queries.ts",
+      "src/app/(team)/payments/page.tsx"
+    ],
+    [
+      "src/features/payments/queries.ts",
+      "src/components/payment-home.tsx"
+    ],
+    [
+      "src/features/payments/types.ts",
+      "src/app/(team)/payments/[id]/page.tsx"
+    ],
+    [
+      "src/features/payments/types.ts",
+      "src/app/(team)/payments/page.tsx"
+    ],
+    [
+      "src/features/payments/types.ts",
+      "src/components/payment-forms.tsx"
+    ],
+    [
+      "src/features/payments/types.ts",
+      "src/components/payment-home.tsx"
+    ],
+    [
+      "src/features/payments/types.ts",
+      "src/features/payments/actions.ts"
+    ],
+    [
+      "src/features/segments/actions.ts",
+      "src/components/segment-form.tsx"
+    ],
+    [
+      "src/features/segments/policy.ts",
+      "src/app/segments/[id]/document/route.ts"
+    ],
+    [
+      "src/features/segments/policy.ts",
+      "src/components/communication-forms.tsx"
+    ],
+    [
+      "src/features/segments/policy.ts",
+      "src/components/payment-forms.tsx"
+    ],
+    [
+      "src/features/segments/policy.ts",
+      "src/components/segment-form.tsx"
+    ],
+    [
+      "src/features/segments/policy.ts",
+      "src/features/communication/queries.ts"
+    ],
+    [
+      "src/features/segments/policy.ts",
+      "src/features/segments/actions.ts"
+    ],
+    [
+      "src/features/segments/queries.ts",
+      "src/app/(team)/home/page.tsx"
+    ],
+    [
+      "src/features/segments/queries.ts",
+      "src/app/(team)/roster/page.tsx"
+    ],
+    [
+      "src/features/segments/queries.ts",
+      "src/app/(team)/segments/[id]/edit/page.tsx"
+    ],
+    [
+      "src/features/segments/queries.ts",
+      "src/app/(team)/segments/[id]/page.tsx"
+    ],
+    [
+      "src/features/segments/queries.ts",
+      "src/app/(team)/segments/page.tsx"
+    ],
+    [
+      "src/lib/config.ts",
+      "src/app/auth/callback/route.ts"
+    ],
+    [
+      "src/lib/config.ts",
+      "src/app/login/page.tsx"
+    ],
+    [
+      "src/lib/config.ts",
+      "src/features/identity/actions.ts"
+    ],
+    [
+      "src/lib/config.ts",
+      "src/features/identity/session.ts"
+    ],
+    [
+      "src/lib/config.ts",
+      "src/features/notifications/config.ts"
+    ],
+    [
       "src/lib/config.ts",
       "src/lib/supabase/server.ts"
     ],
     [
       "src/lib/config.ts",
       "src/proxy.ts"
+    ],
+    [
+      "src/lib/supabase/server.ts",
+      "src/app/auth/callback/route.ts"
+    ],
+    [
+      "src/lib/supabase/server.ts",
+      "src/features/identity/actions.ts"
+    ],
+    [
+      "src/lib/supabase/server.ts",
+      "src/features/identity/session.ts"
     ]
   ],
   "invariants": {
@@ -473,7 +625,8 @@
     "payments": "Own-charge privacy; admins remain dancers. USD cents immutable; report stays outstanding until versioned admin verification. Reject/waive require reasons. Batch uniqueness and version checks prevent double submission; append-only history retained.",
     "privacy": "PDF reads require current active membership and authenticated Storage download operation; signing is denied. Future task/payment visibility restricted to authorized assignees/admins.",
     "segments": "One permanent-ID assignment set drives segment lineup, roster and Home; stale edits cannot overwrite newer revisions.",
-    "communication": "Recipients are immutable snapshots of permanent dancer IDs. Active assignees acknowledge/complete only themselves; shared completion preserves its actor. Admin content edits and reopen/archive are versioned; admin is also dancer."
+    "communication": "Recipients are immutable snapshots of permanent dancer IDs. Active assignees acknowledge/complete only themselves; shared completion preserves its actor. Admin content edits and reopen/archive are versioned; admin is also dancer.",
+    "notifications": "Optin per-device delivery requires current verifiedactiveTAMU membership and existing captured audience. Generic LockScreen copy; no private offlinecache. Mount never registers subscriptions. Deactivation/signup/signout cannot grant permissions; workers use service-only fenced leases/retries and immediate source eligibility. Timedreminders require scheduler and current freshcalendar."
   },
   "freeze_boundary": [
     "src/**",
@@ -486,6 +639,8 @@
     "root configuration",
     "supabase/migrations/0002_segments.sql",
     "supabase/migrations/0003_communication.sql",
-    "supabase/migrations/0004_payments.sql"
+    "supabase/migrations/0004_payments.sql",
+    "public/**",
+    "supabase/migrations/0007_push_notifications.sql"
   ]
 }
