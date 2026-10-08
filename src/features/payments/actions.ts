@@ -168,9 +168,9 @@ export async function managePaymentCharge(
   }
   schedulePush();
   revalidatePath("/", "layout");
-  if (operation === "update") redirect(`/payments/${args.target_id}`);
-  return {
-    error: null,
-    success: "Charge deleted. Payment history is retained.",
-  };
+  redirect(
+    operation === "update"
+      ? `/payments/${args.target_id}`
+      : "/payments?view=all",
+  );
 }

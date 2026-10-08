@@ -102,33 +102,37 @@ it("expires invalid endpoints, retries provider failures and discards permanent 
     expect(finish).toHaveBeenCalledWith(job(), expected);
   }
 });
-it("caps work and concurrency and never leaks private content into delivery payload", async () => {
-  let running = 0,
-    peak = 0;
-  const payloads: string[] = [];
-  const result = await deliverJobs(
-    Array.from({ length: 30 }, (_, i) => job(i)),
-    {
-      eligible: async () => true,
-      send: async (_, payload) => {
-        running++;
-        peak = Math.max(peak, running);
-        payloads.push(payload);
-        await new Promise((r) => setTimeout(r, 1));
-        running--;
+it.each([35, 40, 45])(
+  "caps work and concurrency for %i jobs and never leaks private content into delivery payload",
+  async (count) => {
+    let running = 0,
+      peak = 0;
+    const payloads: string[] = [];
+    const result = await deliverJobs(
+      Array.from({ length: count }, (_, i) => job(i)),
+      {
+        eligible: async () => true,
+        send: async (_, payload) => {
+          running++;
+          peak = Math.max(peak, running);
+          payloads.push(payload);
+          await new Promise((r) => setTimeout(r, 1));
+          running--;
+        },
+        finish: async () => {},
       },
-      finish: async () => {},
-    },
-  );
-  expect(result.sent).toBe(20);
-  expect(peak).toBeLessThanOrEqual(10);
-  expect(JSON.parse(payloads[0])).toEqual({
-    title: "AKH Mastani",
-    body: "A team announcement is available.",
-    url: "/announcements",
-    tag: "mastani-0",
-  });
-});
+    );
+    expect(result.sent).toBe(Math.min(count, 40));
+    expect(payloads).toHaveLength(Math.min(count, 40));
+    expect(peak).toBeLessThanOrEqual(10);
+    expect(JSON.parse(payloads[0])).toEqual({
+      title: "AKH Mastani",
+      body: "A team announcement is available.",
+      url: "/announcements",
+      tag: "mastani-0",
+    });
+  },
+);
 it("recovers ambiguous delivery and keeps stable tags for retried jobs", async () => {
   const payloads: string[] = [];
   const dependencies = {

@@ -83,13 +83,11 @@ export default async function MemberDetail({
                   >
                     <strong>{p.title}</strong>
                     <span className="badge">
-                      {p.archived_at
-                        ? "Archived"
-                        : completed
-                          ? p.kind === "task"
-                            ? "Done"
-                            : "Read"
-                          : "Pending"}
+                      {completed
+                        ? p.kind === "task"
+                          ? "Done"
+                          : "Read"
+                        : "Pending"}
                     </span>
                   </Link>
                 );

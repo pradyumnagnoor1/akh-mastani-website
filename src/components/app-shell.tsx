@@ -8,6 +8,7 @@ import {
   ListTodo,
   CalendarDays,
   Layers,
+  Film,
   Wallet,
   Users,
   Settings2,
@@ -33,6 +34,7 @@ const navigation = [
     icon: CalendarDays,
   },
   { label: "Set Design", href: "/segments", icon: Layers },
+  { label: "Choreo", href: "/choreo", icon: Film },
   { label: "Payments", href: "/payments", icon: Wallet },
   { label: "Roster", href: "/roster", icon: Users },
 ];

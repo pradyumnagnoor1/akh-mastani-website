@@ -167,6 +167,7 @@ test("navigation: narrow layouts keep controls accessible and dancer permissions
     "/calendar",
     "/payments",
     "/segments",
+    "/choreo",
     "/announcements",
     "/todos",
   ]) {

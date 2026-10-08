@@ -17,6 +17,7 @@ export const communicationData = cache(async () => {
       context.supabase
         .from("communication_posts")
         .select("*")
+        .is("archived_at", null)
         .order("id")
         .range(from, to),
     ),
@@ -53,6 +54,7 @@ export const communicationEditorData = cache(async () => {
         supabase
           .from("communication_groups")
           .select("*")
+          .is("archived_at", null)
           .order("id")
           .range(from, to),
       ),
@@ -65,7 +67,12 @@ export const communicationEditorData = cache(async () => {
           .range(from, to),
       ),
       collectPages((from, to) =>
-        supabase.from("segments").select("*").order("id").range(from, to),
+        supabase
+          .from("segments")
+          .select("*")
+          .is("archived_at", null)
+          .order("id")
+          .range(from, to),
       ),
       collectPages((from, to) =>
         supabase

@@ -332,7 +332,7 @@ export function CommunicationAction({
   label,
 }: {
   post: CommunicationPost;
-  operation: "complete" | "archive" | "restore" | "reopen";
+  operation: "complete" | "delete" | "reopen";
   recipientId?: string;
   label: string;
 }) {
@@ -346,15 +346,16 @@ export function CommunicationAction({
       className="communication-action"
       onSubmit={(e) => {
         if (
-          operation === "archive" &&
+          operation === "delete" &&
           !window.confirm(
-            "Delete this item? It will be removed for dancers. Its history can be restored by an admin.",
+            "Permanently delete this item and its history? This cannot be undone.",
           )
         )
           e.preventDefault();
       }}
     >
       <input type="hidden" name="id" value={post.id} />
+      <input type="hidden" name="kind" value={post.kind} />
       <input type="hidden" name="version" value={post.version} />
       <input type="hidden" name="operation" value={operation} />
       {recipientId && (

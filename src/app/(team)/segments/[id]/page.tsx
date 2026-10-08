@@ -11,7 +11,7 @@ export default async function SegmentDetail({
   const { id } = await params;
   const { segments, assignments, member, supabase } = await segmentData();
   const segment = segments.find((s) => s.id === id);
-  if (!segment) notFound();
+  if (!segment || segment.archived_at) notFound();
   const { data: people, error } = await supabase
     .from("members")
     .select("id,display_name,is_admin")
@@ -29,9 +29,7 @@ export default async function SegmentDetail({
           <Link href="/segments" className="back-link">
             ← Set design
           </Link>
-          <p className="eyebrow">
-            {segment.archived_at ? "ARCHIVED SEGMENT" : "SEGMENT"}
-          </p>
+          <p className="eyebrow">SEGMENT</p>
           <h1>{segment.name}</h1>
           <p className="muted">
             {dancers.length} active dancers · Formation PDF
@@ -44,12 +42,6 @@ export default async function SegmentDetail({
           </Link>
         )}
       </div>
-      {segment.archived_at && (
-        <p className="notice">
-          This segment has been removed from team views. You’re viewing its
-          archived record as an admin.
-        </p>
-      )}
       <div className="segment-detail-grid">
         <section className="panel document-panel">
           <div className="section-toolbar">

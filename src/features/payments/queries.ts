@@ -9,6 +9,7 @@ export const paymentData = cache(async () => {
     context.supabase
       .from("payment_charges")
       .select("*")
+      .neq("status", "deleted")
       .order("id")
       .range(from, to),
   );

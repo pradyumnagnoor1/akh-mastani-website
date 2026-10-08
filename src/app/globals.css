@@ -719,8 +719,9 @@ body:has(.nav-dialog[open]) {
   margin-bottom: 16px;
 }
 .nav-dialog .nav-item {
-  padding: 10px 14px;
-  margin: 2px 0;
+  min-height: 44px;
+  padding: 8px 14px;
+  margin: 1px 0;
 }
 .nav-dialog .admin-label {
   margin-top: 16px;
@@ -1660,4 +1661,49 @@ html {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
+}
+.choreo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 16px;
+}
+.choreo-card {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+.choreo-card h2,
+.choreo-player h2 {
+  overflow-wrap: anywhere;
+  font-size: 22px;
+}
+.choreo-card .actions {
+  margin-top: auto;
+}
+.choreo-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--accent);
+}
+.choreo-toolbar {
+  align-items: end;
+  flex-wrap: wrap;
+}
+.choreo-search {
+  display: grid;
+  gap: 8px;
+  width: min(100%, 400px);
+}
+.choreo-player {
+  scroll-margin-top: 80px;
+}
+.choreo-player iframe {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  border-radius: 12px;
+  background: #000;
+  margin: 16px 0;
 }

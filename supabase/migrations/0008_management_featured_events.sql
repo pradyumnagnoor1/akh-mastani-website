@@ -1,8 +1,26 @@
+-- Run this complete file. Transactional and resumable for known0008 schema states.
+-- Never replay older behavior after permanent-deletion migration0009 has started.
+begin;
+set local lock_timeout='10s';
+select pg_advisory_xact_lock(hashtextextended('mastani-migration-0008',0));
+do $$
+begin
+ if to_regclass('public.formation_cleanup') is not null
+ or to_regprocedure('public.delete_team_item(uuid,integer,text)') is not null
+ --0009 first drops/replaces this FK, before creating either later marker.
+ or (to_regclass('public.featured_event_audit') is not null and not exists(
+  select 1 from pg_constraint where conrelid=to_regclass('public.featured_event_audit')
+  and conname='featured_event_audit_event_id_fkey' and contype='f' and confdeltype='a'
+ )) then
+  raise exception 'Migration0009 is already present or has started. Do not rerun0008; its older behavior would replace permanent deletion rules.';
+ end if;
+end;$$;
+
 -- Additive management operations; financial records and recipient history remain intact.
-alter table public.payment_charges drop constraint payment_charges_status_check;
+alter table public.payment_charges drop constraint if exists payment_charges_status_check;
 alter table public.payment_charges add constraint payment_charges_status_check check(status in ('unpaid','reported','verified','waived','deleted'));
 
-create function public.manage_payment_charge(target_id uuid,expected_version integer,operation text,amount integer,charge_reason text,payment_instructions text,due_date date,note text) returns void language plpgsql security definer set search_path='' as $$
+create or replace function public.manage_payment_charge(target_id uuid,expected_version integer,operation text,amount integer,charge_reason text,payment_instructions text,due_date date,note text) returns void language plpgsql security definer set search_path='' as $$
 declare c public.payment_charges; before_data jsonb; clean_note text:=nullif(btrim(note),'');
 begin
  if not public.admin_member() then raise exception 'Admin access required';end if;
@@ -24,7 +42,7 @@ end;$$;
 revoke all on function public.manage_payment_charge(uuid,integer,text,integer,text,text,date,text) from public,anon,authenticated;
 grant execute on function public.manage_payment_charge(uuid,integer,text,integer,text,text,date,text) to authenticated;
 
-create table public.featured_events (
+create table if not exists public.featured_events (
  id uuid primary key, title text not null check(char_length(btrim(title)) between 1 and 160 and title !~ '[[:cntrl:]]'),
  description text not null default '' check(char_length(description)<=3000), event_date date not null,
  start_time time, location text not null default '' check(char_length(location)<=200 and location !~ '[[:cntrl:]]'),
@@ -32,16 +50,18 @@ create table public.featured_events (
  version integer not null default 1 check(version>0), deleted_at timestamptz,
  created_by uuid not null references public.members(id), created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
-create index featured_events_date on public.featured_events(event_date,id) where deleted_at is null;
-create table public.featured_event_audit(id bigint generated always as identity primary key,event_id uuid not null references public.featured_events(id),actor_id uuid not null,action text not null,details jsonb not null,created_at timestamptz not null default now());
+create index if not exists featured_events_date on public.featured_events(event_date,id) where deleted_at is null;
+create table if not exists public.featured_event_audit(id bigint generated always as identity primary key,event_id uuid not null references public.featured_events(id),actor_id uuid not null,action text not null,details jsonb not null,created_at timestamptz not null default now());
 alter table public.featured_events enable row level security;
 alter table public.featured_event_audit enable row level security;
 revoke all on public.featured_events,public.featured_event_audit from public,anon,authenticated;
 grant select on public.featured_events,public.featured_event_audit to authenticated;
+drop policy if exists featured_read on public.featured_events;
 create policy featured_read on public.featured_events for select to authenticated using(public.admin_member() or (public.active_member() and deleted_at is null));
+drop policy if exists featured_audit_read on public.featured_event_audit;
 create policy featured_audit_read on public.featured_event_audit for select to authenticated using(public.admin_member());
 
-create function public.save_featured_event(target_id uuid,expected_version integer,event_title text,event_description text,event_day date,event_time time,event_location text,event_url text) returns void language plpgsql security definer set search_path='' as $$
+create or replace function public.save_featured_event(target_id uuid,expected_version integer,event_title text,event_description text,event_day date,event_time time,event_location text,event_url text) returns void language plpgsql security definer set search_path='' as $$
 declare e public.featured_events; before_data jsonb;
 begin
  if not public.admin_member() then raise exception 'Admin access required';end if;
@@ -57,7 +77,7 @@ begin
  end if;
  insert into public.featured_event_audit(event_id,actor_id,action,details) select target_id,auth.uid(),case when expected_version=0 then 'created' else 'updated' end,jsonb_build_object('before',before_data,'after',to_jsonb(f)) from public.featured_events f where id=target_id;
 end;$$;
-create function public.delete_featured_event(target_id uuid,expected_version integer) returns void language plpgsql security definer set search_path='' as $$
+create or replace function public.delete_featured_event(target_id uuid,expected_version integer) returns void language plpgsql security definer set search_path='' as $$
 declare e public.featured_events;
 begin
  if not public.admin_member() then raise exception 'Admin access required';end if;
@@ -96,7 +116,7 @@ begin
  end if;return new;
 end;$$;
 
-create function public.push_featured_event() returns trigger language plpgsql security definer set search_path='' as $$
+create or replace function public.push_featured_event() returns trigger language plpgsql security definer set search_path='' as $$
 declare ids uuid[];
 begin
  if new.deleted_at is not null then return new;end if;
@@ -104,7 +124,10 @@ begin
  perform public.push_enqueue(ids,'featured','featured:'||new.id||':'||new.version,new.id,'featured','/calendar');
  return new;
 end;$$;
+drop trigger if exists push_featured on public.featured_events;
 create trigger push_featured after insert or update on public.featured_events for each row execute function public.push_featured_event();
 revoke all on function public.push_featured_event() from public,anon,authenticated,service_role;
 -- Bring already queued announcement jobs onto the same title-display policy.
 update public.push_jobs j set payload=j.payload||jsonb_build_object('title',p.title) from public.communication_posts p where j.source_id=p.id and j.category='announcement' and j.source_kind='communication' and j.status='pending';
+
+commit;

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/features/identity/session";
 import { segmentName, selectedMembers, validatePdf, UUID } from "./policy";
+import { scheduleFormationCleanup } from "./cleanup";
 export type SegmentFormState = { error: string | null };
 
 export async function saveSegment(
@@ -126,6 +127,7 @@ export async function removeSegment(
       error:
         "We could not confirm removal. Refresh before retrying; the segment may have changed.",
     };
+  scheduleFormationCleanup();
   schedulePush();
   revalidatePath("/", "layout");
   redirect("/segments");

@@ -1,4 +1,5 @@
 # Project knowledge
+- [Choreo videos](../../docs/choreo.md)
 - [Mobile interface](../../docs/mobile-ui.md)
 - [Admin CRUD and featured events](../../docs/management.md)
 - [Shared page updates](../../docs/page-refresh.md)

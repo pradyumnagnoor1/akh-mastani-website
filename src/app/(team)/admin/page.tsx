@@ -53,6 +53,9 @@ export default async function Admin() {
           Connect, reconnect or disconnect the shared practice calendar →
         </span>
       </Link>
+      <Link href="/choreo" className="admin-shortcut">
+        Choreo <span>Team dance videos in Google Drive →</span>
+      </Link>
       <div className="notice">
         <strong>
           {pending.length} membership{" "}

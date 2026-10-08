@@ -6,7 +6,7 @@ Apply only to the dance-team website discussed in this repository. User changes 
 
 The repository's `Talaash HQ.jpg` shows a dark mobile sidebar, violet accent, rounded selected navigation item, icons, and an account area. Use this as visual direction, with legible muted text and a clear selected state. Do not copy the reference team's identity or assume unseen page designs.
 
-Approved navigation: Home, Announcements, To-Dos, Practice Calendar, Set Design, Payments, Roster, and Admin. Attendance is deferred. Exclude Benching, Dues, and Reimbursements. Use a sidebar on larger screens and a keyboard-accessible drawer on narrow screens. Profile and sign-out can live in the account menu.
+Approved navigation: Home, Announcements, To-Dos, Practice Calendar, Set Design, Choreo, Payments, Roster, and Admin. Attendance is deferred. Exclude Benching, Dues, and Reimbursements. Use a sidebar on larger screens and a keyboard-accessible drawer on narrow screens. Profile and sign-out can live in the account menu.
 
 Suggested starting colors: background #0B0B10, surface #171720, primary text #F5F5FA, muted text #B1B1C2, accent #9690FF with dark text on accent fills. Validate combinations in rendered states before adopting them.
 

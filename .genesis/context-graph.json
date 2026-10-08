@@ -13,8 +13,12 @@
     "src/app/(team)/announcements/[id]/page.tsx",
     "src/app/(team)/announcements/new/page.tsx",
     "src/app/(team)/announcements/page.tsx",
+    "src/app/(team)/calendar/featured/[id]/edit/page.tsx",
+    "src/app/(team)/calendar/featured/new/page.tsx",
+    "src/app/(team)/choreo/page.tsx",
     "src/app/(team)/home/page.tsx",
     "src/app/(team)/layout.tsx",
+    "src/app/(team)/payments/[id]/edit/page.tsx",
     "src/app/(team)/payments/[id]/page.tsx",
     "src/app/(team)/payments/new/page.tsx",
     "src/app/(team)/payments/page.tsx",
@@ -27,6 +31,7 @@
     "src/app/(team)/todos/[id]/page.tsx",
     "src/app/(team)/todos/new/page.tsx",
     "src/app/(team)/todos/page.tsx",
+    "src/app/api/maintenance/route.ts",
     "src/app/api/notifications/dispatch/route.ts",
     "src/app/auth/callback/route.ts",
     "src/app/error.tsx",
@@ -43,9 +48,12 @@
     "src/components/app-shell.tsx",
     "src/components/brand.tsx",
     "src/components/calendar-home.tsx",
+    "src/components/choreo-videos.tsx",
     "src/components/communication-forms.tsx",
     "src/components/communication-home.tsx",
     "src/components/communication-pages.tsx",
+    "src/components/featured-event-form.tsx",
+    "src/components/featured-events.tsx",
     "src/components/forms.tsx",
     "src/components/notification-device.ts",
     "src/components/notification-settings.tsx",
@@ -56,11 +64,19 @@
     "src/features/calendar/config.ts",
     "src/features/calendar/google.ts",
     "src/features/calendar/service.ts",
+    "src/features/choreo/config.ts",
+    "src/features/choreo/google.ts",
+    "src/features/choreo/policy.ts",
+    "src/features/choreo/queries.ts",
     "src/features/communication/actions.ts",
     "src/features/communication/pagination.ts",
     "src/features/communication/policy.ts",
     "src/features/communication/queries.ts",
     "src/features/communication/types.ts",
+    "src/features/featured-events/actions.ts",
+    "src/features/featured-events/policy.ts",
+    "src/features/featured-events/queries.ts",
+    "src/features/featured-events/types.ts",
     "src/features/identity/actions.ts",
     "src/features/identity/policy.ts",
     "src/features/identity/session.ts",
@@ -76,25 +92,19 @@
     "src/features/payments/queries.ts",
     "src/features/payments/types.ts",
     "src/features/segments/actions.ts",
+    "src/features/segments/cleanup.ts",
     "src/features/segments/policy.ts",
     "src/features/segments/queries.ts",
     "src/lib/config.ts",
     "src/lib/supabase/server.ts",
+    "src/lib/supabase/service.ts",
     "src/proxy.ts",
     "supabase/migrations/0001_identity.sql",
     "supabase/migrations/0002_segments.sql",
     "supabase/migrations/0003_communication.sql",
     "supabase/migrations/0004_payments.sql",
     "supabase/migrations/0007_push_notifications.sql",
-    "src/features/featured-events/actions.ts",
-    "src/features/featured-events/queries.ts",
-    "src/features/featured-events/policy.ts",
-    "src/features/featured-events/types.ts",
-    "src/components/featured-events.tsx",
-    "src/components/featured-event-form.tsx",
-    "src/app/(team)/calendar/featured/new/page.tsx",
-    "src/app/(team)/calendar/featured/[id]/edit/page.tsx",
-    "src/app/(team)/payments/[id]/edit/page.tsx"
+    "supabase/migrations/0009_permanent_deletion.sql"
   ],
   "edges": [
     [
@@ -668,6 +678,46 @@
     [
       "src/components/payment-forms.tsx",
       "src/app/(team)/payments/[id]/edit/page.tsx"
+    ],
+    [
+      "src/features/choreo/policy.ts",
+      "src/features/choreo/config.ts"
+    ],
+    [
+      "src/features/choreo/config.ts",
+      "src/features/choreo/queries.ts"
+    ],
+    [
+      "src/features/choreo/google.ts",
+      "src/features/choreo/queries.ts"
+    ],
+    [
+      "src/features/identity/session.ts",
+      "src/features/choreo/queries.ts"
+    ],
+    [
+      "src/features/choreo/queries.ts",
+      "src/app/(team)/choreo/page.tsx"
+    ],
+    [
+      "src/components/choreo-videos.tsx",
+      "src/app/(team)/choreo/page.tsx"
+    ],
+    [
+      "src/features/choreo/policy.ts",
+      "src/components/choreo-videos.tsx"
+    ],
+    [
+      "src/lib/supabase/service.ts",
+      "src/features/segments/cleanup.ts"
+    ],
+    [
+      "src/features/segments/cleanup.ts",
+      "src/features/segments/actions.ts"
+    ],
+    [
+      "src/features/segments/cleanup.ts",
+      "src/app/api/maintenance/route.ts"
     ]
   ],
   "invariants": {
@@ -675,12 +725,14 @@
     "participation": "Admin is an additional permission on the same permanent dancer UUID. Display names are never identity keys.",
     "authorization": "Current database membership gates all protected data access; inactive sessions cannot read the roster.",
     "boundaries": "Pure identity domain policies import no framework, database or HTTP code.",
-    "payments": "Own-charge privacy; admins remain dancers. Settled USD cents immutable; outstanding charge edits require explanation and before/after audit, invalidate prior report. Deleted charges leave balances while keeping UUID/history; report stays outstanding until versioned admin verification. Reject/waive require reasons. Batch uniqueness and version checks prevent double submission; append-only history retained.",
+    "payments": "Own-charge privacy; admins remain dancers. Settled USD cents immutable; outstanding charge edits require explanation and before/after audit, invalidate prior report. Deleted charges leave balances while keeping UUID/history; report stays outstanding until versioned admin verification. Reject/waive require reasons. Batch uniqueness and version checks prevent double submission; append-only history retained. Deleted payments/audits remain private in owner database backups and are hidden by RLS from all authenticated app roles and exports.",
     "privacy": "PDF reads require current active membership and authenticated Storage download operation; signing is denied. Future task/payment visibility restricted to authorized assignees/admins.",
-    "segments": "One permanent-ID assignment set drives segment lineup, roster and Home; stale edits cannot overwrite newer revisions.",
-    "communication": "Recipients are immutable snapshots of permanent dancer IDs. Active assignees acknowledge/complete only themselves; shared completion preserves its actor. Admin content edits and reopen/archive are versioned; admin is also dancer.",
+    "segments": "One permanent-ID assignment set drives segment lineup, roster and Home; stale edits cannot overwrite newer revisions. Permanent removal cascades assignment/history/jobs, immediately revokes PDF access and durably retries physical object deletion.",
+    "communication": "Recipients are immutable snapshots of permanent dancer IDs. Active assignees acknowledge/complete only themselves; shared completion preserves its actor. Admin content edits and reopen/delete are versioned; admin is also dancer. Permanent deletion cascades audits/recipients/jobs. Removed audience sources detach to selected captured recipients with version fencing.",
     "notifications": "Optin per-device delivery requires current verifiedactiveTAMU membership and existing captured audience. Announcement titles explicitly authorized on LockScreen; bodies/payment details stay generic. Featured-event updates require current active membership; deletion invalidates source delivery. No private offlinecache. Mount never registers subscriptions. Deactivation/signup/signout cannot grant permissions; workers use service-only fenced leases/retries and immediate source eligibility. Timedreminders require scheduler and current freshcalendar.",
-    "featured_events": "Independent custom events use Central dates/optional local times, active-team reads and admin-only versioned CRUD with soft-delete/audit. Google source stays read-only; ten-Google-event display cap and five-minute cache unchanged."
+    "featured_events": "Independent custom events use Central dates/optional local times, active-team reads and admin-only versioned CRUD with permanent deletion and audit cascade. Google source stays read-only; ten-Google-event display cap and five-minute cache unchanged.",
+    "choreo": "Approved active TAMU app members only; validated owner folder and fixed Google endpoints; server-only metadata OAuth grant for restricted folder. Google enforces per-user playback access; no video/metadata snapshots in app DB/offline cache. Fresh bounded listing removes trashed videos; failure states never silently return stale content.",
+    "migration_order": "Run migrations sequentially. Corrected0008 supports transactional known-schema resumption before0009 without deleting rows/history or duplicating triggers; refuses if0009 has started, including earliest featured_event_audit FK change. Never force older deletion/privacy functions over newer schema."
   },
   "freeze_boundary": [
     "src/**",
@@ -696,6 +748,7 @@
     "supabase/migrations/0004_payments.sql",
     "public/**",
     "supabase/migrations/0007_push_notifications.sql",
-    "supabase/migrations/0008_management_featured_events.sql"
+    "supabase/migrations/0008_management_featured_events.sql",
+    "supabase/migrations/0009_permanent_deletion.sql"
   ]
 }

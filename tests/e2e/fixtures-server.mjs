@@ -81,6 +81,9 @@ await db.exec(
     "utf8",
   ),
 );
+await db.exec(
+  readFileSync("supabase/migrations/0009_permanent_deletion.sql", "utf8"),
+);
 for (const person of users.values()) {
   await db.query(
     `insert into auth.users values($1,$2,now(),'{"provider":"google"}')`,
@@ -206,6 +209,7 @@ function session(person) {
 }
 const sessions = new Map([...users.values()].map((p) => [p.id, session(p)]));
 let queue = Promise.resolve();
+let choreoEmpty = false;
 function locked(work) {
   const result = queue.then(work);
   queue = result.catch(() => {});
@@ -219,6 +223,57 @@ createServer((req, res) => {
       res.end(JSON.stringify(data));
     }
     if (url.pathname === "/health") return json({ ready: true });
+    if (url.pathname === "/fixture/empty-announcements") {
+      await db.exec(
+        "reset role;delete from communication_posts where kind='announcement';",
+      );
+      return json({ ready: true });
+    }
+    if (url.pathname === "/fixture/choreo") {
+      choreoEmpty = url.searchParams.get("state") === "empty";
+      return json({ ready: true });
+    }
+    if (url.pathname === "/fixture/drive/drive/v3/files/folder_fixture_123") {
+      return json({
+        id: "folder_fixture_123",
+        name: "Mastani Choreo",
+        mimeType: "application/vnd.google-apps.folder",
+        trashed: false,
+      });
+    }
+    if (url.pathname === "/fixture/drive/drive/v3/files") {
+      if (choreoEmpty) return json({ files: [] });
+      const nested = url.searchParams.get("q")?.includes("nested_fixture_123");
+      return json({
+        files: nested
+          ? [
+              {
+                id: "finale_fixture_123",
+                name: "Finale rehearsal",
+                mimeType: "video/mp4",
+                videoMediaMetadata: { durationMillis: "145000" },
+              },
+            ]
+          : [
+              {
+                id: "opening_fixture_123",
+                name: "Opening — full team choreography",
+                mimeType: "video/mp4",
+                videoMediaMetadata: { durationMillis: "125000" },
+              },
+              {
+                id: "practice_fixture_123",
+                name: "Practice walkthrough with counts and transitions for the upcoming showcase",
+                mimeType: "video/mp4",
+              },
+              {
+                id: "nested_fixture_123",
+                name: "Finale",
+                mimeType: "application/vnd.google-apps.folder",
+              },
+            ],
+      });
+    }
     // Browser test fixtures ask this isolated process for synthetic cookies, never the app.
     if (url.pathname === "/fixture/session") {
       const value = sessions.get(
@@ -253,6 +308,9 @@ createServer((req, res) => {
           push_register_subscription: ["p_endpoint", "p_p256dh", "p_auth"],
           push_unregister_subscription: ["p_endpoint"],
           active_member: [],
+          formation_cleanup_jobs: [],
+          finish_formation_cleanup: ["p_paths"],
+          delete_team_item: ["target_id", "expected_version", "item_kind"],
           calendar_read_connection: [],
           calendar_connection_status: [],
           begin_calendar_connection: ["p_actor", "p_state_hash"],
@@ -353,6 +411,8 @@ createServer((req, res) => {
           `select public.${name}(${functions[name].map((_, i) => "$" + (i + 1)).join(",")})`,
           functions[name].map((key) => args[key]),
         );
+        if (name === "formation_cleanup_jobs")
+          return json(result.rows.map((row) => row[name]));
         return json(result.rows[0][name]);
       }
       if (url.pathname.startsWith("/rest/v1/")) {
@@ -472,6 +532,11 @@ createServer((req, res) => {
             values.push(filter.slice(4, -1).split(","));
             filters.push(`${key}=any($${values.length})`);
           }
+          if (filter === "is.null") filters.push(`${key} is null`);
+          if (filter.startsWith("neq.")) {
+            values.push(filter.slice(4));
+            filters.push(`${key}<>$${values.length}`);
+          }
           if (filter.startsWith("eq.")) {
             values.push(filter.slice(3));
             filters.push(`${key}=$${values.length}`);
@@ -523,6 +588,20 @@ createServer((req, res) => {
           return json(result.rows[0], 200, headers);
         }
         return json(result.rows, 200, headers);
+      }
+      if (
+        req.method === "DELETE" &&
+        url.pathname === "/storage/v1/object/formations"
+      ) {
+        if (!service) return json({ message: "Service only" }, 403);
+        const { prefixes } = JSON.parse(body.toString());
+        await db.exec("reset role");
+        await db.query(
+          "delete from storage.objects where bucket_id='formations' and name=any($1::text[])",
+          [prefixes],
+        );
+        for (const path of prefixes) files.delete(path);
+        return json(prefixes.map((name) => ({ name })));
       }
       if (url.pathname.startsWith("/storage/v1/object/")) {
         const relative = decodeURIComponent(

@@ -110,7 +110,7 @@ export async function manageCommunication(
     recipientId = value(form, "recipient_id") || null;
   try {
     args = revision(form);
-    if (!["archive", "restore", "reopen"].includes(operation))
+    if (!["delete", "reopen"].includes(operation))
       throw new Error("Choose a valid action.");
     if (recipientId) validVersion(recipientId, 0);
   } catch (error) {
@@ -128,15 +128,10 @@ export async function manageCommunication(
   }
   schedulePush();
   revalidatePath("/", "layout");
-  return {
-    error: null,
-    success:
-      operation === "reopen"
-        ? "Reopened."
-        : operation === "archive"
-          ? "Deleted."
-          : "Restored.",
-  };
+  if (operation === "delete") {
+    redirect(value(form, "kind") === "task" ? "/todos" : "/announcements");
+  }
+  return { error: null, success: "Reopened." };
 }
 export async function saveGroup(
   _state: FormState,

@@ -126,7 +126,7 @@ test("management: featured event create/edit/delete, Home and dancer access", as
   ).toHaveCount(0);
   await dancerContext.close();
 });
-test("management: payment edit invalidates report and deletion preserves history", async ({
+test("management: payment edit invalidates report and deletion hides retained history", async ({
   page,
   context,
   request,
@@ -200,16 +200,19 @@ test("management: payment edit invalidates report and deletion preserves history
   await page
     .getByRole("button", { name: "Delete charge", exact: true })
     .click();
-  await expect(page.getByText("Deleted", { exact: true })).toBeVisible();
-  await expect(page.getByText("Charge deleted", { exact: true })).toBeVisible();
-  await expect(page.getByText("Charge issued", { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/payments\?view=all$/);
+  await expect(
+    page.getByRole("heading", { name: title, exact: true }),
+  ).toHaveCount(0);
   await dancer.goto(url);
   await expect(
-    dancer.getByRole("button", { name: "Report paid", exact: true }),
+    dancer.getByRole("heading", { name: title, exact: true }),
   ).toHaveCount(0);
+  await page.goto(url);
+  await expect(page.getByText("Charge issued", { exact: true })).toHaveCount(0);
   await dancerContext.close();
 });
-test("management: to-do delete removes dancer access and preserves restore", async ({
+test("management: to-do deletion removes admin/dancer access permanently", async ({
   page,
   context,
   request,
@@ -228,9 +231,7 @@ test("management: to-do delete removes dancer access and preserves restore", asy
   const url = page.url();
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Delete to-do", exact: true }).click();
-  await expect(
-    page.getByRole("button", { name: "Restore item", exact: true }),
-  ).toBeVisible();
+  await expect(page).toHaveURL(/\/todos$/);
   const dancerContext = await browser.newContext();
   await login(dancerContext, request, "dancer");
   const dancer = await dancerContext.newPage();
@@ -238,10 +239,12 @@ test("management: to-do delete removes dancer access and preserves restore", asy
   await expect(
     dancer.getByRole("heading", { name: title, exact: true }),
   ).toHaveCount(0);
-  await page.getByRole("button", { name: "Restore item", exact: true }).click();
+  await page.goto(url);
   await expect(
-    page.getByRole("button", { name: "Delete to-do", exact: true }),
-  ).toBeVisible();
+    page.getByRole("heading", { name: title, exact: true }),
+  ).toHaveCount(0);
+  const exported = await (await page.request.get("/api/admin/export")).json();
+  expect(JSON.stringify(exported)).not.toContain(title);
   await dancerContext.close();
 });
 
@@ -271,7 +274,7 @@ test("management: saved group create/edit/delete", async ({
   await updated
     .getByRole("button", { name: "Delete group", exact: true })
     .click();
-  await expect(updated.getByText("Deleted", { exact: true })).toBeVisible();
+  await expect(updated).toHaveCount(0);
   await expect(updated.getByRole("link", { name: "Edit group" })).toHaveCount(
     0,
   );

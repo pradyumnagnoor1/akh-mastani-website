@@ -32,12 +32,11 @@ export async function CommunicationList({
 }) {
   const { member, posts, recipients } = await communicationData();
   const base = baseFor(kind);
-  const tab =
-    member.is_admin && (view === "all" || view === "archive") ? view : "mine";
+  const tab = member.is_admin && view === "all" ? "all" : "mine";
   const items = posts.filter(
     (p) =>
       p.kind === kind &&
-      (tab === "archive" ? !!p.archived_at : !p.archived_at) &&
+      !p.archived_at &&
       (tab !== "mine" ||
         recipients.some(
           (r) => r.post_id === p.id && r.member_id === member.id,
@@ -71,12 +70,6 @@ export async function CommunicationList({
               href={`${base}?view=all`}
             >
               All team
-            </Link>
-            <Link
-              className={tab === "archive" ? "active" : ""}
-              href={`${base}?view=archive`}
-            >
-              Deleted
             </Link>
           </nav>
           <Link className="text-button" href="/admin/groups">
@@ -136,18 +129,12 @@ export async function CommunicationList({
         {!items.length && (
           <section className="panel empty-state">
             <h2>
-              {tab === "archive"
-                ? "Nothing deleted"
-                : tab === "mine"
-                  ? "No open to-dos"
-                  : "Ready for the next update"}
+              {kind === "announcement" ? "No announcements" : "No open to-dos"}
             </h2>
             <p className="muted">
               {tab === "mine"
                 ? `No active ${kind === "task" ? "to-dos" : "announcements"} have been assigned to you.`
-                : tab === "archive"
-                  ? "Deleted items appear here with their history."
-                  : "Create an item to bring the team up to date."}
+                : "Create an item to bring the team up to date."}
             </p>
           </section>
         )}
@@ -164,7 +151,7 @@ export async function CommunicationDetail({
 }) {
   const { member, supabase, posts, recipients } = await communicationData();
   const post = posts.find((p) => p.id === id && p.kind === kind);
-  if (!post) notFound();
+  if (!post || post.archived_at) notFound();
   const rows = recipients.filter((r) => r.post_id === id);
   const mine = rows.find((r) => r.member_id === member.id);
   const done = completed(post, rows, member.id);
@@ -190,7 +177,6 @@ export async function CommunicationDetail({
         <p className="eyebrow">{post.audience_label}</p>
         <h1>{post.title}</h1>
         <div className="communication-meta">
-          {post.archived_at && <span className="badge">Deleted</span>}
           <span className="badge">
             {post.completion_mode === "shared"
               ? "One completion for everyone"
@@ -287,14 +273,8 @@ export async function CommunicationDetail({
               )}
             <CommunicationAction
               post={post}
-              operation={post.archived_at ? "restore" : "archive"}
-              label={
-                post.archived_at
-                  ? "Restore item"
-                  : kind === "task"
-                    ? "Delete to-do"
-                    : "Delete announcement"
-              }
+              operation="delete"
+              label={kind === "task" ? "Delete to-do" : "Delete announcement"}
             />
           </div>
         </section>

@@ -42,7 +42,7 @@ async function create(
   if (kind === "task")
     await page.getByLabel("Completion", { exact: true }).selectOption(mode);
 }
-test("communication: targeted announcement acknowledgment, edit and archive", async ({
+test("communication: targeted announcement acknowledgment, edit and permanent deletion", async ({
   page,
   context,
   request,
@@ -84,17 +84,18 @@ test("communication: targeted announcement acknowledgment, edit and archive", as
   ).toBeVisible();
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Delete announcement" }).click();
+  await expect(page).toHaveURL(/\/announcements$/);
   await expect(
-    page.getByRole("button", { name: "Restore item" }),
-  ).toBeVisible();
+    page.getByRole("link", { name: "Deleted", exact: true }),
+  ).toHaveCount(0);
   await dancer.goto(url);
   await expect(
     dancer.getByRole("heading", { name: title + " revised", exact: true }),
   ).toHaveCount(0);
-  await page.getByRole("button", { name: "Restore item" }).click();
+  await page.goto(url);
   await expect(
-    page.getByRole("button", { name: "Delete announcement" }),
-  ).toBeVisible();
+    page.getByRole("heading", { name: title + " revised", exact: true }),
+  ).toHaveCount(0);
   await dancerContext.close();
 });
 test("communication: individual progress remains independent and can be reopened", async ({

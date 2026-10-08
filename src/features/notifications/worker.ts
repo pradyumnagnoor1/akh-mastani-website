@@ -1,4 +1,5 @@
 import { pushSubscription, notificationPath } from "./policy";
+export const PUSH_BATCH_LIMIT = 40;
 export type PushJob = {
   id: string;
   subscription_id: string;
@@ -20,7 +21,7 @@ export type WorkerDependencies = {
 export async function deliverJobs(jobs: PushJob[], deps: WorkerDependencies) {
   const counts = { sent: 0, retry: 0, expired: 0, failed: 0 };
   // Bounded batches and concurrency keep one failing push provider from exhausting a function.
-  const bounded = jobs.slice(0, 20);
+  const bounded = jobs.slice(0, PUSH_BATCH_LIMIT);
   for (let offset = 0; offset < bounded.length; offset += 10) {
     await Promise.all(
       bounded.slice(offset, offset + 10).map(async (job) => {

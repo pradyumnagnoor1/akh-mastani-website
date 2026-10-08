@@ -188,7 +188,8 @@ export function PaymentForm({
         />
         <p className="muted small">
           Admins can edit outstanding charges or delete a charge with an
-          explanation. Payment activity retains previous details.
+          explanation. Deleting hides the charge from the app and preserves
+          payment history privately.
         </p>
       </section>
       <section className="panel stack">
@@ -430,7 +431,7 @@ export function DeletePaymentForm({ charge }: { charge: Charge }) {
       onSubmit={(e) => {
         if (
           !window.confirm(
-            "Delete this charge? It will leave outstanding balances. Payment activity will be retained.",
+            "Delete this charge from the app? Payment history will be preserved privately.",
           )
         )
           e.preventDefault();

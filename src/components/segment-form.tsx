@@ -194,9 +194,8 @@ export function RemoveSegmentForm({ segment }: { segment: Segment }) {
         <input type="hidden" name="id" value={segment.id} />
         <input type="hidden" name="version" value={segment.version} />
         <p>
-          This removes <strong>{segment.name}</strong> from team views and
-          active roster assignments. Its PDF and history remain available to
-          admins in the archive.
+          This permanently deletes <strong>{segment.name}</strong>, its PDF,
+          assignments and history. This cannot be undone.
         </p>
         <label className="confirm-check">
           <input type="checkbox" name="confirm" value="yes" required />I want to

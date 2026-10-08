@@ -16,7 +16,7 @@ export default async function Page({
   const { id } = await params;
   const { member, supabase, charges } = await paymentData();
   const charge = charges.find((c) => c.id === id);
-  if (!charge) notFound();
+  if (!charge || charge.status === "deleted") notFound();
   const history = (await collectPages((from, to) =>
     supabase
       .from("payment_audit")
@@ -108,7 +108,7 @@ export default async function Page({
             />
           )}
       </div>
-      {member.is_admin && charge.status !== "deleted" && (
+      {member.is_admin && (
         <DeletePaymentForm key={`delete-${charge.version}`} charge={charge} />
       )}
       <section className="panel stack">

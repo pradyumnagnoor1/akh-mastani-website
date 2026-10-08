@@ -12,6 +12,7 @@ export const segmentData = cache(async () => {
         .select(
           "id,name,document_path,document_label,version,archived_at,updated_at",
         )
+        .is("archived_at", null)
         .order("id")
         .range(from, to),
     ),

@@ -124,8 +124,16 @@ test("segments: admin creates, renames, changes lineup, replaces PDF and removes
   await expect(
     page.getByRole("heading", { name: `Finale revised ${info.project.name}` }),
   ).toHaveCount(0);
-  await page.getByRole("link", { name: "Archive", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: `Finale revised ${info.project.name}` }),
+    page.getByRole("link", { name: "Archive", exact: true }),
+  ).toHaveCount(0);
+  await page.goto(url);
+  await expect(
+    page.getByRole("heading", { name: "This page isn’t here" }),
+  ).toBeVisible();
+  await login(context, request, "dancer");
+  await page.goto(url);
+  await expect(
+    page.getByRole("heading", { name: "This page isn’t here" }),
   ).toBeVisible();
 });

@@ -24,39 +24,37 @@ export default async function GroupsPage() {
         history stay intact.
       </p>
       <div className="communication-list">
-        {groups.map((group) => {
-          const ids = groupMembers
-            .filter((m) => m.group_id === group.id)
-            .map((m) => m.member_id);
-          const names = people.filter((p) => ids.includes(p.id));
-          return (
-            <section className="panel" key={group.id}>
-              <div className="section-toolbar">
-                <h2>{group.name}</h2>
-                <span className="badge">
-                  {group.archived_at
-                    ? "Deleted"
-                    : `${names.length} active dancers`}
-                </span>
-              </div>
-              <p className="muted">
-                {names.map((p) => p.display_name ?? p.email).join(", ") ||
-                  "No active dancers"}
-              </p>
-              {!group.archived_at && (
-                <div className="actions">
-                  <Link
-                    className="button secondary"
-                    href={`/admin/groups/${group.id}/edit`}
-                  >
-                    Edit group
-                  </Link>
-                  <ArchiveGroup group={group} />
+        {groups
+          .filter((group) => !group.archived_at)
+          .map((group) => {
+            const ids = groupMembers
+              .filter((m) => m.group_id === group.id)
+              .map((m) => m.member_id);
+            const names = people.filter((p) => ids.includes(p.id));
+            return (
+              <section className="panel" key={group.id}>
+                <div className="section-toolbar">
+                  <h2>{group.name}</h2>
+                  <span className="badge">{names.length} active dancers</span>
                 </div>
-              )}
-            </section>
-          );
-        })}
+                <p className="muted">
+                  {names.map((p) => p.display_name ?? p.email).join(", ") ||
+                    "No active dancers"}
+                </p>
+                {!group.archived_at && (
+                  <div className="actions">
+                    <Link
+                      className="button secondary"
+                      href={`/admin/groups/${group.id}/edit`}
+                    >
+                      Edit group
+                    </Link>
+                    <ArchiveGroup group={group} />
+                  </div>
+                )}
+              </section>
+            );
+          })}
         {!groups.length && (
           <section className="panel empty-state">
             <h2>Your first group starts here</h2>

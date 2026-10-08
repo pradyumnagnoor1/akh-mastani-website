@@ -9,6 +9,7 @@ export const featuredData = cache(async () => {
     context.supabase
       .from("featured_events")
       .select("*")
+      .is("deleted_at", null)
       .order("event_date")
       .order("id")
       .range(from, to),

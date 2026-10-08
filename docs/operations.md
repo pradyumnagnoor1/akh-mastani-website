@@ -14,7 +14,7 @@ Initial application admin: **pradyumnagnoor@tamu.edu**, after verified Google on
 | Each semester and after backup changes | Maintainer restores database and Storage into an isolated project and records results                                                                                                                  |
 | Annually, before officers leave        | Owner transfers repository, Vercel, Supabase, Google Cloud/calendar, domain, billing, monitor, and backup vault recovery access; incoming maintainer performs a restore drill and deployment rehearsal |
 
-Handover records should include project IDs/URLs, owner and backup contact, renewal dates, deployed commit, migration ledger, last backup and drill times, calendar-authorizing account, secret names/rotation dates, and recovery procedure. Verify incoming accounts work before removing outgoing access. Rotate shared credentials and revoke old access. Archive old segments/posts/groups and deactivate departing members; preserve member UUIDs, payment history, and audit records. Never repurpose a former member record for a new dancer.
+Handover records should include project IDs/URLs, owner and backup contact, renewal dates, deployed commit, migration ledger, last backup and drill times, calendar-authorizing account, secret names/rotation dates, and recovery procedure. Verify incoming accounts work before removing outgoing access. Rotate shared credentials and revoke old access. Delete old segments/posts/groups only when their permanent removal is intended, and deactivate departing members; preserve member UUIDs and private payment history. Migration0009 deletes non-payment audit/assignment records with the source; see management.md. Never repurpose a former member record for a new dancer.
 
 ## Monitoring and incident response
 
@@ -28,7 +28,7 @@ For an incident, record start time and affected feature, assess Vercel/Supabase/
 
 ## Operational export
 
-An active admin can download JSON from `/api/admin/export` using their signed-in session. It contains members, segments and assignments, posts and recipient progress, saved groups and memberships, charges, and payment audit history. Other audit tables are not included. Treat the file as private team and financial information: save only to approved encrypted storage and remove unneeded local copies.
+An active admin can download JSON from `/api/admin/export` using their signed-in session. It contains members, segments and assignments, posts and recipient progress, saved groups and memberships, live charges and their payment audit history; deleted payments/history remain only in owner database backups. Other audit tables are not included. Treat the file as private team and financial information: save only to approved encrypted storage and remove unneeded local copies.
 
 The export has a 3 MB data budget and a 20,000-row limit per table. An over-limit export must be handled through the database backup process; do not delete history to make it fit. Reads span multiple requests and are **not transactionally consistent**. This is an operational handover snapshot, not a complete recovery backup: it excludes Auth identities, credentials, full provider configuration, and PDF object bytes. It cannot recreate sign-in identities or restore formation files, and there is no application import route. The endpoint uses the admin's session rather than the calendar's privileged key.
 

@@ -3,13 +3,15 @@ import { after } from "next/server";
 import webpush from "web-push";
 import { pushConfig } from "./config";
 import { pushService } from "./service";
-import { deliverJobs, type PushJob } from "./worker";
+import { deliverJobs, PUSH_BATCH_LIMIT, type PushJob } from "./worker";
 export async function dispatchPush() {
   const config = pushConfig();
   if (!config)
     return { configured: false, sent: 0, retry: 0, expired: 0, failed: 0 };
   const service = pushService();
-  const { data, error } = await service.rpc("push_claim_jobs", { p_limit: 20 });
+  const { data, error } = await service.rpc("push_claim_jobs", {
+    p_limit: PUSH_BATCH_LIMIT,
+  });
   if (error || !Array.isArray(data))
     throw new Error("Unable to claim notification jobs.");
   const counts = await deliverJobs(data as PushJob[], {
