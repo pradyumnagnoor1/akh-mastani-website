@@ -75,3 +75,7 @@ Scope amendment authorized by user: Calendar Connect extension replaces manual r
 Installable Home Screen PWA with optin targeted push. Freeze: src/**, public/**, supabase/migrations/0007_push_notifications.sql, tests/**, scripts/**, docs/**, configuration and Genesis notes. Verify private data never cached offline, active recipient enforcement, subscription isolation, durable bounded retries and mobile install/permission states. Next/Vercel server + Supabase outbox; recurring scheduler configured separately for reminders/retry.
 
 Home Screen/Web Push extension locally complete: 204 tests and48 browser flows; independent APPROVE and user-delegated quiz recorded. Migration0007/Vercel variables/SupabaseCron/physicaliPhone activation not performed; see docs/notifications.md.
+
+
+## User-authorized extension — Automatic and pull refresh
+Shared all-page30second visible/online soft refresh, resume/reconnect update, top-only mobile pull circle, draft/modal/submission protection. Freeze: rootlayout/shared clientcomponents/styles, calendarpresentation, browserchecks/config, refreshdocs/Genesisnotes. Retain upstreamcalendarcache, private server authorization and existing productpages. Local completion evidence: checkpoints/page-refresh.md; hosted deployment and physicalSafari gesture check remain separate.

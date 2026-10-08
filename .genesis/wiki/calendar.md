@@ -1,7 +1,7 @@
 # Practice calendar
 M5 locally complete with independent review. Google Calendar owns schedule edits; the website reads a private OAuth connection using server-only environment values. Exact setup is docs/calendar-setup.md.
 
-calendar_snapshot stores a complete past30/future180day snapshot, source fingerprint, last-success/error, cooldown and fenced30s lease. Google recurrence expansion is fully paginated under capacity/deadline; failed/truncated refresh preserves previous data. All-day dates remain dates, timed instances use actual instants and Chicago display including DST. Requests trigger refresh after300s; calendar page polls while visible/when focused. No background freshness guarantee or cron.
+calendar_snapshot stores a complete past30/future180day snapshot, source fingerprint, last-success/error, cooldown and fenced30s lease. Google recurrence expansion is fully paginated under capacity/deadline; failed/truncated refresh preserves previous data. All-day dates remain dates, timed instances use actual instants and Chicago display including DST. Requests trigger refresh after300s; all application pages now share a visible/online30second soft refresh and foreground/reconnect refresh; the upstream300second cache remains. Calendar presentation reads the refreshed server props, without a second client poll. No background freshness guarantee or cron.
 
 Reads use current member session and RLS; privileged writes only calendar RPCs. Privileged key itself is project-wide and isolated server-side. Recheck active membership after refresh before returning. API no-store; source-change cache hidden. Home reuses same adapter. No live OAuth or hosted provider integration claimed.
 

@@ -1384,3 +1384,49 @@ label {
 .notification-settings button {
   min-height: 44px;
 }
+
+html {
+  overscroll-behavior-y: contain;
+}
+.page-refresh-indicator {
+  position: fixed;
+  top: env(safe-area-inset-top, 0px);
+  left: 50%;
+  z-index: 100;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--surface, #17171f);
+  color: var(--accent, #b2a0ff);
+  border: 1px solid var(--border, #34343f);
+  box-shadow: 0 4px 16px #0005;
+  pointer-events: none;
+}
+.page-refresh-spin {
+  animation: page-refresh-rotate 0.8s linear infinite;
+}
+@keyframes page-refresh-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.page-refresh-message {
+  position: fixed;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  padding: 10px 16px;
+  max-width: calc(100% - 32px);
+  border-radius: 8px;
+  background: var(--surface, #17171f);
+  border: 1px solid var(--border, #34343f);
+  font-size: 13px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-refresh-spin {
+    animation: none;
+  }
+}

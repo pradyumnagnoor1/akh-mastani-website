@@ -1,5 +1,4 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
 import { CalendarDays, MapPin, ExternalLink } from "lucide-react";
 import {
   eventWhen,
@@ -7,69 +6,7 @@ import {
   type CalendarView,
 } from "@/features/calendar/types";
 export function CalendarSchedule({ initial }: { initial: CalendarView }) {
-  const [calendar, setCalendar] = useState(initial),
-    [failure, setFailure] = useState(false),
-    [busy, setBusy] = useState(false);
-  const controller = useRef<AbortController | null>(null);
-  useEffect(() => {
-    async function refresh() {
-      if (document.visibilityState !== "visible" || controller.current) return;
-      const current = new AbortController();
-      controller.current = current;
-      setBusy(true);
-      try {
-        const response = await fetch("/api/calendar", {
-          cache: "no-store",
-          signal: AbortSignal.any([
-            current.signal,
-            AbortSignal.timeout(30_000),
-          ]),
-        });
-        if (
-          response.redirected ||
-          response.status === 401 ||
-          response.status === 403
-        ) {
-          setCalendar({
-            ...initial,
-            events: [],
-            unavailable: true,
-            lastSuccessAt: null,
-          });
-          window.location.assign(response.redirected ? response.url : "/login");
-          return;
-        }
-        if (!response.ok) throw new Error("Calendar unavailable");
-        const next = (await response.json()) as CalendarView;
-        if (!current.signal.aborted) {
-          setCalendar(next);
-          setFailure(false);
-        }
-      } catch {
-        if (!current.signal.aborted) setFailure(true);
-      } finally {
-        if (controller.current === current) {
-          controller.current = null;
-          setBusy(false);
-        }
-      }
-    }
-    const timer = setInterval(() => {
-      void refresh();
-    }, 300_000);
-    const focus = () => {
-      void refresh();
-    };
-    window.addEventListener("focus", focus);
-    document.addEventListener("visibilitychange", focus);
-    return () => {
-      clearInterval(timer);
-      window.removeEventListener("focus", focus);
-      document.removeEventListener("visibilitychange", focus);
-      controller.current?.abort();
-      controller.current = null;
-    };
-  }, [initial]);
+  const calendar = initial;
   const now = new Date();
   const chicagoToday = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Chicago",
@@ -145,9 +82,9 @@ export function CalendarSchedule({ initial }: { initial: CalendarView }) {
         <span className="badge">
           {!calendar.configured
             ? "Not connected"
-            : busy || calendar.refreshing
+            : calendar.refreshing
               ? "Checking for changes"
-              : failure || calendar.stale
+              : calendar.stale
                 ? "Updates delayed"
                 : "Up to date"}
         </span>
@@ -171,7 +108,7 @@ export function CalendarSchedule({ initial }: { initial: CalendarView }) {
         </section>
       ) : (
         <>
-          {(calendar.stale || calendar.error || failure) && (
+          {(calendar.stale || calendar.error) && (
             <p className="notice" role="status">
               Updates are delayed. Showing the last saved schedule; check Google
               Calendar for recent changes.
@@ -204,8 +141,8 @@ export function CalendarSchedule({ initial }: { initial: CalendarView }) {
         </>
       )}
       <p className="muted small calendar-footnote">
-        Schedule changes are made in Google Calendar. This page checks for
-        updates every five minutes while open and when you return.
+        Schedule changes are made in Google Calendar and sync every five
+        minutes.
       </p>
     </>
   );

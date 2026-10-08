@@ -3,8 +3,9 @@
 - target: M7 production activation
 - iteration: 1
 - previous: M1–M6, Calendar Connect, frontend refresh and Home Screen/Web Push extension locally complete with independent APPROVE; delegated review recorded.
+- latest_refresh_extension: Shared30second visible/online all-page updates, return/reconnect refresh and top-only pull circle locally complete; draft/modal/pending protection, calendarprops consolidation. Fresh independent APPROVE; checkpoints/page-refresh.md. Deploy code toVercel and testphysicalSafari pull; no newconfiguration.
 - latest_extension: InstallableHomeScreen app, optin targeted notifications, private transactionaloutbox, boundedretry/fencedleases, payment/segmentupdates and due/practice reminders. See push-notifications.md.
-- validation: 204 unit/SQL tests, typecheck/lint/build/format pass; 26 configured+22 public desktop/mobile browser flows pass, finalfocused PWA andconsent checks pass; screenshotsinspected; runtime dependency auditclean.
+- validation: 204 unit/SQL tests, typecheck/lint/build/format pass; 36 configured+22 public desktop/mobile browser flows pass, finalfocused PWA andconsent checks pass; screenshotsinspected; runtime dependency auditclean.
 - next_action: Apply migration0007, copyfour notificationenvvars from ignored.env.local toVercel, redeploy withFluidcompute, SupabaseCron/Vault five-minute scheduler, targetedphysicaliPhone LockScreen acceptance. docs/notifications.md containssteps.
 - external_setup: user previously reports liveCalendarconnected; notificationhostedmigration/env/scheduler/physicaldelivery notverified. Other M7 two-accountrelease/restore acceptance remains pending.
 - tokens_used: exact telemetry unavailable

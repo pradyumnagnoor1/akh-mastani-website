@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { PageRefresh } from "@/components/page-refresh";
 import { PwaRegistration } from "@/components/pwa-registration";
 export const metadata: Metadata = {
   title: { default: "AKH Mastani · Team Hub", template: "%s · AKH Mastani" },
@@ -24,6 +25,7 @@ export default function RootLayout({
           Skip to content
         </a>
         <PwaRegistration />
+        <PageRefresh />
         {children}
       </body>
     </html>

@@ -20,7 +20,12 @@ export function SubmitButton({
 }) {
   const { pending } = useFormStatus();
   return (
-    <button className={className} type="submit" disabled={disabled || pending}>
+    <button
+      className={className}
+      type="submit"
+      disabled={disabled || pending}
+      data-refresh-busy={pending}
+    >
       {pending ? pendingText : children}
     </button>
   );
@@ -116,6 +121,7 @@ function ActionButton({
       value={value}
       className="button secondary small"
       disabled={pending}
+      data-refresh-busy={pending}
     >
       {pending ? "Saving…" : children}
     </button>

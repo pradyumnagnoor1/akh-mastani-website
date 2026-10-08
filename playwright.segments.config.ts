@@ -10,6 +10,7 @@ export default defineConfig({
     "operations.spec.ts",
     "calendar-connect.spec.ts",
     "pwa.spec.ts",
+    "refresh.spec.ts",
   ],
   workers: 1,
   reporter: "list",
