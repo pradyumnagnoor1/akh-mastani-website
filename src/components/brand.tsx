@@ -1,8 +1,20 @@
 import Image from "next/image";
+import Link from "next/link";
 
-export function Brand({ compact = false }: { compact?: boolean }) {
+export function Brand({
+  compact = false,
+  onNavigate,
+}: {
+  compact?: boolean;
+  onNavigate?: () => void;
+}) {
   return (
-    <div className={`brand${compact ? " brand-compact" : ""}`}>
+    <Link
+      href="/home"
+      aria-label="AKH Mastani home"
+      className={`brand${compact ? " brand-compact" : ""}`}
+      onNavigate={onNavigate}
+    >
       <Image
         className="brand-logo"
         src="/team-logo.jpeg"
@@ -11,6 +23,6 @@ export function Brand({ compact = false }: { compact?: boolean }) {
         alt=""
       />
       <strong>AKH MASTANI</strong>
-    </div>
+    </Link>
   );
 }

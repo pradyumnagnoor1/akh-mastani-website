@@ -5,7 +5,7 @@ import { CalendarHome } from "@/components/calendar-home";
 import Link from "next/link";
 import { PaymentHome } from "@/components/payment-home";
 import { CommunicationHome } from "@/components/communication-home";
-import { ArrowUpRight, Users, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, ShieldCheck } from "lucide-react";
 import { segmentData } from "@/features/segments/queries";
 export const maxDuration = 60;
 export default async function Home() {
@@ -27,43 +27,11 @@ export default async function Home() {
       <div className="page-heading">
         <h1>Home</h1>
       </div>
-      {member.is_admin && <AdminSummary />}
       <CommunicationHome />
-      <PaymentHome />
       <FeaturedEvents compact />
       <CalendarHome />
-      <NotificationSettings />
-      <div className="home-grid">
-        <Link href="/roster" className="panel summary-card">
-          <Users className="accent" />
-          <span className="metric">{count ?? 0}</span>
-          <h3>Team members</h3>
-          <p className="muted">
-            View roster <ArrowUpRight size={15} />
-          </p>
-        </Link>
-        <section className="panel">
-          <div className="panel-title">
-            <ShieldCheck size={20} />
-            <h3>Your membership</h3>
-            <span className="badge success">Active</span>
-          </div>
-          <dl className="details">
-            <div>
-              <dt>Name</dt>
-              <dd>{member.display_name}</dd>
-            </div>
-            <div>
-              <dt>Email</dt>
-              <dd>{member.email}</dd>
-            </div>
-            <div>
-              <dt>Team role</dt>
-              <dd>Dancer{member.is_admin ? " · Admin access" : ""}</dd>
-            </div>
-          </dl>
-        </section>
-      </div>
+      <PaymentHome />
+      {member.is_admin && <AdminSummary />}
       <section className="panel my-segments">
         <div className="section-toolbar">
           <h2>
@@ -90,6 +58,30 @@ export default async function Home() {
           <p className="muted small">No segments assigned.</p>
         )}
       </section>
+      <section className="panel">
+        <div className="panel-title">
+          <ShieldCheck size={20} />
+          <h3>Your membership</h3>
+          <span className="badge success">Active</span>
+        </div>
+        <dl className="details">
+          <div>
+            <dt>Name</dt>
+            <dd>{member.display_name}</dd>
+          </div>
+          <div>
+            <dt>Email</dt>
+            <dd>{member.email}</dd>
+          </div>
+          <div>
+            <dt>Team role</dt>
+            <dd>Dancer{member.is_admin ? " · Admin access" : ""}</dd>
+          </div>
+        </dl>
+        <Link href="/roster" className="text-button">
+          Team roster · {count ?? 0} members <ArrowUpRight size={15} />
+        </Link>
+      </section>
       {member.is_admin && (
         <Link href="/admin" className="admin-shortcut">
           Manage team access{" "}
@@ -98,6 +90,7 @@ export default async function Home() {
           </span>
         </Link>
       )}
+      <NotificationSettings />
     </>
   );
 }

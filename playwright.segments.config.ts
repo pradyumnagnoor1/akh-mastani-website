@@ -12,6 +12,7 @@ export default defineConfig({
     "pwa.spec.ts",
     "refresh.spec.ts",
     "management.spec.ts",
+    "navigation.spec.ts",
   ],
   workers: 1,
   reporter: "list",

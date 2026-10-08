@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import {
   House,
   Megaphone,
@@ -12,6 +12,7 @@ import {
   Users,
   Settings2,
   Menu,
+  Ellipsis,
   X,
   LogOut,
 } from "lucide-react";
@@ -19,24 +20,30 @@ import { Brand } from "./brand";
 import { signOut } from "@/features/identity/actions";
 import type { Member } from "@/features/identity/policy";
 const navigation = [
-  { label: "Home", href: "/home", icon: House, ready: true },
+  { label: "Home", href: "/home", icon: House },
   {
     label: "Announcements",
     href: "/announcements",
     icon: Megaphone,
-    ready: true,
   },
-  { label: "To-Dos", href: "/todos", icon: ListTodo, ready: true },
+  { label: "To-Dos", href: "/todos", icon: ListTodo },
   {
     label: "Practice Calendar",
     href: "/calendar",
     icon: CalendarDays,
-    ready: true,
   },
-  { label: "Set Design", href: "/segments", icon: Layers, ready: true },
-  { label: "Payments", href: "/payments", icon: Wallet, ready: true },
-  { label: "Roster", href: "/roster", icon: Users, ready: true },
+  { label: "Set Design", href: "/segments", icon: Layers },
+  { label: "Payments", href: "/payments", icon: Wallet },
+  { label: "Roster", href: "/roster", icon: Users },
 ];
+const mobileNavigation = [
+  { label: "Home", href: "/home", icon: House },
+  { label: "To-Dos", href: "/todos", icon: ListTodo },
+  { label: "Calendar", href: "/calendar", icon: CalendarDays },
+  { label: "Updates", href: "/announcements", icon: Megaphone },
+];
+const isCurrent = (path: string, href: string) =>
+  path === href || path.startsWith(`${href}/`);
 export function AppShell({
   member,
   children,
@@ -47,52 +54,53 @@ export function AppShell({
   const path = usePathname();
   const [open, setOpen] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
-  const trigger = useRef<HTMLButtonElement>(null);
+  const opener = useRef<HTMLButtonElement | null>(null);
   useEffect(() => {
     if (open) dialog.current?.showModal();
     else dialog.current?.close();
   }, [open]);
+  useEffect(() => {
+    const desktop = window.matchMedia("(min-width: 761px)");
+    const onResize = () => {
+      if (desktop.matches) setOpen(false);
+    };
+    desktop.addEventListener("change", onResize);
+    return () => desktop.removeEventListener("change", onResize);
+  }, []);
+  function openNavigation(event: MouseEvent<HTMLButtonElement>) {
+    opener.current = event.currentTarget;
+    setOpen(true);
+  }
   function close() {
+    dialog.current?.close();
     setOpen(false);
-    trigger.current?.focus();
+    opener.current?.focus();
   }
   const links = (
     <>
       <p className="nav-label">TEAM SPACE</p>
       <nav aria-label="Main navigation">
-        {navigation.map(({ label, href, icon: Icon, ready }) =>
-          ready ? (
-            <Link
-              key={href}
-              href={href}
-              className={`nav-item ${path === href ? "selected" : ""}`}
-              aria-current={path === href ? "page" : undefined}
-              onClick={close}
-            >
-              <Icon size={19} />
-              {label}
-              {path === href && <span className="nav-dot" />}
-            </Link>
-          ) : (
-            <span
-              key={href}
-              className="nav-item unavailable"
-              aria-disabled="true"
-              title="Not available yet"
-            >
-              <Icon size={19} />
-              {label}
-            </span>
-          ),
-        )}
+        {navigation.map(({ label, href, icon: Icon }) => (
+          <Link
+            key={href}
+            href={href}
+            className={`nav-item ${isCurrent(path, href) ? "selected" : ""}`}
+            aria-current={isCurrent(path, href) ? "page" : undefined}
+            onNavigate={close}
+          >
+            <Icon size={19} />
+            {label}
+            {isCurrent(path, href) && <span className="nav-dot" />}
+          </Link>
+        ))}
         {member.is_admin && (
           <>
             <p className="nav-label admin-label">MANAGEMENT</p>
             <Link
               href="/admin"
-              className={`nav-item ${path === "/admin" ? "selected" : ""}`}
-              onClick={close}
-              aria-current={path === "/admin" ? "page" : undefined}
+              className={`nav-item ${isCurrent(path, "/admin") ? "selected" : ""}`}
+              onNavigate={close}
+              aria-current={isCurrent(path, "/admin") ? "page" : undefined}
             >
               <Settings2 size={19} />
               Admin
@@ -129,24 +137,30 @@ export function AppShell({
         <Brand compact />
         <button
           className="icon-button"
-          ref={trigger}
-          onClick={() => setOpen(true)}
+          onClick={openNavigation}
           aria-label="Open navigation"
           aria-expanded={open}
+          aria-controls="team-navigation"
+          aria-haspopup="dialog"
         >
           <Menu />
         </button>
       </header>
       <dialog
         ref={dialog}
+        id="team-navigation"
+        aria-label="Team navigation"
         className="nav-dialog"
-        onCancel={close}
+        onCancel={(event) => {
+          event.preventDefault();
+          close();
+        }}
         onClick={(e) => {
           if (e.target === e.currentTarget) close();
         }}
       >
         <div className="drawer-header">
-          <Brand compact />
+          <Brand compact onNavigate={close} />
           <button
             className="icon-button"
             onClick={close}
@@ -155,8 +169,8 @@ export function AppShell({
             <X />
           </button>
         </div>
-        {links}
-        {account}
+        <div className="drawer-links">{links}</div>
+        <div className="drawer-account">{account}</div>
       </dialog>
       <main id="main" className="main-content">
         <div className="topbar">
@@ -168,8 +182,33 @@ export function AppShell({
           </span>
           <span className="badge">Texas A&M University</span>
         </div>
-        {children}
+        <div className="page-content">{children}</div>
       </main>
+      <nav className="mobile-tabs" aria-label="Quick navigation">
+        {mobileNavigation.map(({ label, href, icon: Icon }) => (
+          <Link
+            key={href}
+            href={href}
+            className={`mobile-tab ${isCurrent(path, href) ? "selected" : ""}`}
+            aria-current={isCurrent(path, href) ? "page" : undefined}
+          >
+            <Icon size={21} aria-hidden="true" />
+            <span>{label}</span>
+          </Link>
+        ))}
+        <button
+          type="button"
+          className={`mobile-tab ${!mobileNavigation.some((item) => isCurrent(path, item.href)) ? "selected" : ""}`}
+          onClick={openNavigation}
+          aria-expanded={open}
+          aria-controls="team-navigation"
+          aria-haspopup="dialog"
+          aria-label="More pages"
+        >
+          <Ellipsis size={21} aria-hidden="true" />
+          <span>More</span>
+        </button>
+      </nav>
     </div>
   );
 }

@@ -37,3 +37,8 @@ Show clear PDF loading/error states and an open/download fallback. Private files
 
 ## User-authorized frontend refresh
 Use the supplied `IMG_3739.jpeg` logo, served as `/team-logo.jpeg`, in shared branding. Keep the dark/violet palette and accessible navigation. Use concise page titles, functional instructions and explicit statuses. The landing page is a compact sign-in card; Home starts directly with personal information and admin summaries. No motivational slogans, decorative hero banners or duplicate brand taglines.
+
+## Mobile interface extension
+Preserve the dark/violet tokens and supplied logo. Use bundled Hanken Grotesk for body/form text and Barlow Condensed for major headings/branding. Form text stays at least 16px; primary touch controls are at least 44px. Keep panel borders/spacing clear and decorative treatment restrained.
+
+At 760px and below, expose Home, To-Dos, Calendar and Updates (Announcements) in bottom navigation; More and the top menu open the complete native modal drawer. Keep desktop sidebar navigation. Nested routes select their section; logo/name link to Home. Restore the actual drawer opener on dismissal. Keep short-screen navigation internally scrollable and hide bottom tabs during field focus; reserve content/refresh feedback space above the bar. Home prioritizes personal work and schedule, with additional admin summaries and a compact roster link in membership details. See docs/mobile-ui.md for verification and deployment.

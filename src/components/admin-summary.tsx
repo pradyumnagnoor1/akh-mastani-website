@@ -24,12 +24,21 @@ export async function AdminSummary() {
         : recipients.some((r) => r.post_id === p.id && !r.completed_at)),
   ).length;
   return (
-    <section className="panel my-segments">
+    <section className="panel my-segments admin-overview">
       <h2>Admin overview</h2>
-      <div className="my-segment-row">
-        <Link href="/admin">{count ?? 0} membership requests →</Link>
-        <Link href="/payments?view=reported">{reports} payment reports →</Link>
-        <Link href="/todos?view=all">{open} open team to-dos →</Link>
+      <div className="admin-overview-links">
+        <Link href="/admin">
+          <strong>{count ?? 0}</strong>
+          <span>Membership requests →</span>
+        </Link>
+        <Link href="/payments?view=reported">
+          <strong>{reports}</strong>
+          <span>Payment reports →</span>
+        </Link>
+        <Link href="/todos?view=all">
+          <strong>{open}</strong>
+          <span>Open team to-dos →</span>
+        </Link>
       </div>
     </section>
   );
