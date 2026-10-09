@@ -2,7 +2,8 @@ import Link from "next/link";
 import { communicationEditorData } from "@/features/communication/queries";
 import { ArchiveGroup } from "@/components/communication-forms";
 export default async function GroupsPage() {
-  const { groups, groupMembers, people } = await communicationEditorData();
+  const { groups, groupMembers, people, segments, assignments } =
+    await communicationEditorData();
   return (
     <>
       <div className="page-heading heading-with-action">
@@ -24,6 +25,36 @@ export default async function GroupsPage() {
         history stay intact.
       </p>
       <div className="communication-list">
+        {segments
+          .filter((s) => !s.archived_at)
+          .map((segment) => {
+            const names = people.filter((person) =>
+              assignments.some(
+                (a) => a.segment_id === segment.id && a.member_id === person.id,
+              ),
+            );
+            return (
+              <section className="panel" key={`segment:${segment.id}`}>
+                <div className="section-toolbar">
+                  <h2>{segment.name}</h2>
+                  <span className="badge">{names.length} active dancers</span>
+                </div>
+                <p className="muted small">
+                  Segment lineup · updates with Set Design
+                </p>
+                <p className="muted">
+                  {names.map((p) => p.display_name ?? p.email).join(", ") ||
+                    "No active dancers"}
+                </p>
+                <Link
+                  className="button secondary"
+                  href={`/segments/${segment.id}/edit`}
+                >
+                  Edit lineup
+                </Link>
+              </section>
+            );
+          })}
         {groups
           .filter((group) => !group.archived_at)
           .map((group) => {
@@ -55,7 +86,7 @@ export default async function GroupsPage() {
               </section>
             );
           })}
-        {!groups.length && (
+        {!groups.length && !segments.length && (
           <section className="panel empty-state">
             <h2>Your first group starts here</h2>
             <p className="muted">

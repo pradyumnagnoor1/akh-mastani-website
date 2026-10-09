@@ -1,4 +1,6 @@
 "use client";
+import { savedAudience } from "@/features/communication/saved-groups";
+import { SavedGroupOptions } from "./saved-group-options";
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { ExpirationField } from "./expiration-field";
@@ -130,17 +132,18 @@ export function CommunicationForm({
   const [selected, setSelected] = useState(assigned);
   const [mode, setMode] = useState(post?.completion_mode ?? "individual");
   const active = people.filter((p) => p.status === "active");
+  const resolved = savedAudience(audience, source);
   const ids = post
     ? assigned
     : audience === "team"
       ? active.map((p) => p.id)
-      : audience === "group"
+      : resolved.audience === "group"
         ? groupMembers
-            .filter((g) => g.group_id === source)
+            .filter((g) => g.group_id === resolved.source)
             .map((g) => g.member_id)
-        : audience === "segment"
+        : resolved.audience === "segment"
           ? assignments
-              .filter((a) => a.segment_id === source)
+              .filter((a) => a.segment_id === resolved.source)
               .map((a) => a.member_id)
           : selected;
   const recipients = active.filter((p) => ids.includes(p.id));
@@ -220,10 +223,10 @@ export function CommunicationForm({
           </>
         ) : (
           <>
+            <input type="hidden" name="audience" value={resolved.audience} />
             <label htmlFor="audience">Send to</label>
             <select
               id="audience"
-              name="audience"
               value={audience}
               onChange={(e) => {
                 setAudience(e.target.value as Audience);
@@ -245,6 +248,7 @@ export function CommunicationForm({
                 single={audience === "individual"}
               />
             )}{" "}
+            <input type="hidden" name="source_id" value={resolved.source} />
             {(audience === "group" || audience === "segment") && (
               <>
                 <label htmlFor="source-id">
@@ -252,19 +256,23 @@ export function CommunicationForm({
                 </label>
                 <select
                   id="source-id"
-                  name="source_id"
+                  name="source-picker"
                   required
                   value={source}
                   onChange={(e) => setSource(e.target.value)}
                 >
                   <option value="">Choose {audience}</option>
-                  {(audience === "group" ? groups : segments)
-                    .filter((g) => !g.archived_at)
-                    .map((g) => (
-                      <option key={g.id} value={g.id}>
-                        {g.name}
-                      </option>
-                    ))}
+                  {audience === "group" ? (
+                    <SavedGroupOptions groups={groups} segments={segments} />
+                  ) : (
+                    segments
+                      .filter((g) => !g.archived_at)
+                      .map((g) => (
+                        <option key={g.id} value={g.id}>
+                          {g.name}
+                        </option>
+                      ))
+                  )}{" "}
                 </select>
               </>
             )}

@@ -63,8 +63,18 @@ test("segments: dancer sees formations, assignments and personal roster links", 
   });
   await page.goto("/roster");
   await expect(
-    page.getByRole("link", { name: "Opening", exact: true }),
+    page.locator(".roster-segment-tag").filter({ hasText: /^Opening$/ }),
   ).toHaveCount(2);
+  expect(
+    await page
+      .locator(".roster-segment-tag")
+      .first()
+      .evaluate((el) => el.getBoundingClientRect().height),
+  ).toBeLessThan(28);
+  await page.screenshot({
+    path: info.outputPath("roster-tags.png"),
+    fullPage: true,
+  });
   await page.goto("/home");
   await expect(
     page.getByRole("heading", { name: "Your segments" }),
@@ -91,6 +101,49 @@ test("segments: admin creates, renames, changes lineup, replaces PDF and removes
   await page.getByRole("button", { name: "Create segment" }).click();
   await expect(page).toHaveURL(/\/segments\/[0-9a-f-]{36}$/);
   const url = page.url();
+  const id = url.split("/").pop();
+  await page.goto("/admin/groups");
+  await expect(
+    page.getByRole("heading", {
+      name: `Finale ${info.project.name}`,
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page.goto("/announcements/new");
+  await page.getByLabel("Send to", { exact: true }).selectOption("group");
+  await page.getByLabel("Group", { exact: true }).selectOption(`segment:${id}`);
+  const targeting = await page
+    .locator("form.communication-form")
+    .evaluate((form) => {
+      const data = new FormData(form as HTMLFormElement);
+      return [data.get("audience"), data.get("source_id")];
+    });
+  expect(targeting).toEqual(["segment", id]);
+  await expect(
+    page.getByRole("heading", {
+      name: "Recipient preview · 1 dancer",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page
+    .getByLabel("Title", { exact: true })
+    .fill(`Lineup update ${info.project.name}`);
+  await page
+    .getByLabel("Details", { exact: true })
+    .fill("For this lineup only.");
+  await page.getByRole("button", { name: "Publish announcement" }).click();
+  await expect(
+    page.getByRole("heading", {
+      name: `Lineup update ${info.project.name}`,
+      exact: true,
+    }),
+  ).toBeVisible();
+  const postUrl = page.url();
+  await page.goto("/payments/new");
+  await page.getByLabel("Charge to", { exact: true }).selectOption("group");
+  await page.getByLabel("Group", { exact: true }).selectOption(`segment:${id}`);
+  await page.goto(url);
+
   await page.getByRole("link", { name: "Edit segment" }).click();
   await page
     .getByLabel("Segment name", { exact: true })
@@ -115,6 +168,25 @@ test("segments: admin creates, renames, changes lineup, replaces PDF and removes
   await expect(
     page.getByText("2 active dancers · Formation PDF"),
   ).toBeVisible();
+  await page.goto(postUrl);
+  await expect(
+    page.getByRole("heading", { name: "Acknowledgments · 0/1", exact: true }),
+  ).toBeVisible();
+  await page.goto("/admin/groups");
+  const lineup = page.locator("section").filter({
+    has: page.getByRole("heading", {
+      name: `Finale revised ${info.project.name}`,
+      exact: true,
+    }),
+  });
+  await expect(lineup.getByText("2 active dancers")).toBeVisible();
+  await page.goto("/roster");
+  await expect(
+    page
+      .locator(".roster-segment-tag")
+      .filter({ hasText: `Finale revised ${info.project.name}` }),
+  ).toHaveCount(2);
+  await page.goto(url);
   await page.getByText("Remove this segment", { exact: true }).click();
   await page.getByLabel("I want to remove this segment").check();
   await page
@@ -126,6 +198,16 @@ test("segments: admin creates, renames, changes lineup, replaces PDF and removes
   ).toHaveCount(0);
   await expect(
     page.getByRole("link", { name: "Archive", exact: true }),
+  ).toHaveCount(0);
+  await page.goto("/admin/groups");
+  await expect(
+    page.getByRole("heading", { name: `Finale revised ${info.project.name}` }),
+  ).toHaveCount(0);
+  await page.goto("/roster");
+  await expect(
+    page
+      .locator(".roster-segment-tag")
+      .filter({ hasText: `Finale revised ${info.project.name}` }),
   ).toHaveCount(0);
   await page.goto(url);
   await expect(

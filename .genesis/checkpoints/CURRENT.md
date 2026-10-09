@@ -20,3 +20,5 @@
 - next_action: Confirm0009 is applied, apply0010 once, configure Supabase expiry/log and Vault maintenance Cron, redeploy and verify phone Photos/Files uploads, recipient-only reads and expired items/Storage removal. docs/announcement-images-expiration.md. User reports live Choreo works. Existing M7 release/physical push acceptance remains pending.
 - external_setup: user previously reports liveCalendarconnected; notificationhostedmigration/env/scheduler/physicaldelivery notverified. Other M7 two-accountrelease/restore acceptance remains pending.
 - tokens_used: exact telemetry unavailable
+
+- latest_segment_groups: Set Design lineups dynamically reused in Saved groups for announcement/to-do/payment targeting and admin list, subtle roster tags. Local COMPLETE, fresh independent APPROVE;266 tests/typecheck/lint/build/format and26 distinct affected desktop/mobile browser flows passed across corrected runs. See segment-groups-tags.md. Code redeploy required; no migration.

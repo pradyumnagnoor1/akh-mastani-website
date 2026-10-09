@@ -68,13 +68,13 @@ export default async function Roster({
                         ),
                     )
                     .map((segment) => (
-                      <Link
+                      <span
                         key={segment.id}
-                        href={`/segments/${segment.id}`}
-                        className="badge segment-chip"
+                        className="roster-segment-tag"
+                        title={segment.name}
                       >
                         {segment.name}
-                      </Link>
+                      </span>
                     ))}
                 </div>
               </div>

@@ -1,4 +1,6 @@
 "use client";
+import { savedAudience } from "@/features/communication/saved-groups";
+import { SavedGroupOptions } from "./saved-group-options";
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { SubmitButton } from "./forms";
@@ -121,16 +123,17 @@ export function PaymentForm({
     [instructions, setInstructions] = useState(""),
     [due, setDue] = useState("");
   const active = people.filter((p) => p.status === "active");
+  const resolved = savedAudience(audience, source);
   const ids =
     audience === "team"
       ? active.map((p) => p.id)
-      : audience === "group"
+      : resolved.audience === "group"
         ? groupMembers
-            .filter((g) => g.group_id === source)
+            .filter((g) => g.group_id === resolved.source)
             .map((g) => g.member_id)
-        : audience === "segment"
+        : resolved.audience === "segment"
           ? assignments
-              .filter((a) => a.segment_id === source)
+              .filter((a) => a.segment_id === resolved.source)
               .map((a) => a.member_id)
           : selected;
   const recipients = active.filter((p) => ids.includes(p.id));
@@ -194,10 +197,10 @@ export function PaymentForm({
       </section>
       <section className="panel stack">
         <p className="eyebrow">02 / THE DANCERS</p>
+        <input type="hidden" name="audience" value={resolved.audience} />
         <label htmlFor="audience">Charge to</label>
         <select
           id="audience"
-          name="audience"
           value={audience}
           onChange={(e) => {
             setAudience(e.target.value as Audience);
@@ -219,6 +222,7 @@ export function PaymentForm({
             single={audience === "individual"}
           />
         )}
+        <input type="hidden" name="source_id" value={resolved.source} />
         {(audience === "group" || audience === "segment") && (
           <>
             <label htmlFor="source">
@@ -226,19 +230,23 @@ export function PaymentForm({
             </label>
             <select
               id="source"
-              name="source_id"
+              name="source-picker"
               value={source}
               onChange={(e) => setSource(e.target.value)}
               required
             >
               <option value="">Choose {audience}</option>
-              {(audience === "group" ? groups : segments)
-                .filter((g) => !g.archived_at)
-                .map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.name}
-                  </option>
-                ))}
+              {audience === "group" ? (
+                <SavedGroupOptions groups={groups} segments={segments} />
+              ) : (
+                segments
+                  .filter((g) => !g.archived_at)
+                  .map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))
+              )}{" "}
             </select>
           </>
         )}

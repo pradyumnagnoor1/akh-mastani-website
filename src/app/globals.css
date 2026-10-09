@@ -1769,3 +1769,23 @@ button:enabled:active {
   object-fit: contain;
   margin-top: 16px;
 }
+
+/* Compact labels; segment navigation stays on each dancer's detail page. */
+.roster-segments {
+  gap: 4px;
+  margin-top: 5px;
+}
+.roster-segment-tag {
+  display: inline-block;
+  max-width: 100%;
+  padding: 1px 7px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
