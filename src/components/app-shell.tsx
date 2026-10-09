@@ -18,6 +18,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { Brand } from "./brand";
+import { NavigationHint } from "./navigation-hint";
 import { signOut } from "@/features/identity/actions";
 import type { Member } from "@/features/identity/policy";
 const navigation = [
@@ -92,6 +93,7 @@ export function AppShell({
           >
             <Icon size={19} />
             {label}
+            <NavigationHint />
             {isCurrent(path, href) && <span className="nav-dot" />}
           </Link>
         ))}
@@ -106,6 +108,7 @@ export function AppShell({
             >
               <Settings2 size={19} />
               Admin
+              <NavigationHint />
             </Link>
           </>
         )}
@@ -196,6 +199,7 @@ export function AppShell({
           >
             <Icon size={21} aria-hidden="true" />
             <span>{label}</span>
+            <NavigationHint />
           </Link>
         ))}
         <button

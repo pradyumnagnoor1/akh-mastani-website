@@ -1708,3 +1708,32 @@ html {
   background: #000;
   margin: 16px 0;
 }
+
+/* Immediate tap feedback; the route boundary keeps navigation visible. */
+a:active,
+button:enabled:active {
+  opacity: 0.75;
+}
+.nav-item,
+.mobile-tab {
+  position: relative;
+}
+.navigation-hint {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0;
+  pointer-events: none;
+}
+.navigation-hint[data-pending="true"] {
+  opacity: 1;
+}
+.nav-item:has(.navigation-hint[data-pending="true"]),
+.mobile-tab:has(.navigation-hint[data-pending="true"]) {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  cursor: progress;
+}

@@ -226,3 +226,47 @@ test("navigation: narrow layouts keep controls accessible and dancer permissions
     });
   }
 });
+
+test("navigation: taps show feedback while a destination response is delayed", async ({
+  page,
+  context,
+  request,
+}, info) => {
+  await login(context, request);
+  await page.goto("/home");
+  let release: (() => void) | undefined;
+  await page.route("**/todos?**", async (route) => {
+    await new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await route.continue();
+  });
+  const nav = page.getByRole("navigation", {
+    name:
+      info.project.name === "mobile" ? "Quick navigation" : "Main navigation",
+  });
+  const link = nav.getByRole("link", { name: "To-Dos", exact: true });
+  await link.click();
+  try {
+    await expect(link.locator(".navigation-hint")).toHaveAttribute(
+      "data-pending",
+      "true",
+    );
+    await expect(nav).toBeVisible();
+    await page.screenshot({
+      path: info.outputPath("navigation-pending.png"),
+      animations: "disabled",
+      style: "nextjs-portal { display: none; }",
+    });
+  } finally {
+    release?.();
+  }
+  await expect(page).toHaveURL(/\/todos$/);
+  await expect(
+    page.getByRole("heading", { name: "To-Dos", exact: true }),
+  ).toBeVisible();
+  await expect(link.locator(".navigation-hint")).toHaveAttribute(
+    "data-pending",
+    "false",
+  );
+});

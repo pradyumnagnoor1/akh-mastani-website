@@ -15,3 +15,7 @@ Home starts with personal to-dos/announcements, featured events and practices, f
 Deploy the code to Vercel through the existing deployment workflow. This UI extension requires no new environment variables or database migration. Previous feature migrations still apply independently.
 
 Run `npm run check`, `npm run format:check`, `npm run test:e2e:team` and `npm run test:e2e`. Navigation checks cover phone/desktop branding, nested selection, menu focus/close, draft preservation, width changes, 320px layouts, touch targets, dancer-only permissions and content clearance above the bottom bar. Browser screenshots cover populated screens. Chrome phone emulation is not a physical iPhone Safari/Home Screen check; verify keyboard, notch/home-indicator spacing and touch gestures there after deploying.
+
+## Navigation responsiveness
+
+A shared loading boundary inside the team layout lets destination pages load while the header and navigation stay available. Navigation links use Next.js-owned pending feedback until the route changes; tapping links/buttons also gives an immediate pressed state. Existing default prefetch prepares route loading shells in production. Server checks and dynamic fetching remain in place, so content and save operations can still take network time. This changes feedback and perceived responsiveness; it is not evidence of lower production server latency. No upgrade, new environment variable or migration is required. Redeploy code, reopen the installed app, and verify on the physical iPhone/network.

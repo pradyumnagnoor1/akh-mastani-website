@@ -2,6 +2,7 @@
 - active_loop: RESEARCH
 - target: M7 production activation
 - iteration: 1
+- latest_navigation_feedback: Shared team loading, nav pending and pressed feedback locally complete; independent APPROVE,246 tests/typecheck/lint/build/format and9 browser checks pass (one intentional desktop skip). Redeploy and verify physical installed app. See checkpoints/navigation-feedback.md.
 - latest_choreo_browse: User reports live Choreo works; folders-first/max-five browsing and immediate loading feedback locally complete; fresh independent APPROVE,246 tests, typecheck/lint/build/format and2 delayed desktop/mobile browser flows pass. Redeploy code; no new variables/migration. See checkpoints/choreo-folders.md.
 - latest_migration_recovery: User-reported0008 error42723 reproduced and known-schema transactional rerun implemented; later0009 guard prevents downgrade.242 tests/typecheck/lint/build/format pass; fresh independent APPROVE with42/42 SQL checks and delegated Q+A. See checkpoints/migration-0008-resume.md and docs/management.md; live migration state unknown.
 - latest_deletion_choreo: Locally implemented permanent non-payment deletion, hidden privately retained deleted-payment history, correct announcement empty state, protected dynamic Choreo wired to owner TAMU folder. Independent APPROVE;236 tests/28 suites, typecheck/lint/build/format pass,53 distinct configured browser flows across regression/fix runs and final2 Choreo screenshot replays. checkpoints/deletion-choreo.md. Apply0009 and deploy; server-only Drive OAuth credentials and cleanup cron still required.

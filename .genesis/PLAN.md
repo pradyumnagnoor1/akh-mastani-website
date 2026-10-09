@@ -87,3 +87,7 @@ Explicit communication/group delete controls preserve archival history. Add audi
 
 ## User-authorized extension — Choreo folder browsing
 Root lists folders first without scanning their videos. Verified nested folder navigation lists at most five newest videos per batch, signed next-page cursors, breadcrumbs and direct-root-video fallback. Route/Suspense loading gives feedback while Google responds. Locally complete with independent APPROVE,246 tests and2 desktop/mobile delayed-upstream flows. No migration/configuration additions; redeploy and verify hosted behavior. See checkpoints/choreo-folders.md.
+
+
+## User-authorized extension — Mobile navigation feedback
+Shared loading boundary retains team nav during page data fetching; framework-owned nav pending hints and immediate pressed styles acknowledge taps. No server authorization/cache changes. Independent APPROVE,246 tests/check/build/format and9 desktop/mobile browser checks pass with one intended desktop skip. Redeploy; physical iPhone latency remains unmeasured. checkpoints/navigation-feedback.md.
