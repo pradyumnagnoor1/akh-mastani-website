@@ -14,7 +14,7 @@ async function user(id: string, role = "authenticated") {
 async function database(includeDeletion = true, includeManagement = true) {
   const db = new PGlite();
   await db.exec(
-    `create role anon nologin;create role authenticated nologin;create role service_role nologin bypassrls;create schema auth;create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,raw_app_meta_data jsonb);create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;grant usage on schema auth to authenticated,anon;grant execute on function auth.uid() to authenticated,anon;create schema storage;create function storage.allow_only_operation(text) returns boolean language sql stable as $$select true$$;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text,name text,metadata jsonb);alter table storage.objects enable row level security;grant usage on schema storage to authenticated,anon,service_role;grant select,insert on storage.objects to authenticated;grant all on storage.objects to service_role;`,
+    `create role anon nologin;create role authenticated nologin;create role service_role nologin bypassrls;create schema auth;create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,raw_app_meta_data jsonb);create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;grant usage on schema auth to authenticated,anon;grant execute on function auth.uid() to authenticated,anon;create schema storage;create function storage.allow_only_operation(operation text) returns boolean language sql stable as $$select coalesce(replace(current_setting('fixture.storage_operation',true),'storage.','')=replace(operation,'storage.',''),false)$$;create function storage.allow_any_operation(operations text[]) returns boolean language sql stable as $$select exists(select 1 from unnest(operations) op where storage.allow_only_operation(op))$$;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text,name text,metadata jsonb);alter table storage.objects enable row level security;grant usage on schema storage to authenticated,anon,service_role;grant select,insert on storage.objects to authenticated;grant all on storage.objects to service_role;`,
   );
   for (const name of [
     "0001_identity",
@@ -61,6 +61,9 @@ beforeEach(async () => {
       ],
     );
   }
+  await db.exec(
+    "select set_config('fixture.storage_operation','object.get_authenticated',false)",
+  );
   await user(admin);
 });
 const post = "00000000-0000-4000-8000-000000000020";
@@ -411,4 +414,90 @@ it("queued delivery becomes invalid at expiry, enqueue stops and purge removes j
   ).toBe(0);
   await db.query("select purge_expired_items()");
   expect((await db.query("select * from push_jobs")).rows).toHaveLength(0);
+});
+
+it("reproduces metadata preflight denial and repairs reads without allowing list/sign/S3 access", async () => {
+  const path = await reserve();
+  await upload(path);
+  await savePost(0, path);
+  await db.exec("reset role");
+  const pdf = `${admin}/00000000-0000-4000-8000-000000000099.pdf`;
+  await db.query(
+    'insert into storage.objects(bucket_id,name,metadata) values(\'formations\',$1,\'{"size":100,"mimetype":"application/pdf"}\')',
+    [pdf],
+  );
+  await user(admin);
+  await db.query(
+    "select save_segment($1,0,'Formation',array[$2::uuid],$3,'formations.pdf')",
+    [event, dancer, pdf],
+  );
+  await db.exec(
+    "select set_config('fixture.storage_operation','object.get_authenticated_info',false)",
+  );
+  expect((await db.query("select * from storage.objects")).rows).toHaveLength(
+    0,
+  );
+  await db.exec("reset role");
+  const repair = readFileSync(
+    "supabase/migrations/0011_private_file_metadata_reads.sql",
+    "utf8",
+  );
+  await db.exec(repair);
+  await db.exec(repair);
+  for (const operation of [
+    "object.get_authenticated_info",
+    "object.get_authenticated",
+    "storage.object.get_authenticated_info",
+  ]) {
+    for (const member of [admin, dancer]) {
+      await user(member);
+      await db.query(
+        "select set_config('fixture.storage_operation',$1,false)",
+        [operation],
+      );
+      expect(
+        (await db.query("select * from storage.objects")).rows,
+      ).toHaveLength(2);
+    }
+    await user(outsider);
+    expect((await db.query("select * from storage.objects")).rows).toHaveLength(
+      0,
+    );
+  }
+  for (const operation of [
+    "object.list",
+    "object.sign",
+    "object.sign_many",
+    "s3.object.get",
+    "storage.object.list",
+    "",
+  ]) {
+    await user(admin);
+    await db.query("select set_config('fixture.storage_operation',$1,false)", [
+      operation,
+    ]);
+    expect((await db.query("select * from storage.objects")).rows).toHaveLength(
+      0,
+    );
+  }
+  await db.exec("reset role");
+  await db.query(
+    "update communication_posts set expires_at=now()-interval '1 second' where id=$1",
+    [post],
+  );
+  await user(admin);
+  await db.exec(
+    "select set_config('fixture.storage_operation','object.get_authenticated_info',false)",
+  );
+  expect(
+    (
+      await db.query(
+        "select * from storage.objects where bucket_id='announcement-images'",
+      )
+    ).rows,
+  ).toHaveLength(0);
+  await db.query("select delete_team_item($1,1,'segment')", [event]);
+  expect((await db.query("select * from storage.objects")).rows).toHaveLength(
+    0,
+  );
 });

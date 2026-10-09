@@ -59,7 +59,7 @@ create table auth.users(id uuid primary key,email text,email_confirmed_at timest
 create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
 grant usage on schema auth to authenticated,anon;grant execute on function auth.uid() to authenticated,anon;
 create schema storage;
-create function storage.allow_only_operation(operation text) returns boolean language sql stable as $$select coalesce(current_setting('fixture.storage_operation',true)=operation,false)$$;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
+create function storage.allow_only_operation(operation text) returns boolean language sql stable as $$select coalesce(current_setting('fixture.storage_operation',true)=operation,false)$$;create function storage.allow_any_operation(operations text[]) returns boolean language sql stable as $$select exists(select 1 from unnest(operations) op where storage.allow_only_operation(op))$$;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
 create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text,name text,metadata jsonb,unique(bucket_id,name));
 alter table storage.objects enable row level security;grant usage on schema storage to authenticated,anon;grant select,insert,update,delete on storage.objects to authenticated;`);
 await db.exec(readFileSync("supabase/migrations/0001_identity.sql", "utf8"));
@@ -87,6 +87,12 @@ await db.exec(
 await db.exec(
   readFileSync(
     "supabase/migrations/0010_announcement_images_expiration.sql",
+    "utf8",
+  ),
+);
+await db.exec(
+  readFileSync(
+    "supabase/migrations/0011_private_file_metadata_reads.sql",
     "utf8",
   ),
 );
@@ -717,6 +723,16 @@ createServer((req, res) => {
             Id: crypto.randomUUID(),
           });
         }
+        // Hosted CDN authenticates a metadata read before retrieving bytes.
+        await db.exec(
+          "select set_config('fixture.storage_operation','object.get_authenticated_info',false)",
+        );
+        const metadata = await db.query(
+          "select name from storage.objects where bucket_id=$1 and name=$2",
+          [bucket, relative],
+        );
+        if (!metadata.rows.length)
+          return json({ message: "Object not found", code: "NoSuchKey" }, 400);
         await db.exec(
           "select set_config('fixture.storage_operation','object.get_authenticated',false)",
         );
