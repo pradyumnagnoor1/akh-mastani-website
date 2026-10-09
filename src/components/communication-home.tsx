@@ -1,3 +1,6 @@
+/* eslint-disable react-hooks/purity -- Server components capture request time for expiration timers. */
+import { Expires } from "./expires";
+import { AnnouncementImage } from "./announcement-image";
 import Link from "next/link";
 import { communicationData } from "@/features/communication/queries";
 export async function CommunicationHome() {
@@ -30,12 +33,14 @@ export async function CommunicationHome() {
         </div>
         {todos.length ? (
           todos.slice(0, 4).map((p) => (
-            <Link className="my-segment-row" key={p.id} href={`/todos/${p.id}`}>
-              <strong>{p.title}</strong>
-              <span className="muted small">
-                {p.due_on ? `Due ${p.due_on}` : "No due date"}
-              </span>
-            </Link>
+            <Expires key={p.id} at={p.expires_at} serverNow={Date.now()}>
+              <Link className="my-segment-row" href={`/todos/${p.id}`}>
+                <strong>{p.title}</strong>
+                <span className="muted small">
+                  {p.due_on ? `Due ${p.due_on}` : "No due date"}
+                </span>
+              </Link>
+            </Expires>
           ))
         ) : (
           <p className="muted">No open to-dos.</p>
@@ -50,20 +55,28 @@ export async function CommunicationHome() {
         </div>
         {announcements.length ? (
           announcements.slice(0, 4).map((p) => (
-            <Link
-              className="my-segment-row"
-              key={p.id}
-              href={`/announcements/${p.id}`}
-            >
-              <strong>{p.title}</strong>
-              <span className="badge">
-                {recipients.find(
-                  (r) => r.post_id === p.id && r.member_id === member.id,
-                )?.completed_at
-                  ? "Read"
-                  : "New"}
-              </span>
-            </Link>
+            <Expires key={p.id} at={p.expires_at} serverNow={Date.now()}>
+              <div>
+                <Link
+                  className="my-segment-row"
+                  href={`/announcements/${p.id}`}
+                >
+                  <strong>{p.title}</strong>
+                  <span className="badge">
+                    {recipients.find(
+                      (r) => r.post_id === p.id && r.member_id === member.id,
+                    )?.completed_at
+                      ? "Read"
+                      : "New"}
+                  </span>
+                </Link>
+                <AnnouncementImage
+                  id={p.id}
+                  path={p.image_path}
+                  description={p.image_description}
+                />
+              </div>
+            </Expires>
           ))
         ) : (
           <p className="muted">No announcements for you yet.</p>

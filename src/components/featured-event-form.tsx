@@ -1,4 +1,5 @@
 "use client";
+import { ExpirationField } from "./expiration-field";
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { SubmitButton } from "./forms";
@@ -86,6 +87,7 @@ export function FeaturedEventForm({
         value={fields.event_link}
         onChange={(e) => setFields({ ...fields, event_link: e.target.value })}
       />
+      <ExpirationField expiresAt={event?.expires_at} />
       {state.error && (
         <p className="notice error" role="alert">
           {state.error}

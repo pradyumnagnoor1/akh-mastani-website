@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/purity -- Server components capture request time for expiration timers. */
+import { Expires } from "@/components/expires";
 import { requireAdmin } from "@/features/identity/session";
 import { featuredData } from "@/features/featured-events/queries";
 import { FeaturedEventForm } from "@/components/featured-event-form";
@@ -13,11 +15,11 @@ export default async function Page({
   const event = events.find((e) => e.id === id && !e.deleted_at);
   if (!event) notFound();
   return (
-    <>
+    <Expires at={event.expires_at} serverNow={Date.now()} detail>
       <div className="page-heading">
         <h1>Edit featured event</h1>
       </div>
       <FeaturedEventForm key={`${id}-${event.version}`} id={id} event={event} />
-    </>
+    </Expires>
   );
 }

@@ -84,6 +84,12 @@ await db.exec(
 await db.exec(
   readFileSync("supabase/migrations/0009_permanent_deletion.sql", "utf8"),
 );
+await db.exec(
+  readFileSync(
+    "supabase/migrations/0010_announcement_images_expiration.sql",
+    "utf8",
+  ),
+);
 for (const person of users.values()) {
   await db.query(
     `insert into auth.users values($1,$2,now(),'{"provider":"google"}')`,
@@ -224,6 +230,14 @@ createServer((req, res) => {
       res.end(JSON.stringify(data));
     }
     if (url.pathname === "/health") return json({ ready: true });
+    if (url.pathname === "/fixture/expire") {
+      await db.exec("reset role");
+      await db.query(
+        "update communication_posts set expires_at=now()+interval '3 seconds' where id=$1",
+        [url.searchParams.get("id")],
+      );
+      return json({ ready: true });
+    }
     if (url.pathname === "/fixture/empty-announcements") {
       await db.exec(
         "reset role;delete from communication_posts where kind='announcement';",
@@ -325,6 +339,38 @@ createServer((req, res) => {
           push_register_subscription: ["p_endpoint", "p_p256dh", "p_auth"],
           push_unregister_subscription: ["p_endpoint"],
           active_member: [],
+          purge_expired_items: [],
+          announcement_cleanup_jobs: [],
+          finish_announcement_cleanup: ["p_paths"],
+          reserve_announcement_image: ["target_id", "expected_version"],
+          verify_announcement_image: ["object_path", "actor_id"],
+          abandon_announcement_image: ["object_path"],
+          save_communication_media: [
+            "target_id",
+            "expected_version",
+            "post_kind",
+            "post_title",
+            "post_body",
+            "task_mode",
+            "audience",
+            "recipient_ids",
+            "source_id",
+            "due_date",
+            "expiration_date",
+            "image_object",
+            "image_alt",
+          ],
+          save_featured_event_expiring: [
+            "target_id",
+            "expected_version",
+            "event_title",
+            "event_description",
+            "event_day",
+            "event_time",
+            "event_location",
+            "event_url",
+            "expiration_date",
+          ],
           formation_cleanup_jobs: [],
           finish_formation_cleanup: ["p_paths"],
           delete_team_item: ["target_id", "expected_version", "item_kind"],
@@ -428,7 +474,9 @@ createServer((req, res) => {
           `select public.${name}(${functions[name].map((_, i) => "$" + (i + 1)).join(",")})`,
           functions[name].map((key) => args[key]),
         );
-        if (name === "formation_cleanup_jobs")
+        if (
+          ["formation_cleanup_jobs", "announcement_cleanup_jobs"].includes(name)
+        )
           return json(result.rows.map((row) => row[name]));
         return json(result.rows[0][name]);
       }
@@ -436,6 +484,7 @@ createServer((req, res) => {
         const table = url.pathname.split("/").pop();
         const allowed = {
           featured_events: [
+            "expires_at",
             "id",
             "title",
             "description",
@@ -513,6 +562,9 @@ createServer((req, res) => {
           ],
           segment_members: ["segment_id", "member_id"],
           communication_posts: [
+            "expires_at",
+            "image_path",
+            "image_description",
             "id",
             "title",
             "body",
@@ -608,26 +660,39 @@ createServer((req, res) => {
       }
       if (
         req.method === "DELETE" &&
-        url.pathname === "/storage/v1/object/formations"
+        [
+          "/storage/v1/object/formations",
+          "/storage/v1/object/announcement-images",
+        ].includes(url.pathname)
       ) {
         if (!service) return json({ message: "Service only" }, 403);
+        const bucket = url.pathname.split("/").pop();
         const { prefixes } = JSON.parse(body.toString());
         await db.exec("reset role");
         await db.query(
-          "delete from storage.objects where bucket_id='formations' and name=any($1::text[])",
-          [prefixes],
+          "delete from storage.objects where bucket_id=$1 and name=any($2::text[])",
+          [bucket, prefixes],
         );
-        for (const path of prefixes) files.delete(path);
+        for (const path of prefixes)
+          files.delete(bucket === "formations" ? path : `${bucket}/${path}`);
         return json(prefixes.map((name) => ({ name })));
       }
       if (url.pathname.startsWith("/storage/v1/object/")) {
+        const bucket = url.pathname
+          .replace(/^\/storage\/v1\/object\/(?:authenticated\/)?/, "")
+          .split("/")[0];
+        const mime =
+          bucket === "announcement-images" ? "image/jpeg" : "application/pdf";
         const relative = decodeURIComponent(
           url.pathname.replace(
-            /^\/storage\/v1\/object\/(?:authenticated\/)?formations\//,
+            /^\/storage\/v1\/object\/(?:authenticated\/)?(?:formations|announcement-images)\//,
             "",
           ),
         );
+        const fileKey =
+          bucket === "formations" ? relative : `${bucket}/${relative}`;
         if (req.method === "POST") {
+          if (service) await db.exec("reset role");
           let bytes = body;
           const contentType = req.headers["content-type"] || "";
           if (contentType.includes("multipart/form-data")) {
@@ -643,12 +708,12 @@ createServer((req, res) => {
           if (bytes.length > 4194304)
             return json({ message: "Too large" }, 413);
           await db.query(
-            `insert into storage.objects(bucket_id,name,metadata) values('formations',$1,$2)`,
-            [relative, { size: bytes.length, mimetype: "application/pdf" }],
+            `insert into storage.objects(bucket_id,name,metadata) values($1,$2,$3)`,
+            [bucket, relative, { size: bytes.length, mimetype: mime }],
           );
-          files.set(relative, bytes);
+          files.set(fileKey, bytes);
           return json({
-            Key: `formations/${relative}`,
+            Key: `${bucket}/${relative}`,
             Id: crypto.randomUUID(),
           });
         }
@@ -656,13 +721,13 @@ createServer((req, res) => {
           "select set_config('fixture.storage_operation','object.get_authenticated',false)",
         );
         const visible = await db.query(
-          `select name from storage.objects where bucket_id='formations' and name=$1`,
-          [relative],
+          `select name from storage.objects where bucket_id=$1 and name=$2`,
+          [bucket, relative],
         );
-        if (!visible.rows.length || !files.has(relative))
+        if (!visible.rows.length || !files.has(fileKey))
           return json({ message: "Not found" }, 404);
-        res.writeHead(200, { "Content-Type": "application/pdf" });
-        return res.end(files.get(relative));
+        res.writeHead(200, { "Content-Type": mime });
+        return res.end(files.get(fileKey));
       }
       return json({ message: "Unsupported fixture endpoint" }, 404);
     } catch (error) {

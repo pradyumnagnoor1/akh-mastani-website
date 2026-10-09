@@ -11,6 +11,9 @@ export type CommunicationPost = {
   audience_source_id: string | null;
   audience_label: string;
   due_on: string | null;
+  expires_at?: string | null;
+  image_path?: string | null;
+  image_description?: string;
   version: number;
   archived_at: string | null;
   created_at: string;

@@ -32,9 +32,9 @@ export const communicationData = cache(async () => {
   ]);
   return {
     ...context,
-    posts: (posts as CommunicationPost[]).sort((a, b) =>
-      b.created_at.localeCompare(a.created_at),
-    ),
+    posts: (posts as CommunicationPost[])
+      .filter((p) => !p.expires_at || Date.parse(p.expires_at) > Date.now())
+      .sort((a, b) => b.created_at.localeCompare(a.created_at)),
     recipients: recipients as Recipient[],
   };
 });

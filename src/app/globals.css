@@ -1737,3 +1737,35 @@ button:enabled:active {
   background: color-mix(in srgb, var(--accent) 18%, transparent);
   cursor: progress;
 }
+
+.announcement-image-preview {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  max-height: 360px;
+  object-fit: contain;
+  border-radius: 12px;
+}
+.announcement-image-button {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  margin-block: 16px;
+}
+.image-dialog {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+  max-width: min(95vw, 1000px);
+  max-height: 90dvh;
+}
+.announcement-image-full {
+  display: block;
+  max-width: 100%;
+  max-height: 75dvh;
+  object-fit: contain;
+  margin-top: 16px;
+}

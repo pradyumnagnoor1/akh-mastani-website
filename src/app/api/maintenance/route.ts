@@ -1,3 +1,5 @@
+import { serviceClient } from "@/lib/supabase/service";
+import { cleanupAnnouncementImages } from "@/features/announcement-images/cleanup";
 import { timingSafeEqual } from "node:crypto";
 import { cleanupFormationFiles } from "@/features/segments/cleanup";
 
@@ -17,7 +19,9 @@ export async function GET(request: Request) {
     return Response.json({ error: "Unauthorized" }, { status: 401, headers });
   }
   try {
-    await cleanupFormationFiles();
+    const purge = await serviceClient().rpc("purge_expired_items");
+    if (purge.error) throw new Error("Expiration cleanup unavailable");
+    await Promise.all([cleanupFormationFiles(), cleanupAnnouncementImages()]);
     return Response.json({ processed: true }, { headers });
   } catch {
     return Response.json(

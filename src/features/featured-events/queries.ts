@@ -14,5 +14,10 @@ export const featuredData = cache(async () => {
       .order("id")
       .range(from, to),
   );
-  return { ...context, events: events as FeaturedEvent[] };
+  return {
+    ...context,
+    events: (events as FeaturedEvent[]).filter(
+      (e) => !e.expires_at || Date.parse(e.expires_at) > Date.now(),
+    ),
+  };
 });

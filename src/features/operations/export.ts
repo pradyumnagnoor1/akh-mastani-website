@@ -12,7 +12,7 @@ export const EXPORT_TABLES = {
   },
   communication_posts: {
     columns:
-      "id,title,body,kind,completion_mode,audience_type,audience_label,due_on,version,archived_at,created_at,created_by,completed_at,completed_by",
+      "id,title,body,kind,completion_mode,audience_type,audience_label,due_on,expires_at,image_path,image_description,version,archived_at,created_at,created_by,completed_at,completed_by",
     order: ["id"],
   },
   communication_recipients: {
@@ -34,7 +34,7 @@ export const EXPORT_TABLES = {
   },
   featured_events: {
     columns:
-      "id,title,description,event_date,start_time,location,event_link,version,deleted_at,created_by,created_at,updated_at",
+      "id,title,description,event_date,start_time,location,event_link,expires_at,version,deleted_at,created_by,created_at,updated_at",
     order: ["id"],
   },
   featured_event_audit: {
@@ -73,7 +73,7 @@ export async function readExport(
   return {
     format: "akh-mastani-operational-v1",
     generated_at: new Date().toISOString(),
-    note: "Operational records only; not a transactionally consistent database backup. Formation files and Auth accounts are excluded.",
+    note: "Operational records only; not a transactionally consistent database backup. Image/formation files and Auth accounts are excluded.",
     tables,
   };
 }

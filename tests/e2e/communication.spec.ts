@@ -206,3 +206,70 @@ test("communication: saved group and shared completion show actor for everyone",
   await expect(dancer).toHaveURL(/\/home$/);
   await dancerContext.close();
 });
+
+test("communication: phone image compression, private display, removal and mounted expiry", async ({
+  page,
+  context,
+  request,
+}, info) => {
+  await login(context, request, "admin");
+  const sharp = (await import("sharp")).default;
+  const png = await sharp({
+    create: { width: 2400, height: 1800, channels: 3, background: "red" },
+  })
+    .png()
+    .toBuffer();
+  const title = `Image announcement ${info.project.name}`;
+  await create(page, "announcement", title);
+  await page.getByLabel("Attach an image (optional)").setInputFiles({
+    name: "phone-photo.png",
+    mimeType: "image/png",
+    buffer: png,
+  });
+  await expect(page.getByText(/Prepared JPEG/)).toBeVisible();
+  await page
+    .getByLabel("Image description (optional)")
+    .fill("Practice formation");
+  await page.getByLabel("Expiration date (optional)").fill("2027-12-12");
+  await page.getByRole("button", { name: "Publish announcement" }).click();
+  await expect(
+    page.getByRole("heading", { name: title, exact: true }),
+  ).toBeVisible();
+  const image = page.getByRole("img", { name: "Practice formation" }).first();
+  await expect(image).toBeVisible();
+  await page.screenshot({
+    path: info.outputPath("announcement-image.png"),
+    fullPage: true,
+  });
+  await page
+    .getByRole("button", { name: "Enlarge announcement image" })
+    .click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.getByRole("button", { name: "Close image" }).click();
+  const imageUrl = await image.getAttribute("src");
+  const response = await page.request.get(imageUrl!);
+  expect(response.status()).toBe(200);
+  expect(response.headers()["content-type"]).toContain("image/jpeg");
+  expect(response.headers()["cache-control"]).toContain("no-store");
+  const metadata = await sharp(await response.body()).metadata();
+  expect(Math.max(metadata.width!, metadata.height!)).toBeLessThanOrEqual(1600);
+  await page
+    .getByRole("link", { name: "Edit announcement", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Remove image", exact: true }).click();
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(
+    page.getByRole("heading", { name: title, exact: true }),
+  ).toBeVisible();
+  expect((await page.request.get(imageUrl!)).status()).toBe(404);
+  const id = new URL(page.url()).pathname.split("/").pop();
+  await request.get(`http://127.0.0.1:3201/fixture/expire?id=${id}`);
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "This item has expired" }),
+  ).toBeVisible({ timeout: 10000 });
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: title, exact: true }),
+  ).toHaveCount(0);
+});

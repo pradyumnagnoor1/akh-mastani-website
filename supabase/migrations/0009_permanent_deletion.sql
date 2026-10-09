@@ -1,14 +1,26 @@
+-- Run the complete file to recover a known partial or already-applied0009.
+begin;
+set local lock_timeout='10s';
+select pg_advisory_xact_lock(hashtextextended('mastani-migration-0009',0));
+do $$
+begin
+ if to_regclass('public.announcement_uploads') is not null
+ or to_regprocedure('public.purge_expired_items()') is not null
+ or exists(select 1 from pg_attribute where attrelid in(to_regclass('public.communication_posts'),to_regclass('public.featured_events')) and attname='expires_at' and not attisdropped) then
+  raise exception 'Migration0010 is already present or has started. Do not rerun0009; its older notification rules would replace expiration checks.';
+ end if;
+end;$$;
 -- User-authorized permanent deletion replaces archive/restore behavior.
 -- Payment deletion is the user-approved exception: retain financial evidence privately.
-alter table public.featured_event_audit drop constraint featured_event_audit_event_id_fkey;
+alter table public.featured_event_audit drop constraint if exists featured_event_audit_event_id_fkey;
 alter table public.featured_event_audit add constraint featured_event_audit_event_id_fkey foreign key(event_id) references public.featured_events(id) on delete cascade;
 
 -- Object bytes must be removed through Storage API, never by deleting storage.objects SQL rows.
-create table public.formation_cleanup(path text primary key, created_at timestamptz not null default now());
+create table if not exists public.formation_cleanup(path text primary key, created_at timestamptz not null default now());
 alter table public.formation_cleanup enable row level security;
 revoke all on public.formation_cleanup from public,anon,authenticated;
 
-create function public.purge_deleted_source() returns trigger language plpgsql security definer set search_path='' as $$
+create or replace function public.purge_deleted_source() returns trigger language plpgsql security definer set search_path='' as $$
 declare kind text;
 begin
  kind:=case TG_TABLE_NAME when 'communication_posts' then 'communication' when 'payment_charges' then 'payment' when 'segments' then 'segment' when 'featured_events' then 'featured' end;
@@ -21,13 +33,18 @@ begin
  end if;
  return old;
 end;$$;
+drop trigger if exists purge_post on public.communication_posts;
 create trigger purge_post after delete on public.communication_posts for each row execute function public.purge_deleted_source();
+drop trigger if exists purge_charge on public.payment_charges;
 create trigger purge_charge after delete on public.payment_charges for each row execute function public.purge_deleted_source();
+drop trigger if exists purge_segment on public.segments;
 create trigger purge_segment after delete on public.segments for each row execute function public.purge_deleted_source();
+drop trigger if exists purge_group on public.communication_groups;
 create trigger purge_group after delete on public.communication_groups for each row execute function public.purge_deleted_source();
+drop trigger if exists purge_featured on public.featured_events;
 create trigger purge_featured after delete on public.featured_events for each row execute function public.purge_deleted_source();
 
-create function public.queue_segment_documents() returns trigger language plpgsql security definer set search_path='' as $$
+create or replace function public.queue_segment_documents() returns trigger language plpgsql security definer set search_path='' as $$
 declare object_path text;
 begin
  -- Serialize attachments and deletion for each immutable object, including shared/history keys.
@@ -49,18 +66,20 @@ begin
  on conflict do nothing;
  return old;
 end;$$;
+drop trigger if exists queue_segment_documents on public.segments;
 create trigger queue_segment_documents before delete on public.segments for each row execute function public.queue_segment_documents();
 
 -- Prevent an object scheduled for deletion from being attached again.
-create function public.reject_deleted_document() returns trigger language plpgsql security definer set search_path='' as $$
+create or replace function public.reject_deleted_document() returns trigger language plpgsql security definer set search_path='' as $$
 begin
  perform pg_advisory_xact_lock(hashtextextended(new.document_path,0));
  if not exists(select 1 from storage.objects where bucket_id='formations' and name=new.document_path) or exists(select 1 from public.formation_cleanup where path=new.document_path) then raise exception 'PDF deleted. Upload a new PDF';end if;
  return new;
 end;$$;
+drop trigger if exists reject_deleted_document on public.segments;
 create trigger reject_deleted_document before insert or update of document_path on public.segments for each row execute function public.reject_deleted_document();
 
-create function public.delete_team_item(target_id uuid,expected_version integer,item_kind text) returns void language plpgsql security definer set search_path='' as $$
+create or replace function public.delete_team_item(target_id uuid,expected_version integer,item_kind text) returns void language plpgsql security definer set search_path='' as $$
 begin
  if not public.admin_member() then raise exception 'Admin access required';end if;
  if target_id is null or expected_version is null or expected_version<1 then raise exception 'Invalid item version';end if;
@@ -96,19 +115,20 @@ end;$$;
 
 -- Payment manage/delete RPC remains the audited operation from migration0008.
 -- Hide retained deleted charges/history even from app admins; owner database backup retains them.
-drop policy payment_read on public.payment_charges;
+drop policy if exists payment_read on public.payment_charges;
 create policy payment_read on public.payment_charges for select to authenticated using(status<>'deleted' and (public.admin_member() or (public.active_member() and member_id=auth.uid())));
-drop policy payment_audit_read on public.payment_audit;
+drop policy if exists payment_audit_read on public.payment_audit;
 create policy payment_audit_read on public.payment_audit for select to authenticated using(exists(select 1 from public.payment_charges c where c.id=charge_id and c.status<>'deleted' and (public.admin_member() or (public.active_member() and c.member_id=auth.uid()))));
-create function public.purge_deleted_payment_jobs() returns trigger language plpgsql security definer set search_path='' as $$
+create or replace function public.purge_deleted_payment_jobs() returns trigger language plpgsql security definer set search_path='' as $$
 begin
  if new.status='deleted' then delete from public.push_jobs where source_kind='payment' and source_id=new.id;end if;
  return new;
 end;$$;
+drop trigger if exists purge_deleted_payment_jobs on public.payment_charges;
 create trigger purge_deleted_payment_jobs after update of status on public.payment_charges for each row execute function public.purge_deleted_payment_jobs();
 revoke all on function public.purge_deleted_payment_jobs() from public,anon,authenticated;
-create function public.formation_cleanup_jobs() returns setof text language sql security definer set search_path='' as $$select path from public.formation_cleanup order by created_at,path limit 40$$;
-create function public.finish_formation_cleanup(p_paths text[]) returns void language sql security definer set search_path='' as $$delete from public.formation_cleanup where path=any(p_paths)$$;
+create or replace function public.formation_cleanup_jobs() returns setof text language sql security definer set search_path='' as $$select path from public.formation_cleanup order by created_at,path limit 40$$;
+create or replace function public.finish_formation_cleanup(p_paths text[]) returns void language sql security definer set search_path='' as $$delete from public.formation_cleanup where path=any(p_paths)$$;
 revoke all on function public.purge_deleted_source(),public.queue_segment_documents(),public.reject_deleted_document(),public.delete_team_item(uuid,integer,text),public.formation_cleanup_jobs(),public.finish_formation_cleanup(text[]) from public,anon,authenticated;
 grant execute on function public.delete_team_item(uuid,integer,text) to authenticated;
 grant execute on function public.formation_cleanup_jobs(),public.finish_formation_cleanup(text[]) to service_role;
@@ -121,7 +141,7 @@ delete from public.push_jobs where source_kind='payment' and source_id in(select
 delete from public.featured_events where deleted_at is not null;
 
 -- No admin bypass can expose deleted or unreferenced formation files.
-drop policy formations_read on storage.objects;
+drop policy if exists formations_read on storage.objects;
 create policy formations_read on storage.objects for select to authenticated using(
  bucket_id='formations' and storage.allow_only_operation('object.get_authenticated') and public.active_member() and
  (exists(select 1 from public.segments s where s.document_path=storage.objects.name and s.archived_at is null)
@@ -147,3 +167,5 @@ begin
  end if;return new;
 end;$$;
 
+
+commit;

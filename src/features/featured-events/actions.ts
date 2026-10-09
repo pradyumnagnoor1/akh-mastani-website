@@ -1,4 +1,5 @@
 "use server";
+import { validateExpiration } from "@/features/expiration/policy";
 import { requireAdmin } from "@/features/identity/session";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -34,12 +35,13 @@ export async function saveFeaturedEvent(
       event_time: event.time,
       event_location: event.location,
       event_url: event.link,
+      expiration_date: validateExpiration(value(form, "expiration_date")),
     };
   } catch (error) {
     return { error: (error as Error).message };
   }
   try {
-    const { error } = await supabase.rpc("save_featured_event", args);
+    const { error } = await supabase.rpc("save_featured_event_expiring", args);
     if (error)
       return {
         error:

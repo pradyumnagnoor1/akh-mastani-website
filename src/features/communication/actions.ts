@@ -1,4 +1,6 @@
 "use server";
+import { validateExpiration } from "@/features/expiration/policy";
+import { scheduleImageCleanup } from "@/features/announcement-images/cleanup";
 import { schedulePush } from "@/features/notifications/dispatch";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -42,8 +44,10 @@ export async function saveCommunication(
   const { supabase } = await requireAdmin();
   let args;
   let input;
+  let expiration;
   try {
     args = revision(form);
+    expiration = validateExpiration(value(form, "expiration_date"));
     input = validatePost({
       title: value(form, "title"),
       body: value(form, "body"),
@@ -58,7 +62,7 @@ export async function saveCommunication(
     return { error: (error as Error).message };
   }
   try {
-    const { error } = await supabase.rpc("save_communication", {
+    const { error } = await supabase.rpc("save_communication_media", {
       ...args,
       post_kind: input.kind,
       post_title: input.title,
@@ -68,11 +72,15 @@ export async function saveCommunication(
       recipient_ids: input.members,
       source_id: input.sourceId,
       due_date: input.dueOn,
+      expiration_date: expiration,
+      image_object: value(form, "image_path") || null,
+      image_alt: value(form, "image_description"),
     });
     if (error) return failure(error);
   } catch {
     return failure({ message: "Network error" });
   }
+  scheduleImageCleanup();
   schedulePush();
   revalidatePath("/", "layout");
   redirect(
@@ -129,6 +137,7 @@ export async function manageCommunication(
   schedulePush();
   revalidatePath("/", "layout");
   if (operation === "delete") {
+    scheduleImageCleanup();
     redirect(value(form, "kind") === "task" ? "/todos" : "/announcements");
   }
   return { error: null, success: "Reopened." };

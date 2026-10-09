@@ -792,3 +792,148 @@ it.each(["dropped", "cascade"])(
     }
   },
 );
+
+it("0009 replay preserves live records, retained payment evidence and queued file cleanup", async () => {
+  await save();
+  const id = await charge();
+  await manage(id, 1, "delete");
+  await db.exec("reset role");
+  await db.query(
+    "insert into formation_cleanup(path) values('admin/queued.pdf')",
+  );
+  const audit = (await db.query("select * from payment_audit order by id"))
+    .rows;
+  await db.exec(
+    readFileSync("supabase/migrations/0009_permanent_deletion.sql", "utf8"),
+  );
+  expect(
+    (await db.query("select * from payment_audit order by id")).rows,
+  ).toEqual(audit);
+  expect((await db.query("select path from formation_cleanup")).rows).toEqual([
+    { path: "admin/queued.pdf" },
+  ]);
+  await user(admin);
+  expect((await db.query("select id from featured_events")).rows).toEqual([
+    { id: event },
+  ]);
+  expect((await db.query("select * from payment_charges")).rows).toHaveLength(
+    0,
+  );
+  await db.query("select delete_team_item($1,1,'featured')", [event]);
+  expect((await db.query("select * from featured_events")).rows).toHaveLength(
+    0,
+  );
+});
+it("0009 resumes the existing-table interruption and restores missing triggers/policies", async () => {
+  const recovery = await database(false);
+  try {
+    await recovery.exec(
+      "create table public.formation_cleanup(path text primary key,created_at timestamptz not null default now())",
+    );
+    const sql = readFileSync(
+      "supabase/migrations/0009_permanent_deletion.sql",
+      "utf8",
+    );
+    await recovery.exec(sql);
+    await recovery.exec(
+      "drop trigger purge_post on communication_posts;drop policy payment_read on payment_charges;",
+    );
+    await recovery.exec(sql);
+    expect(
+      (
+        await recovery.query(
+          "select tgname from pg_trigger where tgname='purge_post'",
+        )
+      ).rows,
+    ).toHaveLength(1);
+    expect(
+      (
+        await recovery.query(
+          "select policyname from pg_policies where tablename='payment_charges' and policyname='payment_read'",
+        )
+      ).rows,
+    ).toHaveLength(1);
+  } finally {
+    await recovery.close();
+  }
+});
+it("0009 refuses before changing0010 expiration rules or a partial0010 column", async () => {
+  const recovery = await database();
+  try {
+    const sql = readFileSync(
+      "supabase/migrations/0009_permanent_deletion.sql",
+      "utf8",
+    );
+    await recovery.exec(
+      "alter table communication_posts add column expires_at timestamptz",
+    );
+    await expect(recovery.exec(sql)).rejects.toThrow(/Migration0010/);
+    await recovery.exec(
+      "rollback;alter table communication_posts drop column expires_at",
+    );
+    await recovery.exec(
+      readFileSync(
+        "supabase/migrations/0010_announcement_images_expiration.sql",
+        "utf8",
+      ),
+    );
+    const before = (
+      await recovery.query(
+        "select pg_get_functiondef('public.push_job_valid(public.push_jobs,uuid)'::regprocedure) definition",
+      )
+    ).rows;
+    await expect(recovery.exec(sql)).rejects.toThrow(/Migration0010/);
+    await recovery.exec("rollback");
+    expect(
+      (
+        await recovery.query(
+          "select pg_get_functiondef('public.push_job_valid(public.push_jobs,uuid)'::regprocedure) definition",
+        )
+      ).rows,
+    ).toEqual(before);
+  } finally {
+    await recovery.close();
+  }
+});
+it("0009 rolls back earlier policy/function/FK changes when later DDL fails", async () => {
+  const recovery = await database(false);
+  try {
+    await recovery.exec(
+      "create table formation_cleanup(path text primary key)",
+    );
+    const before = (
+      await recovery.query(
+        "select qual from pg_policies where tablename='payment_charges' and policyname='payment_read'",
+      )
+    ).rows;
+    await expect(
+      recovery.exec(
+        readFileSync("supabase/migrations/0009_permanent_deletion.sql", "utf8"),
+      ),
+    ).rejects.toThrow(/created_at/);
+    await recovery.exec("rollback");
+    expect(
+      (
+        await recovery.query(
+          "select qual from pg_policies where tablename='payment_charges' and policyname='payment_read'",
+        )
+      ).rows,
+    ).toEqual(before);
+    expect(
+      (
+        await recovery.query(
+          "select to_regprocedure('public.delete_team_item(uuid,integer,text)') fn",
+        )
+      ).rows[0],
+    ).toEqual({ fn: null });
+    expect(
+      (
+        await recovery.query(
+          "select confdeltype from pg_constraint where conname='featured_event_audit_event_id_fkey'",
+        )
+      ).rows[0],
+    ).toEqual({ confdeltype: "a" });
+  } finally {
+    await recovery.close();
+  }
+});

@@ -8,6 +8,7 @@ export type FeaturedEvent = {
   event_link: string;
   version: number;
   deleted_at: string | null;
+  expires_at?: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;

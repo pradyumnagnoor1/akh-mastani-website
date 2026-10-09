@@ -1,6 +1,8 @@
 "use client";
 import Link from "next/link";
 import { useActionState, useState } from "react";
+import { ExpirationField } from "./expiration-field";
+import { AnnouncementImageUpload } from "./announcement-image-upload";
 import { SubmitButton } from "./forms";
 import {
   saveCommunication,
@@ -117,6 +119,7 @@ export function CommunicationForm({
   const [state, action] = useActionState(saveCommunication, {
     error: null,
   } as FormState);
+  const [imageBusy, setImageBusy] = useState(false);
   const [title, setTitle] = useState(post?.title ?? "");
   const [body, setBody] = useState(post?.body ?? "");
   const [due, setDue] = useState(post?.due_on ?? "");
@@ -176,6 +179,16 @@ export function CommunicationForm({
           maxLength={6000}
           required
         />
+        <ExpirationField expiresAt={post?.expires_at} />
+        {kind === "announcement" && (
+          <AnnouncementImageUpload
+            id={id}
+            version={post?.version ?? 0}
+            initialPath={post?.image_path}
+            initialDescription={post?.image_description}
+            onBusyChange={setImageBusy}
+          />
+        )}
         {kind === "task" && (
           <>
             <label htmlFor="due-on">Due date (optional)</label>
@@ -311,7 +324,7 @@ export function CommunicationForm({
       </section>
       <Feedback state={state} />
       <div className="actions">
-        <SubmitButton disabled={!post && !recipients.length}>
+        <SubmitButton disabled={imageBusy || (!post && !recipients.length)}>
           {post
             ? "Save changes"
             : kind === "task"

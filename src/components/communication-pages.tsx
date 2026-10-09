@@ -1,3 +1,6 @@
+/* eslint-disable react-hooks/purity -- Server components capture request time for expiration timers. */
+import { Expires } from "./expires";
+import { AnnouncementImage } from "./announcement-image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import {
@@ -82,48 +85,55 @@ export async function CommunicationList({
           const rows = recipients.filter((r) => r.post_id === post.id);
           const done = completed(post, rows, member.id);
           return (
-            <article className="panel communication-card" key={post.id}>
-              <div className="communication-meta">
-                <span className="badge">
-                  {post.completion_mode === "shared"
-                    ? "Shared completion"
-                    : kind === "announcement"
-                      ? "Individual acknowledgment"
-                      : "Individual completion"}
-                </span>
-                {post.due_on && (
-                  <span className="muted small">Due {post.due_on}</span>
-                )}
-                {tab === "mine" && (
-                  <span className={`badge ${done ? "success" : ""}`}>
-                    {done
-                      ? kind === "task"
-                        ? "Done"
-                        : "Read"
-                      : kind === "task"
-                        ? "To do"
-                        : "Unread"}
+            <Expires key={post.id} at={post.expires_at} serverNow={Date.now()}>
+              <article className="panel communication-card">
+                <div className="communication-meta">
+                  <span className="badge">
+                    {post.completion_mode === "shared"
+                      ? "Shared completion"
+                      : kind === "announcement"
+                        ? "Individual acknowledgment"
+                        : "Individual completion"}
                   </span>
-                )}
-              </div>
-              <h2>
-                <Link href={`${base}/${post.id}`}>{post.title}</Link>
-              </h2>
-              <p className="muted communication-excerpt">{post.body}</p>
-              <div className="communication-footer">
-                <span className="small muted">
-                  {post.audience_label}
-                  {member.is_admin &&
-                    ` · ${post.completion_mode === "shared" ? (post.completed_at ? rows.length : 0) : rows.filter((r) => r.completed_at).length}/${rows.length} ${kind === "task" ? "done" : "read"}`}
-                </span>
-                <Link
-                  className="text-button accent"
-                  href={`${base}/${post.id}`}
-                >
-                  View {kind === "task" ? "to-do" : "announcement"} →
-                </Link>
-              </div>
-            </article>
+                  {post.due_on && (
+                    <span className="muted small">Due {post.due_on}</span>
+                  )}
+                  {tab === "mine" && (
+                    <span className={`badge ${done ? "success" : ""}`}>
+                      {done
+                        ? kind === "task"
+                          ? "Done"
+                          : "Read"
+                        : kind === "task"
+                          ? "To do"
+                          : "Unread"}
+                    </span>
+                  )}
+                </div>
+                <h2>
+                  <Link href={`${base}/${post.id}`}>{post.title}</Link>
+                </h2>
+                <p className="muted communication-excerpt">{post.body}</p>
+                <AnnouncementImage
+                  id={post.id}
+                  path={post.image_path}
+                  description={post.image_description}
+                />
+                <div className="communication-footer">
+                  <span className="small muted">
+                    {post.audience_label}
+                    {member.is_admin &&
+                      ` · ${post.completion_mode === "shared" ? (post.completed_at ? rows.length : 0) : rows.filter((r) => r.completed_at).length}/${rows.length} ${kind === "task" ? "done" : "read"}`}
+                  </span>
+                  <Link
+                    className="text-button accent"
+                    href={`${base}/${post.id}`}
+                  >
+                    View {kind === "task" ? "to-do" : "announcement"} →
+                  </Link>
+                </div>
+              </article>
+            </Expires>
           );
         })}
         {!items.length && (
@@ -169,7 +179,7 @@ export async function CommunicationDetail({
       names.set(person.id, person.display_name ?? "Team member");
   }
   return (
-    <>
+    <Expires at={post.expires_at} serverNow={Date.now()} detail>
       <div className="page-heading">
         <Link className="back-link" href={base}>
           ← {headingFor(kind)}
@@ -189,6 +199,11 @@ export async function CommunicationDetail({
       </div>
       <section className="panel">
         <p className="communication-body">{post.body}</p>
+        <AnnouncementImage
+          id={post.id}
+          path={post.image_path}
+          description={post.image_description}
+        />
         {post.completion_mode === "shared" && post.completed_at ? (
           <p className="notice">
             Completed by {names.get(post.completed_by ?? "") ?? "a teammate"}{" "}
@@ -279,7 +294,7 @@ export async function CommunicationDetail({
           </div>
         </section>
       )}
-    </>
+    </Expires>
   );
 }
 export async function CommunicationEditor({
@@ -305,17 +320,19 @@ export async function CommunicationEditor({
         </h1>
         <p className="muted">Enter the details and select recipients.</p>
       </div>
-      <CommunicationForm
-        {...editor}
-        id={id ?? crypto.randomUUID()}
-        kind={kind}
-        post={post}
-        assigned={
-          data?.recipients
-            .filter((r) => r.post_id === id)
-            .map((r) => r.member_id) ?? []
-        }
-      />
+      <Expires at={post?.expires_at} serverNow={Date.now()} detail>
+        <CommunicationForm
+          {...editor}
+          id={id ?? crypto.randomUUID()}
+          kind={kind}
+          post={post}
+          assigned={
+            data?.recipients
+              .filter((r) => r.post_id === id)
+              .map((r) => r.member_id) ?? []
+          }
+        />
+      </Expires>
     </>
   );
 }

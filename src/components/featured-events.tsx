@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/purity -- Server components capture request time for expiration timers. */
+import { Expires } from "./expires";
 import Link from "next/link";
 import { featuredData } from "@/features/featured-events/queries";
 import { featuredWhen } from "@/features/featured-events/types";
@@ -39,36 +41,38 @@ export async function FeaturedEvents({
       </div>
       {!visible.length && <p className="muted">No upcoming featured events.</p>}
       {visible.map((event) => (
-        <article className={compact ? "stack" : "panel stack"} key={event.id}>
-          <p className="eyebrow">{featuredWhen(event)}</p>
-          <h3>{event.title}</h3>
-          {event.location && <p className="muted">{event.location}</p>}
-          {!compact && event.description && (
-            <p className="preserve-lines">{event.description}</p>
-          )}
-          {!compact && event.event_link && (
-            <a
-              className="text-button"
-              href={event.event_link}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Event details{" "}
-              <span className="sr-only">(opens in a new tab)</span>→
-            </a>
-          )}
-          {!compact && member.is_admin && (
-            <div className="actions">
-              <Link
-                href={`/calendar/featured/${event.id}/edit`}
-                className="button secondary"
+        <Expires key={event.id} at={event.expires_at} serverNow={Date.now()}>
+          <article className={compact ? "stack" : "panel stack"}>
+            <p className="eyebrow">{featuredWhen(event)}</p>
+            <h3>{event.title}</h3>
+            {event.location && <p className="muted">{event.location}</p>}
+            {!compact && event.description && (
+              <p className="preserve-lines">{event.description}</p>
+            )}
+            {!compact && event.event_link && (
+              <a
+                className="text-button"
+                href={event.event_link}
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                Edit event
-              </Link>
-              <DeleteFeaturedEvent event={event} />
-            </div>
-          )}
-        </article>
+                Event details{" "}
+                <span className="sr-only">(opens in a new tab)</span>→
+              </a>
+            )}
+            {!compact && member.is_admin && (
+              <div className="actions">
+                <Link
+                  href={`/calendar/featured/${event.id}/edit`}
+                  className="button secondary"
+                >
+                  Edit event
+                </Link>
+                <DeleteFeaturedEvent event={event} />
+              </div>
+            )}
+          </article>
+        </Expires>
       ))}
       {!compact &&
         member.is_admin &&
@@ -78,19 +82,25 @@ export async function FeaturedEvents({
             {events
               .filter((e) => !e.deleted_at && e.event_date < today)
               .map((event) => (
-                <article className="panel stack" key={event.id}>
-                  <h3>{event.title}</h3>
-                  <p className="muted">{featuredWhen(event)}</p>
-                  <div className="actions">
-                    <Link
-                      className="button secondary"
-                      href={`/calendar/featured/${event.id}/edit`}
-                    >
-                      Edit event
-                    </Link>
-                    <DeleteFeaturedEvent event={event} />
-                  </div>
-                </article>
+                <Expires
+                  key={event.id}
+                  at={event.expires_at}
+                  serverNow={Date.now()}
+                >
+                  <article className="panel stack">
+                    <h3>{event.title}</h3>
+                    <p className="muted">{featuredWhen(event)}</p>
+                    <div className="actions">
+                      <Link
+                        className="button secondary"
+                        href={`/calendar/featured/${event.id}/edit`}
+                      >
+                        Edit event
+                      </Link>
+                      <DeleteFeaturedEvent event={event} />
+                    </div>
+                  </article>
+                </Expires>
               ))}
           </details>
         )}
