@@ -1,5 +1,5 @@
 import "server-only";
-import { sign } from "node:crypto";
+import { createHmac, timingSafeEqual, sign } from "node:crypto";
 import { DRIVE_ID, type DriveFolder, type ChoreoVideo } from "./policy";
 import type { ChoreoConfig } from "./config";
 
@@ -26,10 +26,17 @@ const object = (value: unknown): value is Record<string, unknown> =>
 const encode = (value: unknown) =>
   Buffer.from(JSON.stringify(value)).toString("base64url");
 
-/** Traverse only real folders below the configured root; no arbitrary client-supplied file IDs. */
+export type ChoreoBrowse = {
+  path?: string[];
+  cursor?: string;
+  rootVideos?: boolean;
+};
+
+/** Browse one folder, verifying each ancestor under the configured team root. */
 export async function fetchChoreo(
   config: ChoreoConfig,
   transport: typeof fetch = fetch,
+  browse: ChoreoBrowse = {},
 ) {
   const deadline = AbortSignal.timeout(20000);
   async function request(
@@ -97,6 +104,7 @@ export async function fetchChoreo(
     path: string,
     parameters: Record<string, string>,
     folder: DriveFolder,
+    resourceFolders: DriveFolder[] = [folder],
   ) {
     const url = new URL(`https://www.googleapis.com/drive/v3/${path}`);
     Object.entries(parameters).forEach(([key, value]) =>
@@ -105,9 +113,11 @@ export async function fetchChoreo(
     if (config.apiKey) url.searchParams.set("key", config.apiKey);
     const headers: Record<string, string> = {};
     if (token) headers.Authorization = `Bearer ${token}`;
-    if (folder.resourceKey)
-      headers["X-Goog-Drive-Resource-Keys"] =
-        `${folder.id}/${folder.resourceKey}`;
+    const resourceKeys = resourceFolders
+      .filter((item) => item.resourceKey)
+      .map((item) => `${item.id}/${item.resourceKey}`)
+      .join(",");
+    if (resourceKeys) headers["X-Goog-Drive-Resource-Keys"] = resourceKeys;
     return request(url, { headers });
   }
   const root = await drive(
@@ -122,97 +132,207 @@ export async function fetchChoreo(
     typeof root.name !== "string"
   )
     throw new ChoreoFailure("authorization");
-  const queue = [{ ...config.folder, name: "" }];
-  const visited = new Set([config.folder.id]);
-  const videos: ChoreoVideo[] = [];
-  const seenVideos = new Set<string>();
-  let pages = 0;
-  for (let offset = 0; offset < queue.length; offset++) {
-    const folder = queue[offset];
-    let pageToken = "";
+  const path = browse.path ?? [];
+  if (
+    path.length > 10 ||
+    path.some((id) => !DRIVE_ID.test(id)) ||
+    new Set(path).size !== path.length ||
+    path.includes(config.folder.id)
+  )
+    throw new ChoreoFailure("authorization");
+  const breadcrumbs = [{ ...config.folder, name: root.name.slice(0, 200) }];
+  for (const id of path) {
+    const parent = breadcrumbs[breadcrumbs.length - 1];
+    const item = await drive(
+      `files/${id}`,
+      {
+        fields: "id,name,mimeType,trashed,parents,resourceKey",
+        supportsAllDrives: "true",
+      },
+      parent,
+    );
+    if (
+      item.id !== id ||
+      item.trashed ||
+      item.mimeType !== "application/vnd.google-apps.folder" ||
+      typeof item.name !== "string" ||
+      !Array.isArray(item.parents) ||
+      !item.parents.includes(parent.id) ||
+      (item.resourceKey !== undefined &&
+        (typeof item.resourceKey !== "string" ||
+          !/^[A-Za-z0-9_-]{1,200}$/.test(item.resourceKey)))
+    )
+      throw new ChoreoFailure("authorization");
+    breadcrumbs.push({
+      id,
+      name: item.name.slice(0, 200),
+      resourceKey: item.resourceKey as string | undefined,
+    });
+  }
+  const folder = breadcrumbs[breadcrumbs.length - 1];
+  // Bind opaque Drive page tokens to this folder and connection. Client input
+  // cannot substitute a token from a different private Drive query.
+  const signingKey =
+    config.oauth?.clientSecret ?? config.account?.key ?? config.apiKey;
+  if (!signingKey) throw new ChoreoFailure("authorization");
+  const scope = JSON.stringify([config.folder.id, path, !!browse.rootVideos]);
+  const signature = (payload: string) =>
+    createHmac("sha256", signingKey)
+      .update(`choreo-page:${scope}:${payload}`)
+      .digest();
+  let pageToken = "";
+  if (browse.cursor) {
+    if (browse.cursor.length > 6000) throw new ChoreoFailure("authorization");
+    const [payload, mac, extra] = browse.cursor.split(".");
+    if (
+      !payload ||
+      !mac ||
+      extra !== undefined ||
+      !/^[A-Za-z0-9_-]+$/.test(payload) ||
+      !/^[A-Za-z0-9_-]+$/.test(mac)
+    )
+      throw new ChoreoFailure("authorization");
+    const supplied = Buffer.from(mac, "base64url");
+    const expected = signature(payload);
+    if (
+      supplied.length !== expected.length ||
+      !timingSafeEqual(supplied, expected)
+    )
+      throw new ChoreoFailure("authorization");
+    pageToken = Buffer.from(payload, "base64url").toString();
+    if (!pageToken || pageToken.length > 4096)
+      throw new ChoreoFailure("authorization");
+  }
+  const valid = (item: unknown): Record<string, unknown> => {
+    if (
+      !object(item) ||
+      typeof item.id !== "string" ||
+      !DRIVE_ID.test(item.id) ||
+      typeof item.name !== "string" ||
+      typeof item.mimeType !== "string" ||
+      (item.resourceKey !== undefined &&
+        (typeof item.resourceKey !== "string" ||
+          !/^[A-Za-z0-9_-]{1,200}$/.test(item.resourceKey)))
+    )
+      throw new ChoreoFailure("invalid_response");
+    return item;
+  };
+  async function list(videos: boolean, token = "", size = videos ? 5 : 100) {
+    const result = await drive(
+      "files",
+      {
+        q: `'${folder.id}' in parents and trashed = false and ${videos ? "mimeType contains 'video/'" : "mimeType = 'application/vnd.google-apps.folder'"}`,
+        fields:
+          "nextPageToken,incompleteSearch,files(id,name,mimeType,trashed,resourceKey,videoMediaMetadata(durationMillis))",
+        pageSize: String(size),
+        orderBy: videos ? "createdTime desc,name_natural" : "name_natural",
+        spaces: "drive",
+        supportsAllDrives: "true",
+        includeItemsFromAllDrives: "true",
+        ...(token ? { pageToken: token } : {}),
+      },
+      folder,
+    );
+    if (
+      !Array.isArray(result.files) ||
+      result.incompleteSearch === true ||
+      result.files.length > size ||
+      (result.nextPageToken !== undefined &&
+        (typeof result.nextPageToken !== "string" ||
+          result.nextPageToken.length > 4096))
+    )
+      throw new ChoreoFailure("invalid_response");
+    return {
+      files: result.files.map(valid),
+      next:
+        typeof result.nextPageToken === "string" ? result.nextPageToken : "",
+    };
+  }
+  async function readFolders() {
+    const children: (DriveFolder & { name: string })[] = [];
+    const seen = new Set<string>();
     const tokens = new Set<string>();
+    let next = "";
+    let pages = 0;
     do {
-      if (++pages > 30) throw new ChoreoFailure("capacity");
-      const result = await drive(
-        "files",
-        {
-          q: `'${folder.id}' in parents and trashed = false and (mimeType contains 'video/' or mimeType = 'application/vnd.google-apps.folder')`,
-          fields:
-            "nextPageToken,incompleteSearch,files(id,name,mimeType,trashed,resourceKey,videoMediaMetadata(durationMillis))",
-          pageSize: "100",
-          orderBy: "name_natural",
-          spaces: "drive",
-          supportsAllDrives: "true",
-          includeItemsFromAllDrives: "true",
-          ...(pageToken ? { pageToken } : {}),
-        },
-        folder,
-      );
-      if (!Array.isArray(result.files) || result.incompleteSearch === true)
-        throw new ChoreoFailure("invalid_response");
-      if (result.files.length > 100) throw new ChoreoFailure("capacity");
+      if (++pages > 10) throw new ChoreoFailure("capacity");
+      const result = await list(false, next);
       for (const item of result.files) {
         if (
-          !object(item) ||
-          typeof item.id !== "string" ||
-          !DRIVE_ID.test(item.id) ||
-          typeof item.name !== "string" ||
-          typeof item.mimeType !== "string" ||
-          (item.resourceKey !== undefined &&
-            (typeof item.resourceKey !== "string" ||
-              !/^[A-Za-z0-9_-]{1,200}$/.test(item.resourceKey)))
+          item.trashed ||
+          item.mimeType !== "application/vnd.google-apps.folder" ||
+          seen.has(item.id as string)
         )
-          throw new ChoreoFailure("invalid_response");
-        if (item.trashed) continue;
-        const name = item.name.slice(0, 200);
-        const key =
-          typeof item.resourceKey === "string" ? item.resourceKey : undefined;
-        if (
-          item.mimeType === "application/vnd.google-apps.folder" &&
-          !visited.has(item.id)
-        ) {
-          if (queue.length >= 20) throw new ChoreoFailure("capacity");
-          visited.add(item.id);
-          queue.push({
-            id: item.id,
-            resourceKey: key,
-            name: [folder.name, name].filter(Boolean).join(" / "),
-          });
-        } else if (
-          item.mimeType.startsWith("video/") &&
-          !seenVideos.has(item.id)
-        ) {
-          if (videos.length >= 1000) throw new ChoreoFailure("capacity");
-          seenVideos.add(item.id);
-          const milliseconds = object(item.videoMediaMetadata)
-            ? Number(item.videoMediaMetadata.durationMillis)
-            : NaN;
-          const seconds = Math.floor(milliseconds / 1000);
-          videos.push({
-            id: item.id,
-            name,
-            folder: folder.name,
-            resourceKey: key,
-            ...(Number.isFinite(seconds) && seconds >= 0
-              ? {
-                  duration: `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`,
-                }
-              : {}),
-          });
-        }
+          continue;
+        seen.add(item.id as string);
+        children.push({
+          id: item.id as string,
+          name: (item.name as string).slice(0, 200),
+          resourceKey: item.resourceKey as string | undefined,
+        });
       }
-      if (
-        result.nextPageToken !== undefined &&
-        (typeof result.nextPageToken !== "string" ||
-          result.nextPageToken.length > 4096)
-      )
-        throw new ChoreoFailure("invalid_response");
-      pageToken =
-        typeof result.nextPageToken === "string" ? result.nextPageToken : "";
-      if (pageToken && tokens.has(pageToken))
-        throw new ChoreoFailure("invalid_response");
-      tokens.add(pageToken);
-    } while (pageToken);
+      next = result.next;
+      if (next && tokens.has(next)) throw new ChoreoFailure("invalid_response");
+      tokens.add(next);
+    } while (next);
+    return children;
   }
-  return { name: root.name.slice(0, 200), videos, folder: config.folder };
+  async function readVideos() {
+    if (!path.length && !browse.rootVideos) {
+      if (pageToken) throw new ChoreoFailure("authorization");
+      return {
+        videos: [] as ChoreoVideo[],
+        nextCursor: undefined as string | undefined,
+      };
+    }
+    const videos: ChoreoVideo[] = [];
+    const seen = new Set<string>();
+    const tokens = new Set<string>();
+    let next = pageToken;
+    let pages = 0;
+    do {
+      if (++pages > 10) throw new ChoreoFailure("capacity");
+      const result = await list(true, next, 5 - videos.length);
+      for (const item of result.files) {
+        if (
+          item.trashed ||
+          !(item.mimeType as string).startsWith("video/") ||
+          seen.has(item.id as string)
+        )
+          continue;
+        seen.add(item.id as string);
+        const seconds = Math.floor(
+          Number(
+            object(item.videoMediaMetadata)
+              ? item.videoMediaMetadata.durationMillis
+              : NaN,
+          ) / 1000,
+        );
+        videos.push({
+          id: item.id as string,
+          name: (item.name as string).slice(0, 200),
+          folder: folder.name,
+          resourceKey: item.resourceKey as string | undefined,
+          ...(Number.isFinite(seconds) && seconds >= 0
+            ? {
+                duration: `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`,
+              }
+            : {}),
+        });
+      }
+      next = result.next;
+      if (next && (tokens.has(next) || next === pageToken))
+        throw new ChoreoFailure("invalid_response");
+      tokens.add(next);
+    } while (next && videos.length < 5);
+    const payload = next ? Buffer.from(next).toString("base64url") : "";
+    return {
+      videos,
+      nextCursor: payload
+        ? `${payload}.${signature(payload).toString("base64url")}`
+        : undefined,
+    };
+  }
+  const [folders, videoPage] = await Promise.all([readFolders(), readVideos()]);
+  return { name: folder.name, folder, breadcrumbs, folders, ...videoPage };
 }

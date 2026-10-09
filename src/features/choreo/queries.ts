@@ -3,9 +3,9 @@ import { cache } from "react";
 import { requireMember } from "@/features/identity/session";
 import { parseDriveFolder, TEAM_CHOREO_FOLDER } from "./policy";
 import { choreoConfig } from "./config";
-import { fetchChoreo, ChoreoFailure } from "./google";
+import { fetchChoreo, ChoreoFailure, type ChoreoBrowse } from "./google";
 
-export const choreoData = cache(async () => {
+export const choreoData = cache(async (browse: ChoreoBrowse = {}) => {
   const { member } = await requireMember();
   let folder = parseDriveFolder(TEAM_CHOREO_FOLDER);
   try {
@@ -18,7 +18,7 @@ export const choreoData = cache(async () => {
       member,
       folder,
       status: "ready" as const,
-      library: await fetchChoreo(config),
+      library: await fetchChoreo(config, fetch, browse),
     };
   } catch (error) {
     return {

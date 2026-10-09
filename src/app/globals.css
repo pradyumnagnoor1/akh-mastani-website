@@ -1674,6 +1674,7 @@ html {
   min-width: 0;
 }
 .choreo-card h2,
+.choreo-card h3,
 .choreo-player h2 {
   overflow-wrap: anywhere;
   font-size: 22px;

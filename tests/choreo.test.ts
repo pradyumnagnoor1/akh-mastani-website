@@ -56,12 +56,17 @@ it("keeps missing and malformed connection configuration honest", () => {
   vi.stubEnv("GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON", "{invalid}");
   expect(() => choreoConfig()).toThrow();
 });
-it("reads all pages/subfolders, filters deleted/non-video files and never returns credentials", async () => {
-  const responses = [
-    root,
-    {
+it("opens with folders only and never traverses or reads their videos", async () => {
+  const calls: URL[] = [];
+  const transport: typeof fetch = async (input) => {
+    const url = new URL(String(input));
+    calls.push(url);
+    if (url.pathname.endsWith(folder.id)) return json(root);
+    expect(url.searchParams.get("q")).toContain(
+      "mimeType = 'application/vnd.google-apps.folder'",
+    );
+    return json({
       files: [
-        video(),
         {
           id: "child_folder_123",
           name: "Finale",
@@ -69,51 +74,145 @@ it("reads all pages/subfolders, filters deleted/non-video files and never return
           resourceKey: "child_key",
         },
       ],
-      nextPageToken: "next",
-    },
-    {
-      files: [
-        video("second_file_123", "Practice"),
-        { ...video("deleted_file_123"), trashed: true },
-        { id: "document_file_123", name: "Notes", mimeType: "application/pdf" },
-      ],
-    },
-    { files: [video("finale_file_123", "Finale run")] },
-  ];
-  const transport = vi.fn(async () =>
-    json(responses.shift()),
-  ) as unknown as typeof fetch;
+    });
+  };
   const result = await fetchChoreo(config, transport);
-  expect(result.videos.map((v) => [v.name, v.folder, v.duration])).toEqual([
-    ["Opening", "", "2:05"],
-    ["Practice", "", "2:05"],
-    ["Finale run", "Finale", "2:05"],
+  expect(calls).toHaveLength(2);
+  expect(result.videos).toHaveLength(0);
+  expect(result.folders).toEqual([
+    { id: "child_folder_123", name: "Finale", resourceKey: "child_key" },
   ]);
   expect(JSON.stringify(result)).not.toContain(config.apiKey);
-  const calls = vi.mocked(transport).mock.calls;
-  expect(new URL(String(calls[1][0])).searchParams.get("q")).toContain(
-    "trashed = false",
-  );
-  expect(new URL(String(calls[2][0])).searchParams.get("pageToken")).toBe(
-    "next",
-  );
-  expect(calls[3][1]?.headers).toMatchObject({
-    "X-Goog-Drive-Resource-Keys": "child_folder_123/child_key",
-  });
-  for (const [, init] of calls)
+});
+it("reads only five newest videos in a verified child and binds pagination to that folder", async () => {
+  const requests: URL[] = [];
+  const child = "child_folder_123";
+  const transport: typeof fetch = async (input, init) => {
+    const url = new URL(String(input));
+    requests.push(url);
     expect(init).toMatchObject({ cache: "no-store", redirect: "error" });
+    if (url.pathname.endsWith(folder.id)) return json(root);
+    if (url.pathname.endsWith(child))
+      return json({
+        id: child,
+        name: "Finale",
+        mimeType: "application/vnd.google-apps.folder",
+        parents: [folder.id],
+        resourceKey: "child_key",
+      });
+    expect(init?.headers).toMatchObject({
+      "X-Goog-Drive-Resource-Keys": `${child}/child_key`,
+    });
+    const q = url.searchParams.get("q")!;
+    expect(q).toContain(`'${child}' in parents and trashed = false`);
+    if (!q.includes("video/")) return json({ files: [] });
+    expect(url.searchParams.get("pageSize")).toBe("5");
+    expect(url.searchParams.get("orderBy")).toBe(
+      "createdTime desc,name_natural",
+    );
+    return json({
+      files: Array.from({ length: 5 }, (_, i) =>
+        video(
+          `video_file_${url.searchParams.has("pageToken") ? "old" : "new"}_${i}`,
+        ),
+      ),
+      ...(url.searchParams.has("pageToken")
+        ? {}
+        : { nextPageToken: "older-page" }),
+    });
+  };
+  const first = await fetchChoreo(config, transport, { path: [child] });
+  expect(first.videos).toHaveLength(5);
+  expect(first.videos[0]).toMatchObject({ folder: "Finale", duration: "2:05" });
+  expect(first.nextCursor).toBeTruthy();
+  const second = await fetchChoreo(config, transport, {
+    path: [child],
+    cursor: first.nextCursor,
+  });
+  expect(second.videos).toHaveLength(5);
+  expect(second.videos[0].id).toContain("old");
+  expect(second.nextCursor).toBeUndefined();
+  expect(
+    requests.filter((url) => url.searchParams.has("pageToken")),
+  ).toHaveLength(1);
+  await expect(
+    fetchChoreo(config, transport, {
+      cursor: first.nextCursor,
+      rootVideos: true,
+    }),
+  ).rejects.toThrow();
+  await expect(
+    fetchChoreo(config, transport, {
+      path: [child],
+      cursor: first.nextCursor + "tampered",
+    }),
+  ).rejects.toThrow();
+});
+it("rejects unrelated, moved, trashed and shortcut folders before listing private contents", async () => {
+  for (const change of [
+    { parents: ["outside_folder_123"] },
+    { trashed: true },
+    { mimeType: "application/vnd.google-apps.shortcut" },
+  ]) {
+    const transport = vi.fn(async (input) =>
+      json(
+        String(input).includes(`files/${folder.id}`)
+          ? root
+          : {
+              id: "child_folder_123",
+              name: "Child",
+              mimeType: "application/vnd.google-apps.folder",
+              parents: [folder.id],
+              ...change,
+            },
+      ),
+    ) as unknown as typeof fetch;
+    await expect(
+      fetchChoreo(config, transport, { path: ["child_folder_123"] }),
+    ).rejects.toThrow(/attention/);
+    expect(vi.mocked(transport).mock.calls).toHaveLength(2);
+  }
 });
 it("reflects removals on the next read without retaining a stale snapshot", async () => {
   let removed = false;
-  const transport: typeof fetch = async (input) =>
-    json(
-      new URL(String(input)).pathname.endsWith(folder.id)
+  const transport: typeof fetch = async (input) => {
+    const url = new URL(String(input));
+    return json(
+      url.pathname.endsWith(folder.id)
         ? root
-        : { files: removed ? [] : [video()] },
+        : {
+            files:
+              url.searchParams.get("q")?.includes("video/") && !removed
+                ? [video()]
+                : [],
+          },
     );
-  expect((await fetchChoreo(config, transport)).videos).toHaveLength(1);
+  };
+  expect(
+    (await fetchChoreo(config, transport, { rootVideos: true })).videos,
+  ).toHaveLength(1);
   removed = true;
-  expect((await fetchChoreo(config, transport)).videos).toHaveLength(0);
+  expect(
+    (await fetchChoreo(config, transport, { rootVideos: true })).videos,
+  ).toHaveLength(0);
+});
+it("fills short/empty video pages without displaying more than five", async () => {
+  let page = 0;
+  const transport: typeof fetch = async (input) => {
+    const url = new URL(String(input));
+    if (url.pathname.endsWith(folder.id)) return json(root);
+    if (!url.searchParams.get("q")?.includes("video/"))
+      return json({ files: [] });
+    page++;
+    if (page === 1) return json({ files: [], nextPageToken: "next" });
+    return json({
+      files: Array.from({ length: 5 }, (_, i) => video(`video_file_${i}_123`)),
+    });
+  };
+  expect(
+    (await fetchChoreo(config, transport, { rootVideos: true })).videos,
+  ).toHaveLength(5);
+  expect(page).toBe(2);
 });
 it.each([401, 403, 404, 429, 503])(
   "fails closed for provider status%i without exposing private response bodies",
@@ -211,7 +310,9 @@ it("uses an owner TAMU OAuth grant for a domain-restricted folder, without retur
     });
     return json(calls === 2 ? root : { files: [video()] });
   };
-  const result = await fetchChoreo({ folder, oauth }, transport);
+  const result = await fetchChoreo({ folder, oauth }, transport, {
+    rootVideos: true,
+  });
   expect(result.videos).toHaveLength(1);
   for (const secret of [
     oauth.clientSecret,
@@ -231,4 +332,41 @@ it("configures the owner's supplied folder by default and rejects partial OAuth 
   });
   vi.stubEnv("GOOGLE_DRIVE_REFRESH_TOKEN", "");
   expect(() => choreoConfig()).toThrow();
+});
+
+it("validates every ancestor for deeply nested folders without traversing siblings", async () => {
+  const calls: string[] = [];
+  const transport: typeof fetch = async (input) => {
+    const url = new URL(String(input));
+    calls.push(url.pathname);
+    if (url.pathname.endsWith(folder.id)) return json(root);
+    if (url.pathname.endsWith("child_folder_123"))
+      return json({
+        id: "child_folder_123",
+        name: "Showcase",
+        mimeType: "application/vnd.google-apps.folder",
+        parents: [folder.id],
+      });
+    if (url.pathname.endsWith("deep_folder_123"))
+      return json({
+        id: "deep_folder_123",
+        name: "Finale",
+        mimeType: "application/vnd.google-apps.folder",
+        parents: ["child_folder_123"],
+      });
+    expect(url.searchParams.get("q")).toContain("'deep_folder_123' in parents");
+    return json({
+      files: url.searchParams.get("q")?.includes("video/") ? [video()] : [],
+    });
+  };
+  const result = await fetchChoreo(config, transport, {
+    path: ["child_folder_123", "deep_folder_123"],
+  });
+  expect(result.breadcrumbs.map((item) => item.name)).toEqual([
+    "Choreo",
+    "Showcase",
+    "Finale",
+  ]);
+  expect(result.videos).toHaveLength(1);
+  expect(calls).toHaveLength(5);
 });

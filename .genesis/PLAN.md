@@ -83,3 +83,7 @@ Shared all-page30second visible/online soft refresh, resume/reconnect update, to
 
 ## User-authorized extension — Admin CRUD and featured events
 Explicit communication/group delete controls preserve archival history. Add auditable outstandingpayment edit/delete, title-bearing announcement pushes and custom featured-event CRUD with Calendar/Home display. Freeze src/**, additive migration0008, tests/config, docs andGenesisnotes. Current requirement supersedes original immutable-outstandingcharge and fullygenericannouncement preview assumptions. Settledamounts/UUID/audit/permission invariants remain. Local evidence checkpoints/crud-featured.md; apply migration0008 before code deployment and verify actualpush separately.
+
+
+## User-authorized extension — Choreo folder browsing
+Root lists folders first without scanning their videos. Verified nested folder navigation lists at most five newest videos per batch, signed next-page cursors, breadcrumbs and direct-root-video fallback. Route/Suspense loading gives feedback while Google responds. Locally complete with independent APPROVE,246 tests and2 desktop/mobile delayed-upstream flows. No migration/configuration additions; redeploy and verify hosted behavior. See checkpoints/choreo-folders.md.

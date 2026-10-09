@@ -14,7 +14,7 @@ export function ChoreoVideos({ videos }: { videos: ChoreoVideo[] }) {
     <>
       <div className="section-toolbar choreo-toolbar">
         <div className="choreo-search">
-          <label htmlFor="choreo-search">Find a video</label>
+          <label htmlFor="choreo-search">Find a loaded video</label>
           <input
             id="choreo-search"
             type="search"
@@ -24,7 +24,8 @@ export function ChoreoVideos({ videos }: { videos: ChoreoVideo[] }) {
           />
         </div>
         <span className="muted small">
-          {videos.length} {videos.length === 1 ? "video" : "videos"}
+          {videos.length} {videos.length === 1 ? "video" : "videos"} · Newest
+          first on this page
         </span>
       </div>
       {selected && (
@@ -116,7 +117,7 @@ export function ChoreoVideos({ videos }: { videos: ChoreoVideo[] }) {
           </h2>
           <p className="muted">
             {videos.length
-              ? "Try another name or folder."
+              ? "Try another name on this page."
               : "Videos added to the team Drive folder will appear here."}
           </p>
         </section>

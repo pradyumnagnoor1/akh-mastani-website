@@ -14,3 +14,5 @@ Append-only. One line per ingest / update / query / lint. Parse with:
 - 2026-10-08: Mobile UI extension locally complete and independently approved. Bundled fonts, simple dark/violet controls, mobile tabs/drawer, Home brand links and nested selection; permissions/data retained.77 full browser flows +7 final focused checks and212 tests pass. docs/mobile-ui.md; physicaliPhone hosted acceptance pending.
 
 - 2026-10-08: User clarified payment-history exception and provided TAMU-only Choreo folder. Migration0009 permanently deletes other entities, hides retained deleted financial evidence with RLS, durable PDF cleanup and no archive/restore. Choreo server OAuth metadata-only listing/player implemented; docs/choreo.md and docs/management.md cover external setup. Independent review APPROVE; live migration/Drive/playback unverified.
+
+- 2026-10-08: Choreo folders-first/max-five pagination and immediate loading locally complete; fresh review APPROVE,246 tests and2 desktop/mobile delayed Drive browser flows. User reports earlier live connection works. Redeploy code, then verify hosted speed.

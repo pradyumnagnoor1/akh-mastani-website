@@ -35,11 +35,27 @@ test("choreo: protected desktop/mobile navigation, video search/playback and liv
   await page.goto("/home");
   if (info.project.name === "mobile")
     await page.getByRole("button", { name: "More pages" }).click();
+  await request.get(
+    "http://127.0.0.1:3201/fixture/choreo?state=populated&delay=1500",
+  );
   await page.getByRole("link", { name: "Choreo", exact: true }).click();
+  await expect(page).toHaveURL(/\/choreo$/);
+  await expect(page.getByRole("status")).toContainText(/Loading/);
   await expect(
     page.getByRole("heading", { name: "Choreo", exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("3 videos", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Finale Open folder" }),
+  ).toBeVisible();
+  await expect(page.locator(".choreo-card")).toHaveCount(1);
+  await expect(page.locator("iframe")).toHaveCount(0);
+  await page.getByRole("link", { name: "Finale Open folder" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Choreo", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("5 videos · Newest first on this page", { exact: true }),
+  ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Finale rehearsal", exact: true }),
   ).toBeVisible();
@@ -54,7 +70,9 @@ test("choreo: protected desktop/mobile navigation, video search/playback and liv
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
-  await page.getByLabel("Find a video", { exact: true }).fill("Finale");
+  await page
+    .getByLabel("Find a loaded video", { exact: true })
+    .fill("Finale rehearsal");
   await expect(page.locator(".choreo-card")).toHaveCount(1);
   await page.route("https://drive.google.com/file/d/**", (route) =>
     route.fulfill({
@@ -69,7 +87,15 @@ test("choreo: protected desktop/mobile navigation, video search/playback and liv
     "src",
     "https://drive.google.com/file/d/finale_fixture_123/preview",
   );
-  await page.getByLabel("Find a video", { exact: true }).fill("");
+  await page.getByLabel("Find a loaded video", { exact: true }).fill("");
+  await page.getByRole("link", { name: "Next 5 videos", exact: true }).click();
+  await expect(page.locator(".choreo-card")).toHaveCount(2);
+  await expect(page.locator("iframe")).toHaveCount(0);
+  await expect(
+    page.getByRole("link", { name: "Next 5 videos", exact: true }),
+  ).toHaveCount(0);
+  await page.getByRole("link", { name: "Newest videos", exact: true }).click();
+  await expect(page.locator(".choreo-card")).toHaveCount(5);
   await request.get("http://127.0.0.1:3201/fixture/choreo?state=empty");
   await page.reload();
   await expect(

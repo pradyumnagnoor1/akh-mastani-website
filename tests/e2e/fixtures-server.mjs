@@ -210,6 +210,7 @@ function session(person) {
 const sessions = new Map([...users.values()].map((p) => [p.id, session(p)]));
 let queue = Promise.resolve();
 let choreoEmpty = false;
+let choreoDelay = 0;
 function locked(work) {
   const result = queue.then(work);
   queue = result.catch(() => {});
@@ -231,9 +232,15 @@ createServer((req, res) => {
     }
     if (url.pathname === "/fixture/choreo") {
       choreoEmpty = url.searchParams.get("state") === "empty";
+      choreoDelay = Math.min(2000, Number(url.searchParams.get("delay")) || 0);
       return json({ ready: true });
     }
     if (url.pathname === "/fixture/drive/drive/v3/files/folder_fixture_123") {
+      if (choreoDelay) {
+        const delay = choreoDelay;
+        choreoDelay = 0;
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
       return json({
         id: "folder_fixture_123",
         name: "Mastani Choreo",
@@ -241,37 +248,47 @@ createServer((req, res) => {
         trashed: false,
       });
     }
+    if (url.pathname === "/fixture/drive/drive/v3/files/nested_fixture_123") {
+      return json({
+        id: "nested_fixture_123",
+        name: "Finale",
+        mimeType: "application/vnd.google-apps.folder",
+        parents: ["folder_fixture_123"],
+      });
+    }
     if (url.pathname === "/fixture/drive/drive/v3/files") {
       if (choreoEmpty) return json({ files: [] });
-      const nested = url.searchParams.get("q")?.includes("nested_fixture_123");
+      const query = url.searchParams.get("q") ?? "";
+      const nested = query.includes("nested_fixture_123");
+      if (!query.includes("video/"))
+        return json({
+          files: nested
+            ? []
+            : [
+                {
+                  id: "nested_fixture_123",
+                  name: "Finale",
+                  mimeType: "application/vnd.google-apps.folder",
+                },
+              ],
+        });
+      const videos = Array.from({ length: 7 }, (_, index) => ({
+        id:
+          index === 0 ? "finale_fixture_123" : `practice_fixture_${index}_123`,
+        name:
+          index === 0
+            ? "Finale rehearsal"
+            : `Practice ${index} — walkthrough with counts and transitions for the upcoming showcase`,
+        mimeType: "video/mp4",
+        videoMediaMetadata: { durationMillis: "145000" },
+      }));
+      const offset = Number(url.searchParams.get("pageToken") ?? 0);
+      const size = Number(url.searchParams.get("pageSize") ?? 5);
       return json({
-        files: nested
-          ? [
-              {
-                id: "finale_fixture_123",
-                name: "Finale rehearsal",
-                mimeType: "video/mp4",
-                videoMediaMetadata: { durationMillis: "145000" },
-              },
-            ]
-          : [
-              {
-                id: "opening_fixture_123",
-                name: "Opening — full team choreography",
-                mimeType: "video/mp4",
-                videoMediaMetadata: { durationMillis: "125000" },
-              },
-              {
-                id: "practice_fixture_123",
-                name: "Practice walkthrough with counts and transitions for the upcoming showcase",
-                mimeType: "video/mp4",
-              },
-              {
-                id: "nested_fixture_123",
-                name: "Finale",
-                mimeType: "application/vnd.google-apps.folder",
-              },
-            ],
+        files: videos.slice(offset, offset + size),
+        ...(offset + size < videos.length
+          ? { nextPageToken: String(offset + size) }
+          : {}),
       });
     }
     // Browser test fixtures ask this isolated process for synthetic cookies, never the app.
