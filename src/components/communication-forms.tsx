@@ -98,7 +98,7 @@ function PeoplePicker({
   );
 }
 export function CommunicationForm({
-  id,
+  id: initialId,
   kind,
   post,
   people,
@@ -118,6 +118,9 @@ export function CommunicationForm({
   assignments: Assignment[];
   assigned?: string[];
 }) {
+  // Server refreshes may supply a new UUID; uploads belong to this mounted draft.
+  const [draftId] = useState(initialId);
+  const id = post?.id ?? draftId;
   const [state, action] = useActionState(saveCommunication, {
     error: null,
   } as FormState);

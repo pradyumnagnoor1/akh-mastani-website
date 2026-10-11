@@ -15,6 +15,11 @@ function revision(form: FormData) {
   return { target_id: id, expected_version: version };
 }
 function failure(error: { message: string; code?: string }): FormState {
+  if (error.message === "Image unavailable. Choose it again")
+    return {
+      error:
+        "The attached image is no longer available. Remove it and choose it again, then publish. Your message has been kept.",
+    };
   if (error.code === "23505")
     return {
       error: "That item or group already exists. Refresh before trying again.",

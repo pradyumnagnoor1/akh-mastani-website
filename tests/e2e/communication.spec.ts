@@ -212,7 +212,9 @@ test("communication: phone image compression, private display, removal and mount
   context,
   request,
 }, info) => {
+  test.setTimeout(90_000);
   await login(context, request, "admin");
+  await page.clock.install();
   const sharp = (await import("sharp")).default;
   const png = await sharp({
     create: { width: 2400, height: 1800, channels: 3, background: "red" },
@@ -231,6 +233,24 @@ test("communication: phone image compression, private display, removal and mount
     .getByLabel("Image description (optional)")
     .fill("Practice formation");
   await page.getByLabel("Expiration date (optional)").fill("2027-12-12");
+  // A background RSC refresh must keep the draft ID used to reserve its image.
+  const draftId = await page.locator('input[name="id"]').inputValue();
+  await page
+    .getByRole("heading", { name: "New announcement", exact: true })
+    .click();
+  // Force a refresh of the mounted editor, as a session-cookie update can do.
+  // Clear only the polling guard; keep the React draft and attachment mounted.
+  await page.evaluate(() =>
+    document
+      .querySelector("form.communication-form")!
+      .dispatchEvent(new Event("reset", { bubbles: true })),
+  );
+  const refreshed = page.waitForResponse((response) =>
+    response.url().includes("_rsc="),
+  );
+  await page.clock.runFor(30_100);
+  await refreshed;
+  await expect(page.locator('input[name="id"]')).toHaveValue(draftId);
   await page.getByRole("button", { name: "Publish announcement" }).click();
   await expect(
     page.getByRole("heading", { name: title, exact: true }),
