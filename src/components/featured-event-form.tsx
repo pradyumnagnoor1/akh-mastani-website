@@ -3,18 +3,20 @@ import { ExpirationField } from "./expiration-field";
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { SubmitButton } from "./forms";
+import { DraftConflict, useDraftRevision } from "./draft-revision";
 import {
   saveFeaturedEvent,
   deleteFeaturedEvent,
 } from "@/features/featured-events/actions";
 import type { FeaturedEvent } from "@/features/featured-events/types";
 export function FeaturedEventForm({
-  id,
+  id: initialId,
   event,
 }: {
   id: string;
   event?: FeaturedEvent;
 }) {
+  const { id, version, changed } = useDraftRevision(initialId, event?.version);
   const [state, action] = useActionState(saveFeaturedEvent, { error: null });
   const [fields, setFields] = useState({
     title: event?.title ?? "",
@@ -26,12 +28,13 @@ export function FeaturedEventForm({
   });
   return (
     <form
+      data-mutation-form
       action={action}
       className="panel stack"
       onReset={(e) => e.preventDefault()}
     >
       <input type="hidden" name="id" value={id} />
-      <input type="hidden" name="version" value={event?.version ?? 0} />
+      <input type="hidden" name="version" value={version} />
       <label htmlFor="event-title">Event title</label>
       <input
         id="event-title"
@@ -88,13 +91,14 @@ export function FeaturedEventForm({
         onChange={(e) => setFields({ ...fields, event_link: e.target.value })}
       />
       <ExpirationField expiresAt={event?.expires_at} />
+      <DraftConflict changed={changed} />
       {state.error && (
         <p className="notice error" role="alert">
           {state.error}
         </p>
       )}
       <div className="actions">
-        <SubmitButton>
+        <SubmitButton disabled={changed}>
           {event ? "Save event" : "Create featured event"}
         </SubmitButton>
         <Link href="/calendar" className="button secondary">
@@ -108,6 +112,7 @@ export function DeleteFeaturedEvent({ event }: { event: FeaturedEvent }) {
   const [state, action] = useActionState(deleteFeaturedEvent, { error: null });
   return (
     <form
+      data-mutation-form
       action={action}
       onSubmit={(e) => {
         if (!window.confirm(`Delete “${event.title}” from the calendar?`))

@@ -1,12 +1,13 @@
 "use client";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 import {
   saveName,
   manageMember,
   type FormState,
 } from "@/features/identity/actions";
-import type { Member } from "@/features/identity/policy";
+import { normalizeName, type Member } from "@/features/identity/policy";
+import { DraftConflict } from "./draft-revision";
 export function SubmitButton({
   children,
   pendingText = "Saving…",
@@ -35,7 +36,12 @@ export function NameForm() {
     error: null,
   } as FormState);
   return (
-    <form action={action} className="stack">
+    <form
+      data-mutation-form
+      action={action}
+      className="stack"
+      onReset={(e) => e.preventDefault()}
+    >
       <label htmlFor="name">Your name on the roster</label>
       <input
         id="name"
@@ -67,11 +73,26 @@ export function MemberControls({
   member: Member;
   self: boolean;
 }) {
-  const [state, action] = useActionState(manageMember, {
-    error: null,
-  } as FormState);
+  const [originalName, setOriginalName] = useState(member.display_name ?? "");
+  const nameChanged = originalName !== (member.display_name ?? "");
+  const [state, action] = useActionState(
+    async (previous: FormState, data: FormData) => {
+      const result = await manageMember(previous, data);
+      if (result.success && data.get("operation") === "name")
+        setOriginalName(normalizeName(String(data.get("name") ?? "")));
+      return result;
+    },
+    {
+      error: null,
+    } as FormState,
+  );
   return (
-    <form action={action} className="member-controls">
+    <form
+      data-mutation-form
+      action={action}
+      className="member-controls"
+      onReset={(e) => e.preventDefault()}
+    >
       <input type="hidden" name="id" value={member.id} />
       <label className="sr-only" htmlFor={`name-${member.id}`}>
         Name for {member.email}
@@ -84,7 +105,9 @@ export function MemberControls({
         maxLength={80}
       />
       <div className="actions">
-        <ActionButton value="name">Correct name</ActionButton>
+        <ActionButton value="name" disabled={nameChanged}>
+          Correct name
+        </ActionButton>
         {!self && member.display_name && (
           <ActionButton
             value={member.status === "active" ? "inactive" : "active"}
@@ -93,6 +116,7 @@ export function MemberControls({
           </ActionButton>
         )}
       </div>
+      <DraftConflict changed={nameChanged} />
       {state.error && (
         <p className="error small" role="alert">
           {state.error}
@@ -109,9 +133,11 @@ export function MemberControls({
 function ActionButton({
   value,
   children,
+  disabled = false,
 }: {
   value: string;
   children: React.ReactNode;
+  disabled?: boolean;
 }) {
   const { pending } = useFormStatus();
   return (
@@ -120,7 +146,7 @@ function ActionButton({
       name="operation"
       value={value}
       className="button secondary small"
-      disabled={pending}
+      disabled={disabled || pending}
       data-refresh-busy={pending}
     >
       {pending ? "Saving…" : children}

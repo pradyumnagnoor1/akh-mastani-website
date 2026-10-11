@@ -19,7 +19,7 @@ export default async function Page({
       <div className="page-heading">
         <h1>Edit featured event</h1>
       </div>
-      <FeaturedEventForm key={`${id}-${event.version}`} id={id} event={event} />
+      <FeaturedEventForm key={id} id={id} event={event} />
     </Expires>
   );
 }

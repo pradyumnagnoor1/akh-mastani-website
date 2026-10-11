@@ -8,6 +8,8 @@ do $$begin
   raise exception 'Apply complete migrations0009 and0010 before0011';
  end if;
 end;$$;
+
+
 drop policy if exists formations_read on storage.objects;
 create policy formations_read on storage.objects for select to authenticated using(
  bucket_id='formations' and storage.allow_any_operation(array['object.get_authenticated','object.get_authenticated_info']) and public.active_member() and

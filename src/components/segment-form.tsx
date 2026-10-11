@@ -10,8 +10,9 @@ import {
 import { validatePdf, type Segment } from "@/features/segments/policy";
 import type { Member } from "@/features/identity/policy";
 import { SubmitButton } from "./forms";
+import { DraftConflict, useDraftRevision } from "./draft-revision";
 export function SegmentForm({
-  id,
+  id: initialId,
   segment,
   people,
   assigned,
@@ -21,6 +22,10 @@ export function SegmentForm({
   people: Member[];
   assigned: string[];
 }) {
+  const { id, version, changed } = useDraftRevision(
+    initialId,
+    segment?.version,
+  );
   const [name, setName] = useState(segment?.name ?? "");
   const [selected, setSelected] = useState(new Set(assigned));
   const [query, setQuery] = useState("");
@@ -51,9 +56,14 @@ export function SegmentForm({
     });
   }
   return (
-    <form action={action} className="segment-editor">
+    <form
+      data-mutation-form
+      action={action}
+      className="segment-editor"
+      onReset={(e) => e.preventDefault()}
+    >
       <input type="hidden" name="id" value={id} />
-      <input type="hidden" name="version" value={segment?.version ?? 0} />
+      <input type="hidden" name="version" value={version} />
       {[...selected].map((id) => (
         <input key={id} type="hidden" name="members" value={id} />
       ))}
@@ -165,13 +175,14 @@ export function SegmentForm({
           can be assigned just like any other dancer.
         </p>
       </section>
+      <DraftConflict changed={changed} />
       {state.error && (
         <p className="notice error" role="alert">
           {state.error}
         </p>
       )}
       <div className="actions">
-        <SubmitButton pendingText="Saving segment…">
+        <SubmitButton pendingText="Saving segment…" disabled={changed}>
           {segment ? "Save changes" : "Create segment"}{" "}
           <span aria-hidden="true">→</span>
         </SubmitButton>
@@ -190,7 +201,12 @@ export function RemoveSegmentForm({ segment }: { segment: Segment }) {
   return (
     <details className="remove-segment">
       <summary>Remove this segment</summary>
-      <form action={action} className="stack">
+      <form
+        data-mutation-form
+        action={action}
+        className="stack"
+        onReset={(e) => e.preventDefault()}
+      >
         <input type="hidden" name="id" value={segment.id} />
         <input type="hidden" name="version" value={segment.version} />
         <p>

@@ -221,6 +221,7 @@ function session(person) {
 }
 const sessions = new Map([...users.values()].map((p) => [p.id, session(p)]));
 let queue = Promise.resolve();
+let mutationFault = null;
 let choreoEmpty = false;
 let choreoDelay = 0;
 function locked(work) {
@@ -236,6 +237,43 @@ createServer((req, res) => {
       res.end(JSON.stringify(data));
     }
     if (url.pathname === "/health") return json({ ready: true });
+    if (url.pathname === "/fixture/reset-refresh-audit") {
+      await db.exec("reset role");
+      for (const [table, column, kind] of [
+        ["segments", "name", "segment"],
+        ["featured_events", "title", "featured"],
+      ])
+        for (const prefix of ["Stable", "Lost", "Concurrent", "Rejected"])
+          await db.query(
+            `delete from public.${table} where ${column} like $1`,
+            [`${prefix} ${kind} %`],
+          );
+      return json({ ready: true });
+    }
+    if (url.pathname === "/fixture/mutation-fault") {
+      const parts = [];
+      for await (const chunk of req) parts.push(chunk);
+      mutationFault = JSON.parse(Buffer.concat(parts).toString());
+      return json({ ready: true });
+    }
+    if (url.pathname === "/fixture/records") {
+      const entities = {
+        announcement: ["communication_posts", "title"],
+        task: ["communication_posts", "title"],
+        segment: ["segments", "name"],
+        group: ["communication_groups", "name"],
+        payment: ["payment_charges", "reason"],
+        featured: ["featured_events", "title"],
+      };
+      const entity = entities[url.searchParams.get("kind")];
+      if (!entity) return json({ error: "Unknown fixture entity" }, 400);
+      await db.exec("reset role");
+      const rows = await db.query(
+        `select * from public.${entity[0]} where ${entity[1]}=$1`,
+        [url.searchParams.get("title")],
+      );
+      return json(rows.rows);
+    }
     if (url.pathname === "/fixture/expire") {
       await db.exec("reset role");
       await db.query(
@@ -473,13 +511,30 @@ createServer((req, res) => {
           ],
           archive_communication_group: ["target_id", "expected_version"],
           archive_segment: ["target_id", "expected_version"],
+          correct_member_name: ["target_id", "member_name"],
         };
         if (!functions[name])
           return json({ message: "Unsupported fixture function" }, 404);
+        const fault =
+          mutationFault?.rpc === name &&
+          mutationFault.id === (args.target_id ?? args.batch_id)
+            ? mutationFault
+            : null;
+        if (fault) mutationFault = null;
+        if (fault?.mode === "reject")
+          return json(
+            { code: "P0001", message: "Fixture rejected mutation" },
+            400,
+          );
         const result = await db.query(
           `select public.${name}(${functions[name].map((_, i) => "$" + (i + 1)).join(",")})`,
           functions[name].map((key) => args[key]),
         );
+        if (fault?.mode === "lost-response")
+          return json(
+            { code: "08006", message: "Fixture lost committed response" },
+            503,
+          );
         if (
           ["formation_cleanup_jobs", "announcement_cleanup_jobs"].includes(name)
         )

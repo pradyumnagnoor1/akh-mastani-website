@@ -1,4 +1,5 @@
 # Integration and operations
+Mounted draft/save reliability conventions and October audit evidence: docs/save-refresh-reliability.md and checkpoints/save-refresh-audit.md. New UUIDs and optimistic revisions remain paired with draft fields through refresh; uncertain outcomes require checking the saved record before retrying. Code redeploy required; no audit migration.
 Member profiles at /roster/[id] reuse permanent IDs and segment assignments. Self/admin can see private assigned communication and payments; other dancers get directory/segment information only. AdminSummary is additional to personal Home.
 
 /api/admin/export requires current admin and session RLS, explicitly allowlists operational columns, reads stable pages, rejects partial/error and caps3MB data/20k rows per table. Includes payment audit, excludes other audits/Auth/PDF bytes/credentials; not a consistent recovery backup. /api/health is liveness only with no dependencies/secret data. CI runs full check/public/team browser suites.

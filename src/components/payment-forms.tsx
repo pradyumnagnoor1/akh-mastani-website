@@ -4,6 +4,7 @@ import { SavedGroupOptions } from "./saved-group-options";
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { SubmitButton } from "./forms";
+import { DraftConflict, useDraftRevision } from "./draft-revision";
 import {
   issuePayments,
   transitionPayment,
@@ -98,7 +99,7 @@ function PeoplePicker({
 }
 
 export function PaymentForm({
-  id,
+  id: initialId,
   people,
   groups,
   groupMembers,
@@ -112,6 +113,7 @@ export function PaymentForm({
   segments: Segment[];
   assignments: Assignment[];
 }) {
+  const { id } = useDraftRevision(initialId);
   const [state, action] = useActionState(issuePayments, {
     error: null,
   } as FormState);
@@ -142,7 +144,12 @@ export function PaymentForm({
     cents = parseAmount(amount);
   } catch {}
   return (
-    <form action={action} className="segment-editor communication-form">
+    <form
+      data-mutation-form
+      action={action}
+      className="segment-editor communication-form"
+      onReset={(e) => e.preventDefault()}
+    >
       <input type="hidden" name="id" value={id} />
       {(audience === "individual" || audience === "selected"
         ? selected
@@ -289,6 +296,7 @@ export function PaymentAction({
   charge: Charge;
   operation: "report" | "verify" | "reject" | "waive";
 }) {
+  const { version, changed } = useDraftRevision(charge.id, charge.version);
   const [state, action] = useActionState(transitionPayment, {
     error: null,
   } as FormState);
@@ -300,10 +308,15 @@ export function PaymentAction({
     waive: "Waive charge",
   }[operation];
   return (
-    <form action={action} className="panel stack payment-action">
+    <form
+      data-mutation-form
+      action={action}
+      className="panel stack payment-action"
+      onReset={(e) => e.preventDefault()}
+    >
       <h3>{label}</h3>
       <input type="hidden" name="id" value={charge.id} />
-      <input type="hidden" name="version" value={charge.version} />
+      <input type="hidden" name="version" value={version} />
       <input type="hidden" name="operation" value={operation} />
       {operation !== "verify" && (
         <>
@@ -331,13 +344,15 @@ export function PaymentAction({
           from outstanding balances.
         </p>
       )}
-      <SubmitButton>{label}</SubmitButton>
+      <DraftConflict changed={changed} />
+      <SubmitButton disabled={changed}>{label}</SubmitButton>
       <Feedback state={state} />
     </form>
   );
 }
 
 export function EditPaymentForm({ charge }: { charge: Charge }) {
+  const { version, changed } = useDraftRevision(charge.id, charge.version);
   const [state, action] = useActionState(managePaymentCharge, {
     error: null,
   } as FormState);
@@ -350,12 +365,13 @@ export function EditPaymentForm({ charge }: { charge: Charge }) {
   });
   return (
     <form
+      data-mutation-form
       action={action}
       className="panel stack"
       onReset={(e) => e.preventDefault()}
     >
       <input type="hidden" name="id" value={charge.id} />
-      <input type="hidden" name="version" value={charge.version} />
+      <input type="hidden" name="version" value={version} />
       <input type="hidden" name="operation" value="update" />
       <label htmlFor="charge-reason">Reason</label>
       <input
@@ -416,9 +432,10 @@ export function EditPaymentForm({ charge }: { charge: Charge }) {
         The assigned dancer stays the same. Previous details remain in payment
         activity.
       </p>
+      <DraftConflict changed={changed} />
       <Feedback state={state} />
       <div className="actions">
-        <SubmitButton>Save charge</SubmitButton>
+        <SubmitButton disabled={changed}>Save charge</SubmitButton>
         <Link href={`/payments/${charge.id}`} className="button secondary">
           Cancel
         </Link>
@@ -427,12 +444,14 @@ export function EditPaymentForm({ charge }: { charge: Charge }) {
   );
 }
 export function DeletePaymentForm({ charge }: { charge: Charge }) {
+  const { version, changed } = useDraftRevision(charge.id, charge.version);
   const [state, action] = useActionState(managePaymentCharge, {
     error: null,
   } as FormState);
   const [note, setNote] = useState("");
   return (
     <form
+      data-mutation-form
       action={action}
       onReset={(e) => e.preventDefault()}
       className="panel stack"
@@ -447,7 +466,7 @@ export function DeletePaymentForm({ charge }: { charge: Charge }) {
     >
       <h3>Delete charge</h3>
       <input type="hidden" name="id" value={charge.id} />
-      <input type="hidden" name="version" value={charge.version} />
+      <input type="hidden" name="version" value={version} />
       <input type="hidden" name="operation" value="delete" />
       <label htmlFor="delete-charge-note">Deletion reason</label>
       <textarea
@@ -459,7 +478,10 @@ export function DeletePaymentForm({ charge }: { charge: Charge }) {
         maxLength={1000}
         rows={2}
       />
-      <SubmitButton className="button secondary">Delete charge</SubmitButton>
+      <DraftConflict changed={changed} />
+      <SubmitButton disabled={changed} className="button secondary">
+        Delete charge
+      </SubmitButton>
       <Feedback state={state} />
     </form>
   );

@@ -80,7 +80,7 @@ export default async function Page({
       <div className="payment-actions">
         {charge.member_id === member.id && charge.status === "unpaid" && (
           <PaymentAction
-            key={`report-${charge.version}`}
+            key={`report-${charge.id}`}
             charge={charge}
             operation="report"
           />
@@ -88,12 +88,12 @@ export default async function Page({
         {member.is_admin && charge.status === "reported" && (
           <>
             <PaymentAction
-              key={`verify-${charge.version}`}
+              key={`verify-${charge.id}`}
               charge={charge}
               operation="verify"
             />
             <PaymentAction
-              key={`reject-${charge.version}`}
+              key={`reject-${charge.id}`}
               charge={charge}
               operation="reject"
             />
@@ -102,14 +102,14 @@ export default async function Page({
         {member.is_admin &&
           (charge.status === "unpaid" || charge.status === "reported") && (
             <PaymentAction
-              key={`waive-${charge.version}`}
+              key={`waive-${charge.id}`}
               charge={charge}
               operation="waive"
             />
           )}
       </div>
       {member.is_admin && (
-        <DeletePaymentForm key={`delete-${charge.version}`} charge={charge} />
+        <DeletePaymentForm key={`delete-${charge.id}`} charge={charge} />
       )}
       <section className="panel stack">
         <h2>Payment activity</h2>

@@ -61,7 +61,12 @@ export function PageRefresh() {
         target instanceof HTMLTextAreaElement ||
         target instanceof HTMLSelectElement
       ) {
-        if (target.form && target.form.method !== "get") dirty.add(target.form);
+        if (
+          target.form &&
+          (target.form.method !== "get" ||
+            target.form.hasAttribute("data-mutation-form"))
+        )
+          dirty.add(target.form);
       }
     };
     const reset = (event: Event) => {

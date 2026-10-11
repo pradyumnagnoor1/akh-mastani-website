@@ -6,6 +6,7 @@ import { useActionState, useState } from "react";
 import { ExpirationField } from "./expiration-field";
 import { AnnouncementImageUpload } from "./announcement-image-upload";
 import { SubmitButton } from "./forms";
+import { DraftConflict, useDraftRevision } from "./draft-revision";
 import {
   saveCommunication,
   completeCommunication,
@@ -118,9 +119,7 @@ export function CommunicationForm({
   assignments: Assignment[];
   assigned?: string[];
 }) {
-  // Server refreshes may supply a new UUID; uploads belong to this mounted draft.
-  const [draftId] = useState(initialId);
-  const id = post?.id ?? draftId;
+  const { id, version, changed } = useDraftRevision(initialId, post?.version);
   const [state, action] = useActionState(saveCommunication, {
     error: null,
   } as FormState);
@@ -152,9 +151,14 @@ export function CommunicationForm({
   const recipients = active.filter((p) => ids.includes(p.id));
   const base = kind === "task" ? "/todos" : "/announcements";
   return (
-    <form action={action} className="segment-editor communication-form">
+    <form
+      data-mutation-form
+      action={action}
+      className="segment-editor communication-form"
+      onReset={(e) => e.preventDefault()}
+    >
       <input type="hidden" name="id" value={id} />
-      <input type="hidden" name="version" value={post?.version ?? 0} />
+      <input type="hidden" name="version" value={version} />
       <input type="hidden" name="kind" value={kind} />
       {(audience === "individual" || audience === "selected"
         ? post
@@ -189,7 +193,8 @@ export function CommunicationForm({
         {kind === "announcement" && (
           <AnnouncementImageUpload
             id={id}
-            version={post?.version ?? 0}
+            version={version}
+            disabled={changed}
             initialPath={post?.image_path}
             initialDescription={post?.image_description}
             onBusyChange={setImageBusy}
@@ -333,9 +338,12 @@ export function CommunicationForm({
           </>
         )}
       </section>
+      <DraftConflict changed={changed} />
       <Feedback state={state} />
       <div className="actions">
-        <SubmitButton disabled={imageBusy || (!post && !recipients.length)}>
+        <SubmitButton
+          disabled={changed || imageBusy || (!post && !recipients.length)}
+        >
           {post
             ? "Save changes"
             : kind === "task"
@@ -366,6 +374,7 @@ export function CommunicationAction({
   );
   return (
     <form
+      data-mutation-form
       action={action}
       className="communication-action"
       onSubmit={(e) => {
@@ -395,7 +404,7 @@ export function CommunicationAction({
   );
 }
 export function GroupForm({
-  id,
+  id: initialId,
   group,
   people,
   assigned = [],
@@ -405,6 +414,7 @@ export function GroupForm({
   people: Member[];
   assigned?: string[];
 }) {
+  const { id, version, changed } = useDraftRevision(initialId, group?.version);
   const [state, action] = useActionState(saveGroup, {
     error: null,
   } as FormState);
@@ -415,9 +425,14 @@ export function GroupForm({
     ),
   );
   return (
-    <form action={action} className="segment-editor">
+    <form
+      data-mutation-form
+      action={action}
+      className="segment-editor"
+      onReset={(e) => e.preventDefault()}
+    >
       <input type="hidden" name="id" value={id} />
-      <input type="hidden" name="version" value={group?.version ?? 0} />
+      <input type="hidden" name="version" value={version} />
       {selected.map((id) => (
         <input key={id} type="hidden" name="members" value={id} />
       ))}
@@ -455,9 +470,10 @@ export function GroupForm({
           and to-dos keep their original recipients.
         </p>
       </section>
+      <DraftConflict changed={changed} />
       <Feedback state={state} />
       <div className="actions">
-        <SubmitButton disabled={!selected.length}>
+        <SubmitButton disabled={changed || !selected.length}>
           {group ? "Save group" : "Create group"}
         </SubmitButton>
         <Link className="button secondary" href="/admin/groups">
@@ -473,6 +489,7 @@ export function ArchiveGroup({ group }: { group: CommunicationGroup }) {
   } as FormState);
   return (
     <form
+      data-mutation-form
       action={action}
       onSubmit={(e) => {
         if (

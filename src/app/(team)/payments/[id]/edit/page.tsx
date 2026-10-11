@@ -19,7 +19,7 @@ export default async function Page({
       <div className="page-heading">
         <h1>Edit charge</h1>
       </div>
-      <EditPaymentForm key={`${id}-${charge.version}`} charge={charge} />
+      <EditPaymentForm key={id} charge={charge} />
     </>
   );
 }

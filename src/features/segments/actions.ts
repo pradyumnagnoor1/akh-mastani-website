@@ -26,11 +26,19 @@ export async function saveSegment(
   let path: string | null = null,
     label: string | null = null;
   if (version > 0) {
-    const existing = await supabase
-      .from("segments")
-      .select("document_path,document_label,version,archived_at")
-      .eq("id", id)
-      .single();
+    let existing;
+    try {
+      existing = await supabase
+        .from("segments")
+        .select("document_path,document_label,version,archived_at")
+        .eq("id", id)
+        .single();
+    } catch {
+      return {
+        error:
+          "Unable to load the current segment. Your draft has been kept. Check your connection and try again.",
+      };
+    }
     if (
       existing.error ||
       existing.data.archived_at ||
@@ -118,15 +126,22 @@ export async function removeSegment(
     form.get("confirm") !== "yes"
   )
     return { error: "Confirm that you want to remove this segment." };
-  const { error } = await supabase.rpc("archive_segment", {
-    target_id: id,
-    expected_version: version,
-  });
-  if (error)
+  try {
+    const { error } = await supabase.rpc("archive_segment", {
+      target_id: id,
+      expected_version: version,
+    });
+    if (error)
+      return {
+        error:
+          "We could not confirm removal. Refresh before retrying; the segment may have changed.",
+      };
+  } catch {
     return {
       error:
         "We could not confirm removal. Refresh before retrying; the segment may have changed.",
     };
+  }
   scheduleFormationCleanup();
   schedulePush();
   revalidatePath("/", "layout");

@@ -11,6 +11,7 @@ export default defineConfig({
     "calendar-connect.spec.ts",
     "pwa.spec.ts",
     "refresh.spec.ts",
+    "save-refresh.spec.ts",
     "management.spec.ts",
     "navigation.spec.ts",
     "choreo.spec.ts",

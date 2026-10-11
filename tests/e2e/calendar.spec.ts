@@ -40,7 +40,14 @@ test("calendar: fresh schedule, stale fallback, Home, private API", async ({
   await expect(
     page.getByText("Recurring practice", { exact: true }),
   ).toBeVisible();
-  await expect(page.getByText(/All day/)).toBeVisible();
+  await expect(
+    page
+      .locator("article")
+      .filter({
+        has: page.getByRole("heading", { name: "Team workshop", exact: true }),
+      })
+      .getByText(/All day/),
+  ).toBeVisible();
   const response = await context.request.get("/api/calendar");
   expect(response.status()).toBe(200);
   expect(response.headers()["cache-control"]).toContain("no-store");

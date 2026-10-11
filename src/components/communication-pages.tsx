@@ -322,6 +322,7 @@ export async function CommunicationEditor({
       </div>
       <Expires at={post?.expires_at} serverNow={Date.now()} detail>
         <CommunicationForm
+          key={id ?? `new-${kind}`}
           {...editor}
           id={id ?? crypto.randomUUID()}
           kind={kind}

@@ -11,12 +11,14 @@ export function AnnouncementImageUpload({
   initialPath,
   initialDescription,
   onBusyChange,
+  disabled = false,
 }: {
   id: string;
   version: number;
   initialPath?: string | null;
   initialDescription?: string;
   onBusyChange: (busy: boolean) => void;
+  disabled?: boolean;
 }) {
   const [path, setPath] = useState(initialPath ?? "");
   const [description, setDescription] = useState(initialDescription ?? "");
@@ -43,7 +45,7 @@ export function AnnouncementImageUpload({
     [preview],
   );
   async function choose(file?: File) {
-    if (!file || busy) return;
+    if (!file || busy || disabled) return;
     setError("");
     setBusy(true);
     onBusyChange(true);
@@ -89,7 +91,7 @@ export function AnnouncementImageUpload({
         id="announcement-image"
         type="file"
         accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
-        disabled={busy}
+        disabled={busy || disabled}
         onChange={(event) => {
           const file = event.target.files?.[0];
           event.target.value = "";
@@ -132,7 +134,7 @@ export function AnnouncementImageUpload({
           <button
             type="button"
             className="button secondary"
-            disabled={busy}
+            disabled={busy || disabled}
             onClick={() => {
               if (staged.current)
                 void abandonAnnouncementImage(staged.current).catch(() => {});

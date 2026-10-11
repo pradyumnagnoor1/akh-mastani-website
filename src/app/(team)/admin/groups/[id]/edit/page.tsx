@@ -20,6 +20,7 @@ export default async function EditGroup({
         <h1>Edit group</h1>
       </div>
       <GroupForm
+        key={id}
         id={id}
         group={group}
         people={people}

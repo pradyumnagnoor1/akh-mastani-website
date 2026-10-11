@@ -37,6 +37,7 @@ export default async function EditSegment({
         </p>
       </div>
       <SegmentForm
+        key={id}
         id={id}
         segment={segment}
         people={people}

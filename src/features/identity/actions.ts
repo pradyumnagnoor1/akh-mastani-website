@@ -55,11 +55,18 @@ export async function saveName(
   } catch (error) {
     return { error: (error as Error).message };
   }
-  const { error } = await supabase.rpc("complete_onboarding", {
-    member_name: name,
-  });
-  if (error)
-    return { error: "Your name could not be saved. Please try again." };
+  try {
+    const { error } = await supabase.rpc("complete_onboarding", {
+      member_name: name,
+    });
+    if (error)
+      return { error: "Your name could not be saved. Please try again." };
+  } catch {
+    return {
+      error:
+        "We could not confirm the save. Your name is still here. Refresh before retrying; it may already be saved.",
+    };
+  }
   schedulePush();
   revalidatePath("/", "layout");
   redirect(member?.status === "active" ? "/home" : "/membership");
@@ -74,23 +81,30 @@ export async function manageMember(
     return { error: "Select a valid member." };
   const operation = data.get("operation");
   let result;
-  if (operation === "name") {
-    let member_name: string;
-    try {
-      member_name = normalizeName(String(data.get("name") ?? ""));
-    } catch (error) {
-      return { error: (error as Error).message };
-    }
-    result = await supabase.rpc("correct_member_name", {
-      target_id,
-      member_name,
-    });
-  } else if (operation === "active" || operation === "inactive") {
-    result = await supabase.rpc("set_member_status", {
-      target_id,
-      new_status: operation,
-    });
-  } else return { error: "Choose a supported action." };
+  try {
+    if (operation === "name") {
+      let member_name: string;
+      try {
+        member_name = normalizeName(String(data.get("name") ?? ""));
+      } catch (error) {
+        return { error: (error as Error).message };
+      }
+      result = await supabase.rpc("correct_member_name", {
+        target_id,
+        member_name,
+      });
+    } else if (operation === "active" || operation === "inactive") {
+      result = await supabase.rpc("set_member_status", {
+        target_id,
+        new_status: operation,
+      });
+    } else return { error: "Choose a supported action." };
+  } catch {
+    return {
+      error:
+        "We could not confirm the change. Refresh before retrying; it may already be saved.",
+    };
+  }
   if (result.error)
     return {
       error:
