@@ -56,7 +56,7 @@ it("handles Central dates including midnight and daylight saving", () => {
   expect(chicagoDay(new Date("2026-10-12T03:00:00Z"))).toBe("2026-10-11");
   expect(chicagoDay(new Date("2026-11-01T07:30:00Z"))).toBe("2026-11-01");
 });
-it("does not label an ordinary segment rename as a formation update", () => {
+it("excludes formation and assignment updates from the digest", () => {
   const segment = {
     id: "s",
     name: "Opener",
@@ -80,6 +80,63 @@ it("does not label an ordinary segment rename as a formation update", () => {
       posts: [],
       segments: [{ ...segment, formation_updated_at: now.toISOString() }],
       assignments: [{ segment_id: "s", member_id: "a" }],
-    }).items[0].detail,
-  ).toBe("Formation updated");
+    }).items,
+  ).toEqual([]);
+});
+
+it("includes all incomplete assignments ahead of announcements, ordered by urgency", () => {
+  const tasks = ["2026-10-11", "2026-10-12", "2026-10-14", null].map(
+    (due_on, i) => ({ ...post, id: `t${i}`, kind: "task" as const, due_on }),
+  );
+  const digest = buildDigest({
+    ...base,
+    posts: [post, ...tasks],
+    recipients: [
+      ...base.recipients,
+      ...tasks.map((t) => ({
+        post_id: t.id,
+        member_id: "a",
+        completed_at: null,
+      })),
+    ],
+  });
+  expect(digest.items.map((i) => i.id)).toEqual([
+    "task-t0",
+    "task-t1",
+    "task-t2",
+    "task-t3",
+    "announcement-p",
+  ]);
+  expect(digest.items.map((i) => i.detail).slice(0, 4)).toEqual([
+    "Overdue · due 2026-10-11",
+    "To-do · due today",
+    "To-do · due 2026-10-14",
+    "To-do · no due date",
+  ]);
+});
+it("uses saved shared read/completion status consistently with the detail page", () => {
+  for (const kind of ["task", "announcement"] as const) {
+    expect(
+      buildDigest({
+        ...base,
+        posts: [
+          {
+            ...post,
+            kind,
+            completion_mode: "shared",
+            completed_at: now.toISOString(),
+          },
+        ],
+      }).items,
+    ).toEqual([]);
+    expect(
+      buildDigest({
+        ...base,
+        posts: [{ ...post, kind, completion_mode: "individual" }],
+        recipients: [
+          { post_id: "p", member_id: "a", completed_at: now.toISOString() },
+        ],
+      }).items,
+    ).toEqual([]);
+  }
 });

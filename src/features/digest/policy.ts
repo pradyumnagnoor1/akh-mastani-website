@@ -26,7 +26,7 @@ export function announcementExcerpt(body: string, limit = 150) {
 }
 export type DigestItem = {
   id: string;
-  section: "Needs attention" | "Announcements" | "Your updates";
+  section: "Needs attention" | "Your to-dos" | "Announcements";
   title: string;
   detail: string;
   href: string;
@@ -64,22 +64,34 @@ export function buildDigest(input: {
     );
     if (!recipient || post.archived_at || !live(post.expires_at)) continue;
     const done =
-      post.kind === "task" && post.completion_mode === "shared"
+      post.completion_mode === "shared"
         ? !!post.completed_at
         : !!recipient.completed_at;
     if (done) continue;
-    if (post.kind === "task" && post.due_on && post.due_on <= today)
+    if (post.kind === "task")
       items.push({
         id: `task-${post.id}`,
-        section: "Needs attention",
+        section:
+          post.due_on && post.due_on <= today
+            ? "Needs attention"
+            : "Your to-dos",
         title: post.title,
-        detail:
-          post.due_on < today
+        detail: !post.due_on
+          ? "To-do · no due date"
+          : post.due_on < today
             ? `Overdue · due ${post.due_on}`
-            : "To-do · due today",
+            : post.due_on === today
+              ? "To-do · due today"
+              : `To-do · due ${post.due_on}`,
         href: `/todos/${post.id}`,
-        priority: post.due_on < today ? 0 : 1,
-        order: post.due_on,
+        priority: !post.due_on
+          ? 5
+          : post.due_on < today
+            ? 0
+            : post.due_on === today
+              ? 1
+              : 4,
+        order: post.due_on ?? "",
       });
     if (post.kind === "announcement" && Date.parse(post.created_at) >= recent)
       items.push({
@@ -88,7 +100,7 @@ export function buildDigest(input: {
         title: post.title,
         detail: announcementExcerpt(post.body),
         href: `/announcements/${post.id}`,
-        priority: 4,
+        priority: 6,
         order: String(-Date.parse(post.created_at)),
       });
   }
@@ -112,30 +124,6 @@ export function buildDigest(input: {
       priority: charge.due_on < today ? 2 : 3,
       order: charge.due_on,
     });
-  }
-  for (const segment of input.segments) {
-    if (
-      segment.archived_at ||
-      !input.assignments.some(
-        (a) => a.segment_id === segment.id && a.member_id === memberId,
-      )
-    )
-      continue;
-    for (const [label, stamp] of [
-      ["Formation updated", segment.formation_updated_at],
-      ["Assignments updated", segment.assignments_updated_at],
-    ] as const) {
-      if (!stamp || Date.parse(stamp) < recent) continue;
-      items.push({
-        id: `${label}-${segment.id}`,
-        section: "Your updates",
-        title: segment.name,
-        detail: label,
-        href: `/segments/${segment.id}`,
-        priority: 5,
-        order: String(-Date.parse(stamp)),
-      });
-    }
   }
   items.sort(
     (a, b) =>

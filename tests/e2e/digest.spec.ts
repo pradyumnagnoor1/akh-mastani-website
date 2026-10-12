@@ -130,7 +130,7 @@ test("digest: personal announcement excerpt, acknowledgment refresh and reminder
   await expect(page.getByText(/Preparation reminder/)).toHaveCount(0);
 });
 
-test("digest: due task visibility follows individual assignments and expands beyond five entries", async ({
+test("digest: all incomplete assignments appear, completed tasks disappear, and the list expands", async ({
   page,
   context,
   request,
@@ -149,9 +149,11 @@ test("digest: due task visibility follows individual assignments and expands bey
       .getByLabel("Title", { exact: true })
       .fill(`Digest task ${info.project.name} ${i}`);
     await page.getByLabel("Details", { exact: true }).fill("Learn the opener.");
-    await page
-      .getByLabel("Due date (optional)", { exact: true })
-      .fill(todayDate);
+    if (i < 5) {
+      await page
+        .getByLabel("Due date (optional)", { exact: true })
+        .fill(i === 4 ? "2099-12-31" : todayDate);
+    }
     await page
       .getByLabel("Send to", { exact: true })
       .selectOption("individual");
@@ -179,6 +181,12 @@ test("digest: due task visibility follows individual assignments and expands bey
   await today.getByRole("button", { name: /View all/ }).click();
   await expect(
     today.getByText(`Digest task ${info.project.name} 5`, { exact: true }),
+  ).toBeVisible();
+  await expect(
+    today.getByText("To-do · no due date", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    today.getByText("To-do · due 2099-12-31", { exact: true }),
   ).toBeVisible();
   await expect(
     today.getByText(`Digest task ${info.project.name} 0`, { exact: true }),

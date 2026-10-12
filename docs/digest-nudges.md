@@ -2,8 +2,10 @@
 
 Home's Today card shows the next schedule item and up to five personal actionable
 entries, with an expandable list. Tasks/payments due today or overdue appear
-first, then unacknowledged announcements from the last seven days and recent
-formation/assignment changes. Announcement previews come directly from the body;
+first, then other incomplete assignments (including those without a deadline),
+then unread announcements from the last seven days. Formation and assignment
+updates do not appear in this card. Read status follows the saved Mark as read
+state shown on the announcement page. Announcement previews come directly from the body;
 there is no summary field or AI. Reported payments are labeled separately as
 awaiting verification. A failed source shows an unavailable notice, not a false
 caught-up state. Dates and deadlines use America/Chicago.

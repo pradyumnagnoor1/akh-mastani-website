@@ -29,7 +29,6 @@ export function TodayCard({
     <section className="panel today-card" aria-labelledby="today-heading">
       <div className="section-toolbar">
         <div>
-          <p className="eyebrow">YOUR DAILY PLAN</p>
           <h2 id="today-heading">Today · {date}</h2>
         </div>
         <span className="badge">For you</span>
@@ -72,7 +71,7 @@ export function TodayCard({
           You’re caught up.
         </p>
       )}
-      {(["Needs attention", "Announcements", "Your updates"] as const).map(
+      {(["Needs attention", "Your to-dos", "Announcements"] as const).map(
         (section) => {
           const items = visible.filter((i) => i.section === section);
           return items.length ? (
