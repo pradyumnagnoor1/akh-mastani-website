@@ -99,6 +99,12 @@ await db.exec(
 await db.exec(
   readFileSync("supabase/migrations/0012_digest_nudges.sql", "utf8"),
 );
+await db.exec(
+  readFileSync(
+    "supabase/migrations/0013_announcement_push_preview.sql",
+    "utf8",
+  ),
+);
 for (const person of users.values()) {
   await db.query(
     `insert into auth.users values($1,$2,now(),'{"provider":"google"}')`,

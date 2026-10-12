@@ -57,6 +57,7 @@ beforeAll(async () => {
     "0010_announcement_images_expiration",
     "0011_private_file_metadata_reads",
     "0012_digest_nudges",
+    "0013_announcement_push_preview",
   ])
     await db.exec(readFileSync(`supabase/migrations/${name}.sql`, "utf8"));
 });
@@ -572,4 +573,92 @@ it("invalidates a pre-pilot pending legacy job after confirmed nudge delivery an
       "(select count(*) from push_jobs j join push_subscriptions s on s.id=j.subscription_id where j.source_kind='communication' and public.push_job_valid(j,s.member_id))",
     ),
   ).toBe(0);
+});
+
+it("prepares current announcement title/body for queued jobs and rejects an invalid lease", async () => {
+  await device();
+  await role();
+  await q(
+    "save_communication($1,0,'announcement','Bring shoes','Bring black shoes.  Practice\nis at 8 PM.','individual','selected',array[$2::uuid],null,null)",
+    [post, a],
+  );
+  await role("service_role");
+  const jobs = await q<{ id: string; lease_token: string }[]>(
+    "push_claim_jobs(40)",
+  );
+  expect(jobs).toHaveLength(1);
+  const job = jobs[0];
+  const prepare = () =>
+    q<{ title: string; body: string }>("push_prepare_delivery($1,$2)", [
+      job.id,
+      job.lease_token,
+    ]);
+  expect(await prepare()).toMatchObject({
+    title: "Bring shoes",
+    body: "Bring black shoes. Practice is at 8 PM.",
+  });
+  expect(
+    await q("push_prepare_delivery($1,$2)", [job.id, randomUUID()]),
+  ).toBeNull();
+  await db.exec("reset role");
+  await db.query(
+    "update communication_posts set title='Updated shoes',body=$2 where id=$1",
+    [post, "😀".repeat(300)],
+  );
+  await role("service_role");
+  const payload = await prepare();
+  expect(payload.title).toBe("Updated shoes");
+  expect(Array.from(payload.body)).toHaveLength(240);
+  expect(payload.body).toBe("😀".repeat(239) + "…");
+  await db.exec("reset role");
+  await db.query(
+    "delete from communication_recipients where post_id=$1 and member_id=$2",
+    [post, a],
+  );
+  await role("service_role");
+  expect(await prepare()).toBeNull();
+});
+it("keeps task previews generic and falls back for an announcement with an empty body", async () => {
+  await device();
+  await role();
+  await q(
+    "save_communication($1,0,'announcement','Photo','Details','individual','selected',array[$2::uuid],null,null)",
+    [post, a],
+  );
+  await db.exec("reset role");
+  await db.query("update communication_posts set body=$2 where id=$1", [
+    post,
+    "\n\t",
+  ]);
+  await role("service_role");
+  const jobs = await q<{ id: string; lease_token: string }[]>(
+    "push_claim_jobs(40)",
+  );
+  expect(
+    await q("push_prepare_delivery($1,$2)", [jobs[0].id, jobs[0].lease_token]),
+  ).toMatchObject({ body: "Open the announcement to view its contents." });
+  await db.exec("reset role");
+  await db.query("delete from communication_posts where id=$1", [post]);
+  await task();
+  await role("service_role");
+  const tasks = await q<{ id: string; lease_token: string }[]>(
+    "push_claim_jobs(40)",
+  );
+  // task() deletes its creation jobs, so generate another task change normally.
+  expect(tasks).toEqual([]);
+  await role();
+  await q(
+    "save_communication($1,1,'task','Learn opener edited','Private details','individual','selected',array[$2::uuid,$3::uuid],null,'2026-10-12')",
+    [post, a, b],
+  );
+  await role("service_role");
+  const changed = await q<{ id: string; lease_token: string }[]>(
+    "push_claim_jobs(40)",
+  );
+  expect(
+    await q("push_prepare_delivery($1,$2)", [
+      changed[0].id,
+      changed[0].lease_token,
+    ]),
+  ).toMatchObject({ body: "Check your team to-dos." });
 });

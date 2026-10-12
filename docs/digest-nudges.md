@@ -17,7 +17,7 @@ the detail page; it does not automatically complete a task or mark a message rea
 
 Admins can optionally add one absolute-time announcement reminder, a short
 message, and an acknowledgment/preparation/linked-task stop condition. The
-message appears inside the announcement; scheduled lock-screen payloads use
+message appears inside the announcement; scheduled smart-nudge lock-screen payloads use
 generic counts. A linked-task reminder reaches only dancers assigned both items.
 Deleting its task removes that reminder configuration and related queued nudges.
 Reminder edits use the same optimistic revision as the announcement. Skipped or
