@@ -77,12 +77,15 @@ promised. Preserve the existing 40-device batch and concurrency of 10.
    Check actual HTTP responses, environment/VAPID configuration and fresh calendar
    snapshots. A configured Cron expression alone is not proof of delivery.
 
-The owner applied migration 0012 on 2026-10-12. A read-only live check verified
-the tables, digest metadata, delivery RPC and rollback guard; new nudges remained
-disabled. Feature commit `210f5a2` is deployed at the stable Preview URL, with an
-explicit branch `NOTIFICATION_DISPATCH_ENABLED=false` override. Protected health
-and sign-in page checks passed. Production feature deployment,
-pilot activation and physical-phone delivery remain pending.
+The owner applied migration 0012 on 2026-10-12. On the same day, the owner
+explicitly authorized production promotion and team-wide activation. Release
+`56c62b0` is deployed at https://akh-mastani.vercel.app, with the Today action
+cards and latest filtering refinements. Production build, health and sign-in
+page checks passed. Live rollout control is enabled with no pilot restriction.
+The existing five-minute production scheduler and Vault secret were verified.
+An authenticated worker check returned HTTP200, configured=true, sent=1 and
+zero retries/failures/expired jobs. This confirms provider acceptance, not
+physical-phone display or tap acceptance. Preview dispatch remains disabled.
 
 ## Pilot and activation
 

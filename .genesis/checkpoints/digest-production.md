@@ -1,0 +1,12 @@
+# Digest production release · 2026-10-12
+- G0: reuse approved digest/nudge feature and refinements. User explicitly requested production and smart nudge activation; no further approval gate inferred.
+- Skills: existing master/router/production workflow, Chrome control for owner SQL dashboard (no Supabase connector available).
+- Verified before activation: production tracks main; notification env names present without exposing values; production dispatch override absent; migration delivery RPC installed; Cron5minute production endpoint active; Vault secret exists. enabled=false initially.
+- Fast-forward main from16644ab to56c62b0; pushed main and preview. No force push, code edits, re-migration or team fixture writes.
+- Production deployment dpl_3MbSg9HSm4VnHKYQcvcbKQjNif8p Ready35seconds; aliases include akh-mastani.vercel.app. Healthok, loginHTTP200Googlebuttonpresent.
+- Owner SQL update nudge_control enabled=true,pilot_members=null returned true/true. This honors explicit full-team activation rather than requiring another pilot approval.
+- Existing worker called through pg_net using Vault reference, no credential output. Request1357 HTTP200 configuredtrue,sent1,retry0,failed0,expired0. Provider acceptance does not prove phone presentation.
+- Read-only follow-up confirmed enabledteamtrue,1recentoccurrence,0recentbundles. Worker processed eligible existing jobs; no synthetic blast created. Preview dispatch remains hard-disabled.
+- Previous independent code reviews/tests retained:330unit/SQL;4browser plus2screenshot replays; production build verifies final samecode artifact. No new implementation tests needed for promotion/control update.
+- Rollback: owner set nudge_control.enabled=false restores legacy reminders with dedup guards; retain additive0012. Production code rollback only after disabling new nudges.
+- Remaining external acceptance: real-phone display and tap destinations. Do not claim this was verified.
