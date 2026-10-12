@@ -4,7 +4,17 @@ import webpush from "web-push";
 import { pushConfig } from "./config";
 import { pushService } from "./service";
 import { deliverJobs, PUSH_BATCH_LIMIT, type PushJob } from "./worker";
+import { notificationDispatchEnabled } from "./environment";
 export async function dispatchPush() {
+  if (!notificationDispatchEnabled())
+    return {
+      configured: false,
+      disabled: true,
+      sent: 0,
+      retry: 0,
+      expired: 0,
+      failed: 0,
+    };
   const config = pushConfig();
   if (!config)
     return { configured: false, sent: 0, retry: 0, expired: 0, failed: 0 };
@@ -15,13 +25,13 @@ export async function dispatchPush() {
   if (error || !Array.isArray(data))
     throw new Error("Unable to claim notification jobs.");
   const counts = await deliverJobs(data as PushJob[], {
-    eligible: async (job) => {
-      const check = await service.rpc("push_can_deliver", {
+    prepare: async (job) => {
+      const check = await service.rpc("push_prepare_delivery", {
         p_id: job.id,
         p_token: job.lease_token,
       });
       if (check.error) throw new Error("Notification eligibility unavailable.");
-      return check.data === true;
+      return check.data;
     },
     send: async (subscription, payload) =>
       webpush.sendNotification(
@@ -37,7 +47,20 @@ export async function dispatchPush() {
             privateKey: config.privateKey,
           },
           timeout: 5000,
-          TTL: 3600,
+          TTL: Math.max(
+            1,
+            Math.min(
+              3600,
+              Math.floor(
+                (Date.parse(
+                  JSON.parse(payload).expiresAt ??
+                    new Date(Date.now() + 3600_000).toISOString(),
+                ) -
+                  Date.now()) /
+                  1000,
+              ),
+            ),
+          ),
           urgency: "normal",
         },
       ),
@@ -55,6 +78,7 @@ export async function dispatchPush() {
   return { configured: true, ...counts };
 }
 export function schedulePush() {
+  if (!notificationDispatchEnabled()) return;
   if (!pushConfig()) return;
   after(async () => {
     try {

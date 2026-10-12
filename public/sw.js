@@ -62,7 +62,9 @@ function safeUrl(value) {
     ];
     const validPath =
       allowed.includes(url.pathname) ||
-      /^\/(?:segments|announcements|todos|payments|roster)\/[0-9a-f-]{36}$/i.test(url.pathname);
+      /^\/(?:segments|announcements|todos|payments|roster)\/[0-9a-f-]{36}$/i.test(
+        url.pathname,
+      );
     return url.origin === self.location.origin && validPath
       ? url.pathname + url.search + url.hash
       : "/home";
@@ -78,6 +80,11 @@ self.addEventListener("push", (event) => {
     /* Show a generic visible notification. */
   }
   if (!data || typeof data !== "object") data = {};
+  if (
+    typeof data.expiresAt === "string" &&
+    Date.parse(data.expiresAt) <= Date.now()
+  )
+    return;
   event.waitUntil(
     self.registration.showNotification(
       typeof data.title === "string" ? data.title : "AKH Mastani",

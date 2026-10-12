@@ -6,10 +6,14 @@ import Link from "next/link";
 import { PaymentHome } from "@/components/payment-home";
 import { CommunicationHome } from "@/components/communication-home";
 import { ArrowUpRight, ShieldCheck } from "lucide-react";
-import { segmentData } from "@/features/segments/queries";
+import { requireMember } from "@/features/identity/session";
+import { digestData } from "@/features/digest/queries";
+import { TodayCard } from "@/components/today-card";
 export const maxDuration = 60;
 export default async function Home() {
-  const { member, supabase, segments, assignments } = await segmentData();
+  const { member, supabase } = await requireMember();
+  const today = await digestData();
+  const { segments, assignments } = today;
   const mine = segments.filter(
     (s) =>
       !s.archived_at &&
@@ -21,27 +25,43 @@ export default async function Home() {
     .from("members")
     .select("id", { head: true, count: "exact" })
     .eq("status", "active");
-  if (error) throw new Error("Unable to load team overview.");
   return (
     <>
       <div className="page-heading">
         <h1>Home</h1>
       </div>
-      <CommunicationHome />
-      <FeaturedEvents compact />
-      <CalendarHome />
-      <PaymentHome />
-      {member.is_admin && <AdminSummary />}
+      <TodayCard
+        digest={today.digest}
+        unavailable={today.unavailable}
+        calendarStale={today.calendarStale}
+      />
+      {!today.unavailable.includes("Messages") && <CommunicationHome />}
+      {!today.unavailable.includes("Featured events") && (
+        <FeaturedEvents compact />
+      )}
+      {!today.unavailable.includes("Practice calendar") && <CalendarHome />}
+      {!today.unavailable.includes("Payments") && <PaymentHome />}
+      {member.is_admin &&
+        !error &&
+        !today.unavailable.includes("Messages") &&
+        !today.unavailable.includes("Payments") && <AdminSummary />}
       <section className="panel my-segments">
         <div className="section-toolbar">
           <h2>
-            Your segments <span className="count">{mine.length}</span>
+            Your segments{" "}
+            {!today.unavailable.includes("Set Design") && (
+              <span className="count">{mine.length}</span>
+            )}
           </h2>
           <Link className="text-button" href="/segments">
             View all segments →
           </Link>
         </div>
-        {mine.length ? (
+        {today.unavailable.includes("Set Design") ? (
+          <p className="notice error">
+            Your assignments could not be loaded. Refresh to try again.
+          </p>
+        ) : mine.length ? (
           mine.map((segment) => (
             <Link
               className="my-segment-row"
@@ -79,7 +99,8 @@ export default async function Home() {
           </div>
         </dl>
         <Link href="/roster" className="text-button">
-          Team roster · {count ?? 0} members <ArrowUpRight size={15} />
+          Team roster{!error && ` · ${count ?? 0} members`}{" "}
+          <ArrowUpRight size={15} />
         </Link>
       </section>
       {member.is_admin && (

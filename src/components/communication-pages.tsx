@@ -199,6 +199,27 @@ export async function CommunicationDetail({
       </div>
       <section className="panel">
         <p className="communication-body">{post.body}</p>
+        {post.reminder_at && (
+          <div className="notice">
+            <strong>
+              Reminder ·{" "}
+              {new Intl.DateTimeFormat("en-US", {
+                timeZone: "America/Chicago",
+                dateStyle: "medium",
+                timeStyle: "short",
+              }).format(new Date(post.reminder_at))}{" "}
+              Texas time
+            </strong>
+            {post.reminder_message && <p>{post.reminder_message}</p>}
+            <p className="small">
+              {post.reminder_mode === "preparation"
+                ? "Preparation reminder · acknowledgment does not stop it."
+                : post.reminder_mode === "linked-task"
+                  ? "Stops when your linked to-do is complete."
+                  : "Stops once you acknowledge."}
+            </p>
+          </div>
+        )}
         <AnnouncementImage
           id={post.id}
           path={post.image_path}
@@ -305,7 +326,7 @@ export async function CommunicationEditor({
   id?: string;
 }) {
   const editor = await communicationEditorData();
-  const data = id ? await communicationData() : null;
+  const data = id || kind === "announcement" ? await communicationData() : null;
   const post = data?.posts.find((p) => p.id === id && p.kind === kind);
   if (id && !post) notFound();
   if (post?.archived_at) redirect(`${baseFor(kind)}/${post.id}`);
@@ -327,6 +348,10 @@ export async function CommunicationEditor({
           id={id ?? crypto.randomUUID()}
           kind={kind}
           post={post}
+          tasks={
+            data?.posts.filter((p) => p.kind === "task" && !p.completed_at) ??
+            []
+          }
           assigned={
             data?.recipients
               .filter((r) => r.post_id === id)

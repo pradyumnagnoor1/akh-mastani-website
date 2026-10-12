@@ -14,6 +14,11 @@ export type CommunicationPost = {
   expires_at?: string | null;
   image_path?: string | null;
   image_description?: string;
+  reminder_at?: string | null;
+  reminder_mode?: "acknowledgment" | "preparation" | "linked-task" | null;
+  reminder_message?: string;
+  reminder_task_id?: string | null;
+  reminder_revision?: number;
   version: number;
   archived_at: string | null;
   created_at: string;

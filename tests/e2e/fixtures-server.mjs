@@ -96,6 +96,9 @@ await db.exec(
     "utf8",
   ),
 );
+await db.exec(
+  readFileSync("supabase/migrations/0012_digest_nudges.sql", "utf8"),
+);
 for (const person of users.values()) {
   await db.query(
     `insert into auth.users values($1,$2,now(),'{"provider":"google"}')`,
@@ -237,6 +240,12 @@ createServer((req, res) => {
       res.end(JSON.stringify(data));
     }
     if (url.pathname === "/health") return json({ ready: true });
+    if (url.pathname === "/fixture/reset-digest-tests") {
+      await db.exec(
+        "reset role;delete from communication_posts where title like 'Digest %'",
+      );
+      return json({ ready: true });
+    }
     if (url.pathname === "/fixture/reset-refresh-audit") {
       await db.exec("reset role");
       for (const [table, column, kind] of [
@@ -513,6 +522,13 @@ createServer((req, res) => {
           archive_segment: ["target_id", "expected_version"],
           correct_member_name: ["target_id", "member_name"],
         };
+        functions.save_communication_reminder = [
+          ...functions.save_communication_media,
+          "reminder_time",
+          "reminder_type",
+          "reminder_text",
+          "linked_task",
+        ];
         if (!functions[name])
           return json({ message: "Unsupported fixture function" }, 404);
         const fault =
@@ -612,6 +628,8 @@ createServer((req, res) => {
             "created_at",
           ],
           segments: [
+            "formation_updated_at",
+            "assignments_updated_at",
             "id",
             "name",
             "document_path",
@@ -623,6 +641,11 @@ createServer((req, res) => {
           ],
           segment_members: ["segment_id", "member_id"],
           communication_posts: [
+            "reminder_at",
+            "reminder_mode",
+            "reminder_message",
+            "reminder_task_id",
+            "reminder_revision",
             "expires_at",
             "image_path",
             "image_description",

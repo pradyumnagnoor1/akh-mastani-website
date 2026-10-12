@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useActionState, useState } from "react";
 import { ExpirationField } from "./expiration-field";
 import { AnnouncementImageUpload } from "./announcement-image-upload";
+import { AnnouncementReminderFields } from "./announcement-reminder-fields";
 import { SubmitButton } from "./forms";
 import { DraftConflict, useDraftRevision } from "./draft-revision";
 import {
@@ -108,6 +109,7 @@ export function CommunicationForm({
   segments,
   assignments,
   assigned = [],
+  tasks = [],
 }: {
   id: string;
   kind: PostKind;
@@ -118,6 +120,7 @@ export function CommunicationForm({
   segments: Segment[];
   assignments: Assignment[];
   assigned?: string[];
+  tasks?: CommunicationPost[];
 }) {
   const { id, version, changed } = useDraftRevision(initialId, post?.version);
   const [state, action] = useActionState(saveCommunication, {
@@ -339,6 +342,13 @@ export function CommunicationForm({
         )}
       </section>
       <DraftConflict changed={changed} />
+      {kind === "announcement" && (
+        <AnnouncementReminderFields
+          post={post}
+          tasks={tasks}
+          disabled={changed}
+        />
+      )}
       <Feedback state={state} />
       <div className="actions">
         <SubmitButton

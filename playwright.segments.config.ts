@@ -15,6 +15,7 @@ export default defineConfig({
     "management.spec.ts",
     "navigation.spec.ts",
     "choreo.spec.ts",
+    "digest.spec.ts",
   ],
   workers: 1,
   reporter: "list",

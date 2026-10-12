@@ -3,7 +3,9 @@ import { calendarConfig } from "@/features/calendar/config";
 import { calendarService } from "@/features/calendar/service";
 import { fetchCalendar, CalendarFailure } from "@/features/calendar/google";
 import { pushService } from "./service";
+import { notificationDispatchEnabled } from "./environment";
 export async function enqueueReminders() {
+  if (!notificationDispatchEnabled()) return 0;
   const service = pushService();
   // Refresh from Google even when nobody has opened the website. Cached practice
   // reminders are only eligible while a connected snapshot is fresh.

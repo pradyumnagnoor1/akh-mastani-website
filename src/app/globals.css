@@ -1789,3 +1789,102 @@ button:enabled:active {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.today-card {
+  border-color: var(--accent);
+}
+.today-card h2 {
+  font-size: clamp(1.3rem, 3vw, 1.8rem);
+}
+.today-schedule {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0;
+}
+.today-event,
+.today-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 12px;
+  border-radius: 10px;
+}
+.today-event {
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.today-event > span,
+.today-item > span {
+  flex: 1;
+  min-width: 0;
+}
+.today-event strong,
+.today-item strong {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.today-event small,
+.today-item small {
+  display: block;
+  color: var(--muted);
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+.today-item:hover,
+.today-event:hover {
+  background: var(--surface-hover, #222230);
+}
+.today-item svg,
+.today-event svg {
+  flex-shrink: 0;
+}
+.today-section {
+  margin-top: 20px;
+}
+.today-section h3 {
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+.today-item + .today-item {
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+}
+.today-read-more {
+  display: block;
+  color: var(--accent);
+  font-size: 0.85rem;
+  margin-top: 5px;
+}
+.today-caught-up {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 16px 0;
+}
+.today-verification {
+  margin-top: 16px;
+}
+.reminder-time-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.reminder-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+}
+.reminder-toggle input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  min-height: 20px;
+  flex: 0 0 20px;
+  margin: 0;
+}
+@media (max-width: 380px) {
+  .reminder-time-fields {
+    grid-template-columns: 1fr;
+  }
+}

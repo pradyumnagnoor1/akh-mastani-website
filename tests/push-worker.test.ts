@@ -60,6 +60,31 @@ it("accepts actual browser subscription keys while preventing arbitrary outbound
     }),
   ).toThrow();
 });
+it("uses a freshly prepared bundle payload and skips an empty or expired bundle", async () => {
+  const send = vi.fn(),
+    finish = vi.fn();
+  await deliverJobs([job()], {
+    prepare: async () => ({
+      ...job().payload,
+      body: "Today: 1 to-do. Open your plan.",
+    }),
+    send,
+    finish,
+  });
+  expect(JSON.parse(send.mock.calls[0][1]).body).toContain("1 to-do");
+  send.mockClear();
+  await deliverJobs([job()], { prepare: async () => null, send, finish });
+  expect(send).not.toHaveBeenCalled();
+  await deliverJobs([job()], {
+    prepare: async () => ({
+      ...job().payload,
+      expiresAt: "2000-01-01T00:00:00Z",
+    }),
+    send,
+    finish,
+  });
+  expect(send).not.toHaveBeenCalled();
+});
 it("limits click targets to team pages", () => {
   for (const url of [
     "//evil.test",

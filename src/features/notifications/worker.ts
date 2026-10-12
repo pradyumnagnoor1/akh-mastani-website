@@ -7,11 +7,12 @@ export type PushJob = {
   p256dh: string;
   auth: string;
   lease_token: string;
-  payload: { title: string; body: string; url: string };
+  payload: { title: string; body: string; url: string; expiresAt?: string };
 };
 export type DeliveryResult = "sent" | "retry" | "expired" | "failed";
 export type WorkerDependencies = {
-  eligible: (job: PushJob) => Promise<boolean>;
+  eligible?: (job: PushJob) => Promise<boolean>;
+  prepare?: (job: PushJob) => Promise<PushJob["payload"] | null>;
   send: (
     subscription: ReturnType<typeof pushSubscription>,
     payload: string,
@@ -31,11 +32,20 @@ export async function deliverJobs(jobs: PushJob[], deps: WorkerDependencies) {
             endpoint: job.endpoint,
             keys: { p256dh: job.p256dh, auth: job.auth },
           });
-          if (await deps.eligible(job)) {
+          const current = deps.prepare
+            ? await deps.prepare(job)
+            : (await deps.eligible?.(job))
+              ? job.payload
+              : null;
+          if (
+            current &&
+            (!current.expiresAt || Date.parse(current.expiresAt) > Date.now())
+          ) {
             const payload = JSON.stringify({
-              title: job.payload.title,
-              body: job.payload.body,
-              url: notificationPath(job.payload.url),
+              title: current.title,
+              body: current.body,
+              url: notificationPath(current.url),
+              expiresAt: current.expiresAt,
               tag: `mastani-${job.id}`,
             });
             try {

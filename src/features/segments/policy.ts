@@ -34,5 +34,7 @@ export type Segment = {
   version: number;
   archived_at: string | null;
   updated_at: string;
+  formation_updated_at?: string | null;
+  assignments_updated_at?: string | null;
 };
 export type Assignment = { segment_id: string; member_id: string };

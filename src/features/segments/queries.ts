@@ -10,7 +10,7 @@ export const segmentData = cache(async () => {
       context.supabase
         .from("segments")
         .select(
-          "id,name,document_path,document_label,version,archived_at,updated_at",
+          "id,name,document_path,document_label,version,archived_at,updated_at,formation_updated_at,assignments_updated_at",
         )
         .is("archived_at", null)
         .order("id")

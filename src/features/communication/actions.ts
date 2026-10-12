@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { requireAdmin, requireMember } from "@/features/identity/session";
 import { validatePost, validVersion } from "./policy";
 import type { FormState } from "./types";
+import { validateAnnouncementReminder } from "../notifications/reminder-policy";
 const value = (form: FormData, key: string) => String(form.get(key) ?? "");
 function revision(form: FormData) {
   const id = value(form, "id"),
@@ -15,6 +16,12 @@ function revision(form: FormData) {
   return { target_id: id, expected_version: version };
 }
 function failure(error: { message: string; code?: string }): FormState {
+  if (
+    /^(Choose an announcement reminder type|Choose a future reminder within one year|Use a reminder message of up to 200 characters|Reminder must be before announcement expiration|Choose a live linked task|Choose a reminder time|Only task reminders may link a task)$/.test(
+      error.message,
+    )
+  )
+    return { error: error.message };
   if (error.message === "Image unavailable. Choose it again")
     return {
       error:
@@ -50,6 +57,7 @@ export async function saveCommunication(
   let args;
   let input;
   let expiration;
+  let reminder;
   try {
     args = revision(form);
     expiration = validateExpiration(value(form, "expiration_date"));
@@ -63,24 +71,30 @@ export async function saveCommunication(
       sourceId: value(form, "source_id"),
       dueOn: value(form, "due_on"),
     });
+    if (input.kind === "announcement" && form.has("reminder_enabled"))
+      reminder = validateAnnouncementReminder(form);
   } catch (error) {
     return { error: (error as Error).message };
   }
   try {
-    const { error } = await supabase.rpc("save_communication_media", {
-      ...args,
-      post_kind: input.kind,
-      post_title: input.title,
-      post_body: input.body,
-      task_mode: input.mode,
-      audience: input.audience,
-      recipient_ids: input.members,
-      source_id: input.sourceId,
-      due_date: input.dueOn,
-      expiration_date: expiration,
-      image_object: value(form, "image_path") || null,
-      image_alt: value(form, "image_description"),
-    });
+    const { error } = await supabase.rpc(
+      reminder ? "save_communication_reminder" : "save_communication_media",
+      {
+        ...args,
+        post_kind: input.kind,
+        post_title: input.title,
+        post_body: input.body,
+        task_mode: input.mode,
+        audience: input.audience,
+        recipient_ids: input.members,
+        source_id: input.sourceId,
+        due_date: input.dueOn,
+        expiration_date: expiration,
+        image_object: value(form, "image_path") || null,
+        image_alt: value(form, "image_description"),
+        ...reminder,
+      },
+    );
     if (error) return failure(error);
   } catch {
     return failure({ message: "Network error" });

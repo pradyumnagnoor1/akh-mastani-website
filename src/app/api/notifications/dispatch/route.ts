@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { pushConfig } from "@/features/notifications/config";
 import { dispatchPush } from "@/features/notifications/dispatch";
 import { enqueueReminders } from "@/features/notifications/reminders";
+import { notificationDispatchEnabled } from "@/features/notifications/environment";
 export const runtime = "nodejs";
 export const maxDuration = 120;
 const headers = { "Cache-Control": "private, no-store" };
@@ -16,6 +17,8 @@ export async function GET(request: Request) {
     !timingSafeEqual(Buffer.from(supplied), Buffer.from(expected))
   )
     return Response.json({ error: "Unauthorized" }, { status: 401, headers });
+  if (!notificationDispatchEnabled())
+    return Response.json({ configured: false, disabled: true }, { headers });
   if (!pushConfig())
     return Response.json(
       { error: "Notifications are not configured." },

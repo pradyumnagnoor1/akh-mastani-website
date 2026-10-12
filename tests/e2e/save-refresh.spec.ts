@@ -85,7 +85,7 @@ const config = {
     field: "Title",
     create: "Publish announcement",
     save: "Save changes",
-    rpc: "save_communication_media",
+    rpc: "save_communication_reminder",
   },
   task: {
     path: "/todos/new",

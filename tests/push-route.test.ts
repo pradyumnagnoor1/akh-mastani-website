@@ -1,5 +1,9 @@
 import { it, expect, vi, beforeEach, afterEach } from "vitest";
 vi.mock("server-only", () => ({}));
+vi.mock(
+  "@/features/notifications/environment",
+  async () => await import("../src/features/notifications/environment"),
+);
 const m = vi.hoisted(() => ({
   config: vi.fn(),
   dispatch: vi.fn(),
@@ -64,4 +68,11 @@ it("enqueues reminders then dispatches and prevents caching the response", async
     expired: 0,
     failed: 0,
   });
+});
+it("does not enqueue or dispatch shared production jobs from Preview", async () => {
+  vi.stubEnv("VERCEL_ENV", "preview");
+  const response = await GET(request(secret));
+  expect(await response.json()).toEqual({ configured: false, disabled: true });
+  expect(m.enqueue).not.toHaveBeenCalled();
+  expect(m.dispatch).not.toHaveBeenCalled();
 });
