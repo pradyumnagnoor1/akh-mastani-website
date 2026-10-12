@@ -29,3 +29,5 @@
 - Action UI verification: 330 tests pass, typecheck/lint clean,4 digest browser checks plus2 populated screenshot replays pass. Desktop announcement/mobile task screenshots inspected; no horizontal overflow.
 - Fresh-context verify_digest_actions APPROVE; reviewed source and mobile screenshot. Nonblocking destination-prefix style mapping must extend for future item types.
 - Delegated Q+A (assistant answers under prior authorization, not human-understanding evidence): distinct inset/action cards make next steps clear while lower panels summarize records; Complete to-do opens detail and leaving does not complete; Read announcement opens detail and only saved Mark as read suppresses the item.
+
+- Action cards released: commit9e244db on origin/preview, Ready deployment dpl_GEq4Y2VHQngSY6s52LtzNB1ztMBc/build27s, stable alias assigned. Production unchanged.
