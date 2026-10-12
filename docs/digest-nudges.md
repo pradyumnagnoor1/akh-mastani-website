@@ -72,7 +72,9 @@ promised. Preserve the existing 40-device batch and concurrency of 10.
 
 The owner applied migration 0012 on 2026-10-12. A read-only live check verified
 the tables, digest metadata, delivery RPC and rollback guard; new nudges remained
-disabled. Preview publication follows that check. Production feature deployment,
+disabled. Feature commit `210f5a2` is deployed at the stable Preview URL, with an
+explicit branch `NOTIFICATION_DISPATCH_ENABLED=false` override. Protected health
+and sign-in page checks passed. Production feature deployment,
 pilot activation and physical-phone delivery remain pending.
 
 ## Pilot and activation
