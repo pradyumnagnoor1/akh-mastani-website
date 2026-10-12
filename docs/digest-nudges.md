@@ -10,6 +10,11 @@ there is no summary field or AI. Reported payments are labeled separately as
 awaiting verification. A failed source shows an unavailable notice, not a false
 caught-up state. Dates and deadlines use America/Chicago.
 
+Today uses action prompts: Complete to-do, Read announcement, and Review payment.
+Task rows use violet checklist icons; announcement rows use mint message icons,
+with tinted inset cards distinct from the summary panels below. Tapping opens
+the detail page; it does not automatically complete a task or mark a message read.
+
 Admins can optionally add one absolute-time announcement reminder, a short
 message, and an acknowledgment/preparation/linked-task stop condition. The
 message appears inside the announcement; scheduled lock-screen payloads use

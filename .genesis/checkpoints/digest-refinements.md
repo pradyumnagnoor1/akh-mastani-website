@@ -16,3 +16,16 @@
   2. Shared announcement globally read but recipient incomplete? Hidden, matching the detail/list global shared completion state.
   3. Task due2099 and formation update with >5 entries? Task appears in expandable prioritized list; formation update never appears in Today.
 - Live account's two announcement states were not inspected. Individually acknowledged items already suppress; opening alone does not save read status. No migration or nudge activation needed.
+
+## Preview release
+- Commit eadfbd7 pushed to origin/preview; Vercel dpl_5f16pQqiGpatdLGjJvf8ATayJLgW Ready, target Preview, build28s. Stable Preview alias now points to this build. Production main and nudge controls unchanged.
+
+## Action-oriented digest refinement
+- G0: reuse TodayCard/style; existing Home communication panels stay unchanged.
+- Skills considered/chosen: master, router, design-system, modular-architecture; visual-only change.
+- Scope: Today labels and styled action links, existing browser assertions/screenshots, docs/checkpoint.
+- Acceptance: complete/read verbs, differentiated task/announcement icons and tinted inset cards, no inline completion or read mutation, preserve expiry/privacy and five-item behavior.
+
+- Action UI verification: 330 tests pass, typecheck/lint clean,4 digest browser checks plus2 populated screenshot replays pass. Desktop announcement/mobile task screenshots inspected; no horizontal overflow.
+- Fresh-context verify_digest_actions APPROVE; reviewed source and mobile screenshot. Nonblocking destination-prefix style mapping must extend for future item types.
+- Delegated Q+A (assistant answers under prior authorization, not human-understanding evidence): distinct inset/action cards make next steps clear while lower panels summarize records; Complete to-do opens detail and leaving does not complete; Read announcement opens detail and only saved Mark as read suppresses the item.

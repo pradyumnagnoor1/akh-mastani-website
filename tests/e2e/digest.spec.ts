@@ -79,7 +79,7 @@ test("digest: personal announcement excerpt, acknowledgment refresh and reminder
   const entry = today.getByRole("link").filter({ hasText: title });
   await expect(entry).toContainText("Bring black shoes to practice.");
   await expect(entry).toContainText("…");
-  await expect(entry).toContainText("Read more");
+  await expect(entry).toContainText("Read announcement");
   await expect(today.getByText(body, { exact: true })).toHaveCount(0);
   await page.screenshot({
     path: info.outputPath("today-digest.png"),
@@ -175,7 +175,7 @@ test("digest: all incomplete assignments appear, completed tasks disappear, and 
   await dancer.goto("http://127.0.0.1:3102/home");
   const today = dancer.getByRole("region", { name: /Today ·/ });
   await expect(
-    today.getByRole("heading", { name: "Needs attention", exact: true }),
+    today.getByRole("heading", { name: "Take care of these", exact: true }),
   ).toBeVisible();
   await expect(today.getByRole("button", { name: /View all/ })).toBeVisible();
   await today.getByRole("button", { name: /View all/ }).click();
@@ -205,5 +205,19 @@ test("digest: all incomplete assignments appear, completed tasks disappear, and 
       .getByRole("region", { name: /Today ·/ })
       .getByText(`Digest task ${info.project.name} 0`, { exact: true }),
   ).toHaveCount(0);
+  await expect(
+    dancer
+      .getByRole("region", { name: /Today ·/ })
+      .getByText(`Digest task ${info.project.name} 1`, { exact: true }),
+  ).toBeVisible();
+  await dancer.screenshot({
+    path: info.outputPath("today-actions.png"),
+    fullPage: true,
+  });
+  expect(
+    await dancer.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
   await dancerContext.close();
 });

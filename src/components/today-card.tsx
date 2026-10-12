@@ -1,7 +1,14 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowUpRight, CalendarDays, CheckCircle2 } from "lucide-react";
+import {
+  ArrowUpRight,
+  CalendarDays,
+  CheckCircle2,
+  ListTodo,
+  MessageSquare,
+  CreditCard,
+} from "lucide-react";
 import type { buildDigest } from "@/features/digest/policy";
 export function TodayCard({
   digest,
@@ -76,19 +83,49 @@ export function TodayCard({
           const items = visible.filter((i) => i.section === section);
           return items.length ? (
             <div className="today-section" key={section}>
-              <h3>{section}</h3>
-              {items.map((item) => (
-                <Link key={item.id} href={item.href} className="today-item">
-                  <span>
-                    <strong>{item.title}</strong>
-                    <small>{item.detail}</small>
-                    {section === "Announcements" && (
-                      <span className="today-read-more">Read more →</span>
-                    )}
-                  </span>
-                  <ArrowUpRight size={18} />
-                </Link>
-              ))}
+              <h3>
+                {section === "Announcements"
+                  ? "Read announcements"
+                  : section === "Your to-dos"
+                    ? "Complete your to-dos"
+                    : "Take care of these"}
+              </h3>
+              {items.map((item) => {
+                const kind = item.href.startsWith("/todos/")
+                  ? "task"
+                  : item.href.startsWith("/announcements/")
+                    ? "announcement"
+                    : "payment";
+                const Icon =
+                  kind === "task"
+                    ? ListTodo
+                    : kind === "announcement"
+                      ? MessageSquare
+                      : CreditCard;
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    className={`today-item today-item-${kind}`}
+                  >
+                    <span className="today-item-icon" aria-hidden="true">
+                      <Icon size={20} />
+                    </span>
+                    <span className="today-item-content">
+                      <strong>{item.title}</strong>
+                      <small>{item.detail}</small>
+                      <span className="today-item-action">
+                        {kind === "task"
+                          ? "Complete to-do"
+                          : kind === "announcement"
+                            ? "Read announcement"
+                            : "Review payment"}
+                        <ArrowUpRight size={14} aria-hidden="true" />
+                      </span>
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
           ) : null;
         },

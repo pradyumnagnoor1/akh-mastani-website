@@ -1846,15 +1846,49 @@ button:enabled:active {
   font-size: 1rem;
   margin-bottom: 4px;
 }
-.today-item + .today-item {
-  border-top: 1px solid var(--line);
-  border-radius: 0;
+.today-item {
+  --digest-accent: var(--accent);
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  margin-top: 10px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--digest-accent);
+  border-radius: 12px;
+  background: rgba(167, 139, 250, 0.045);
 }
-.today-read-more {
-  display: block;
-  color: var(--accent);
-  font-size: 0.85rem;
-  margin-top: 5px;
+.today-item-announcement {
+  --digest-accent: #8ed5cc;
+  background: rgba(142, 213, 204, 0.045);
+}
+.today-item-payment {
+  --digest-accent: #e6c389;
+}
+.today-item > .today-item-icon {
+  flex: 0 0 36px;
+  min-width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--digest-accent);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+}
+.today-item > .today-item-content {
+  flex: 1;
+}
+.today-item-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 10px;
+  color: var(--digest-accent);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+.today-item-action svg {
+  flex-shrink: 0;
 }
 .today-caught-up {
   display: flex;
