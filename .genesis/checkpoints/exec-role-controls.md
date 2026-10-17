@@ -13,3 +13,6 @@
 - Full check passed:353 tests/42 suites, typecheck/lint/production build. All4 affected desktop/mobile browser flows passed, including target eligibility and delayed-save behavior. Independent review APPROVE; reviewer independently ran12 SQL tests.
 - Prior custom release b85ce87 pushed/deployed READY dpl_8e4tQoRxRwJB9XuNEd8ZSwnS1aNU and stable testing alias updated. Protected preview health CLI was interrupted; production health200.0015 verified applied,0customrecords, legacyexecute preserved.
 - Delegated Q&A (assistant answers, not human evidence): manual admin is distinct from derived exec access; server+SQL reject direct ineligible assignments; saved role state survives reopen and controls cannot diverge during a pending save.
+
+## Testing release
+- Commit300f3a2 pushed to preview.0016 applied to shared Supabase and function definition/execute grant verified; no member permission/role records changed. Vercel deployment dpl_5AcapBzqQsFCjVc5tpNDMKTwRRf5 READY. Existing testing alias updated to akh-mastani-41jvc1r5d-pradyumn-agnoors-projects.vercel.app. Production health200. Preview retains Vercel authentication protection; authenticated live CRUD and physical-phone checks remain user acceptance.
