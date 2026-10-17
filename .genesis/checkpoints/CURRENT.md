@@ -38,3 +38,5 @@
 - latest_exec_role_controls: User clarified only existing manually granted active admins can receive exec roles. UI and0016 SQL enforce eligibility, saved roles collapse to Change exec role, pending/cancel state protected. Independent APPROVE;353 tests/check/build and4 desktop/mobile flows pass. Testing release300f3a2 READY;0016 verified applied and stable alias updated. checkpoints/exec-role-controls.md.
 
 - latest_additional_exec_tags: AO and Hospitality supported in enum/constraints/RPC/post attribution, admin eligibility retained. User-authorized two live tag assignments verified.354 tests/fullcheck/build and2 desktop/mobile role flows pass; independent APPROVE. Testing deployment in progress. checkpoints/additional-exec-tags.md.
+
+- latest_production_release: All reviewed exec/practice/custom-event/loading/link/typography changes promoted to main c4f9cad and production dpl_5D1tyYmV9Nj6uwF3pvYunE2LDXM1 READY at https://akh-mastani.vercel.app. Health/sign-in/anonymous-calendar redirect checks pass.354-test approved source unchanged;0014–0017 already applied. checkpoints/production-exec-release.md.
