@@ -46,3 +46,12 @@ export function eventStatus(event: CalendarEvent, now: Date) {
       ? "Happening now"
       : "Upcoming";
 }
+
+export function eventInMonth(event: CalendarEvent, day: string) {
+  const month = day.slice(0, 7);
+  const start = event.allDay ? event.start : chicagoDay(new Date(event.start));
+  const end = event.allDay
+    ? moveDay(event.end, -1)
+    : chicagoDay(new Date(Date.parse(event.end) - 1));
+  return start.slice(0, 7) <= month && end.slice(0, 7) >= month;
+}

@@ -24,7 +24,7 @@ export const EXPORT_TABLES = {
   },
   communication_posts: {
     columns:
-      "id,title,body,kind,completion_mode,audience_type,audience_label,due_on,expires_at,image_path,image_description,version,archived_at,created_at,created_by,author_name,author_exec_role,edited_at,practice_event_id,practice_snapshot,completed_at,completed_by",
+      "id,title,body,kind,completion_mode,audience_type,audience_label,due_on,expires_at,image_path,image_description,version,archived_at,created_at,created_by,author_name,author_exec_role,edited_at,linked_todo_id,practice_event_id,practice_snapshot,completed_at,completed_by",
     order: ["id"],
   },
   communication_recipients: {

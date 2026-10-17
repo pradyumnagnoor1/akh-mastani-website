@@ -25,6 +25,7 @@ export type CommunicationPost = {
   author_name?: string | null;
   author_exec_role?: import("@/features/identity/policy").ExecRole | null;
   edited_at?: string | null;
+  linked_todo_id?: string | null;
   practice_event_id?: string | null;
   practice_source?: string | null;
   practice_snapshot?: import("@/features/calendar/types").CalendarEvent | null;

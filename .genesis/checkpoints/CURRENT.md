@@ -42,3 +42,5 @@
 - latest_production_release: All reviewed exec/practice/custom-event/loading/link/typography changes promoted to main c4f9cad and production dpl_5D1tyYmV9Nj6uwF3pvYunE2LDXM1 READY at https://akh-mastani.vercel.app. Health/sign-in/anonymous-calendar redirect checks pass.354-test approved source unchanged;0014–0017 already applied. checkpoints/production-exec-release.md.
 
 - latest_action_exec_tags: Shared explicit Exec role badge on published announcements/to-dos and author surfaces; task Posting as/immutable author snapshot reused.355 tests/check/build and6 affected desktop/mobile flows passed, independent APPROVE. No migration/notification changes; production d0eef02/dpl_36MxDtMmSjX7UpNpWcVjqM4JLeTr READY, health/sign-in verified. checkpoints/action-exec-tags.md.
+
+- latest_announcement_todo_month: Current-Chicago-month Upcoming and atomic announcement-linked to-do creation, reciprocal authorized links, independent progress/edit/deletion and publication dedup locally complete.362 tests/fullcheck/build and8 desktop/mobile flows pass; independent APPROVE.0018/prod rollout pending. checkpoints/announcement-todo-month.md.

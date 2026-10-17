@@ -57,3 +57,26 @@ it("keeps uncertain-save guidance for an interrupted network call", async () => 
   expect(result.error).not.toContain("private transport detail");
   expect(mocks.redirect).not.toHaveBeenCalled();
 });
+
+it("routes an announcement and new to-do through one transactional save", async () => {
+  const form = draft();
+  form.set("also_todo", "on");
+  form.set("todo_id", "00000000-0000-4000-8000-000000000021");
+  form.set("todo_mode", "shared");
+  form.set("todo_due", "2026-11-01");
+  mocks.rpc.mockResolvedValue({ error: null });
+  await saveCommunication({ error: null }, form);
+  expect(mocks.rpc).toHaveBeenCalledWith(
+    "save_announcement_with_todo",
+    expect.objectContaining({
+      todo_id: "00000000-0000-4000-8000-000000000021",
+      todo_due: "2026-11-01",
+      todo_mode: "shared",
+      post_data: expect.objectContaining({
+        post_kind: "announcement",
+        post_title: "Practice",
+      }),
+    }),
+  );
+  expect(mocks.rpc).toHaveBeenCalledTimes(1);
+});

@@ -2142,3 +2142,11 @@ h3 {
   font-weight: 800;
   overflow-wrap: anywhere;
 }
+
+.linked-communication .text-button {
+  color: var(--accent);
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}

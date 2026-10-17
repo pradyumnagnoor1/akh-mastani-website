@@ -1,0 +1,15 @@
+# Current-month Upcoming and announcement to-dos · 2026-10-16
+
+## G0
+- Existing calendar Day/Upcoming view shows all future events. Add current Chicago month filter to Upcoming only; day navigation and full sync window remain.
+- Existing announcements/tasks are separate canonical posts with individual read/completion; a reminder-task link already exists but is not a general content link. PARTIAL: add durable announcement->task FK, atomic optional task creation on new/existing announcement save, bidirectional visible-record links.
+- User intent: create one announcement and a related actionable to-do, visible on both pages with links. Checkbox creates task with same title/body/captured recipients, own optional due date/individual or shared completion. Reading and completion remain independent. Later task edits managed separately; announcement edits do not overwrite task progress/content. Deleting either retains the other and clears invalid link. No retrospective historical attribution.
+- Skills: coding-orchestrator/design-system; existing security/data/production canon. Additive0018 and existing validated RPCs, no new permission grants/pages. Suppress paired task's immediate publication job in transaction so recipients get one announcement publication, keep independent due-task reminders. Existing practice reminder dedup untouched.
+- Verification: pure month-boundary tests, SQL atomicity/recipient privacy/CAS/deletion/notification jobs, desktop/mobile linked flow and current-month Upcoming, fullcheck/build/independent review before matching deployment.
+
+## Verification
+- Fullcheck passed362 tests/42 suites, typecheck/lint/production build. Eight affected desktop/mobile flows passed (month+future day, linked create/read/task/list/delete, existing task progress/announcement attribution/calendar). Initial browser test captured the same-title destination URL before navigation; explicit task URL wait corrected it.
+- Independent review APPROVE; initial24 SQL/calendar/actions checks and final19 SQL checks independently passed. Fixed attaching a task to an unchanged announcement to retain its notification; suppress child only when same device has a newly created pending parent alert. Custom practice+shared-task combination verified.
+- Mobile linked-task detail inspected; link is visibly underlined violet and checkbox reuses existing accessible control sizing. Final style replay passed2/2 desktop/mobile; updated linked-task screenshot inspected. No recipient/status/admin changes or live synthetic posts planned.
+- Delegated Q&A (assistant answers, not human evidence): separate posts preserve independent acknowledgment/completion; one transaction and captured-recipient snapshot avoid orphan/private drift; deletion detaches with revision fencing, and paired publication only suppresses a real duplicate.
+- Rollout: preflight confirmed linked_todo_id absent. Apply0018 then matching production frontend; existing signature/legacy clients remain compatible. Existing authenticated/physical push live acceptance remains separate.

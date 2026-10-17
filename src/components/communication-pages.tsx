@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/purity -- Server components capture request time for expiration timers. */
 import { CommunicationAttribution } from "./communication-attribution";
+import { CommunicationLink } from "./communication-link";
 import { ReadBadge } from "./read-badge";
 import {
   canPostAnnouncements,
@@ -140,6 +141,7 @@ export async function CommunicationList({
                 <h2>
                   <Link href={`${base}/${post.id}`}>{post.title}</Link>
                 </h2>
+                <CommunicationLink post={post} posts={posts} compact />
                 <p className="muted communication-excerpt">
                   <MessageText text={post.body} />
                 </p>
@@ -225,6 +227,7 @@ export async function CommunicationDetail({
         <p className="eyebrow">{post.audience_label}</p>
         <h1>{post.title}</h1>
         <CommunicationAttribution post={post} />
+        <CommunicationLink post={post} posts={posts} />
         {kind === "announcement" && mine && <ReadBadge read={done} />}
         {post.practice_event_id && (
           <section className="notice">
@@ -429,6 +432,7 @@ export async function CommunicationEditor({
           {...editor}
           id={id ?? crypto.randomUUID()}
           customPracticeDraftId={crypto.randomUUID()}
+          todoDraftId={crypto.randomUUID()}
           kind={kind}
           calendar={calendar}
           post={post}

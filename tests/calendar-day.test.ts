@@ -1,6 +1,7 @@
 import { expect, it } from "vitest";
 import {
   eventOnDay,
+  eventInMonth,
   eventStatus,
   practiceIdentity,
   chicagoDay,
@@ -68,4 +69,31 @@ it("keeps recurring instance identity across moves while distinguishing occurren
   expect(
     practiceIdentity({ ...event, originalStart: "2026-10-24T04:30:00Z" }),
   ).not.toBe(practiceIdentity(event));
+});
+
+it("limits month membership using Chicago time, exclusive ends and year boundaries", () => {
+  expect(
+    eventInMonth(
+      { ...base, start: "2026-11-01T04:00:00Z", end: "2026-11-01T05:00:00Z" },
+      "2026-10-31",
+    ),
+  ).toBe(true);
+  expect(
+    eventInMonth(
+      { ...base, start: "2026-11-01T06:00:00Z", end: "2026-11-01T07:00:00Z" },
+      "2026-10-31",
+    ),
+  ).toBe(false);
+  expect(
+    eventInMonth(
+      { ...base, allDay: true, start: "2026-12-31", end: "2027-01-01" },
+      "2027-01-01",
+    ),
+  ).toBe(false);
+  expect(
+    eventInMonth(
+      { ...base, allDay: true, start: "2026-12-31", end: "2027-01-02" },
+      "2027-01-01",
+    ),
+  ).toBe(true);
 });

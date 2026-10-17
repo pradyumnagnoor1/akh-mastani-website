@@ -557,3 +557,122 @@ test("practice: to-do actions show explicit saved exec identity on detail, lists
     await assign(page, [], request);
   }
 });
+
+test("practice: Upcoming shows only the current month while day navigation reaches later events", async ({
+  page,
+  context,
+  request,
+}) => {
+  await login(context, request);
+  await request.get("http://127.0.0.1:3201/fixture/calendar?state=months");
+  try {
+    await page.goto("/calendar");
+    await page.getByRole("button", { name: "Upcoming", exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name: "This month event", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Next month event", exact: true }),
+    ).toHaveCount(0);
+    const today = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Chicago",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
+    const current = new Date(`${today}T12:00:00Z`);
+    const next = new Date(
+      Date.UTC(current.getUTCFullYear(), current.getUTCMonth() + 1, 1),
+    )
+      .toISOString()
+      .slice(0, 10);
+    await page.getByLabel("Date", { exact: true }).fill(next);
+    await expect(
+      page.getByRole("heading", { name: "Next month event", exact: true }),
+    ).toBeVisible();
+  } finally {
+    await request.get("http://127.0.0.1:3201/fixture/calendar?state=fresh");
+  }
+});
+test("practice: announcement creates a linked to-do with independent read and completion", async ({
+  page,
+  context,
+  request,
+}, info) => {
+  await login(context, request);
+  const title = `Forms announcement ${info.project.name}`;
+  await page.goto("/announcements/new");
+  await page.getByLabel("Title", { exact: true }).fill(title);
+  await page
+    .getByLabel("Details", { exact: true })
+    .fill("Submit your forms before practice.");
+  await page.getByLabel("Also create a to-do", { exact: true }).check();
+  await page
+    .getByLabel("To-do completion", { exact: true })
+    .selectOption("individual");
+  await page
+    .getByRole("button", { name: "Publish announcement", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: title, exact: true }),
+  ).toBeVisible();
+  const announcement = page.url();
+  await page.getByRole("button", { name: "Mark as read", exact: true }).click();
+  await page
+    .getByRole("link", { name: `View linked to-do: ${title} →`, exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: title, exact: true }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/\/todos\/[0-9a-f-]+$/);
+  const task = page.url();
+  await expect(
+    page.getByRole("button", { name: "Mark done", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Submit your forms before practice.", { exact: true }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: info.outputPath("announcement-linked-todo.png"),
+    fullPage: true,
+  });
+  await page
+    .getByRole("link", { name: `View announcement: ${title} →`, exact: true })
+    .click();
+  await expect(page).toHaveURL(announcement);
+  await page.goto("/todos");
+  const taskCard = page
+    .locator(".communication-card")
+    .filter({ has: page.getByRole("heading", { name: title, exact: true }) });
+  await expect(
+    taskCard.getByRole("link", {
+      name: `View announcement: ${title} →`,
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page.goto("/announcements");
+  const annCard = page
+    .locator(".communication-card")
+    .filter({ has: page.getByRole("heading", { name: title, exact: true }) });
+  await expect(
+    annCard.getByRole("link", {
+      name: `View linked to-do: ${title} →`,
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page.goto(task);
+  await page.getByRole("button", { name: "Mark done", exact: true }).click();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Delete to-do", exact: true }).click();
+  await page.goto(announcement);
+  await expect(
+    page.getByRole("link", { name: /^View linked to-do:/ }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: title, exact: true }),
+  ).toBeVisible();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page
+    .getByRole("button", { name: "Delete announcement", exact: true })
+    .click();
+});

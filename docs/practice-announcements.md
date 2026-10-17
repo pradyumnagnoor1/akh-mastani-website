@@ -31,3 +31,14 @@ Shared page titles use a larger, heavier Hanken heading and violet underline. Se
 ## Exec identity on published actions
 
 Announcement and to-do authors show their name, posting/creation timestamp and a violet **Exec role** badge with the saved role. The same badge distinguishes exec identity from audience/status tags on Home, Today, Calendar, Roster and Admin. Both composers offer **Posting as** for assigned roles; edits preserve original attribution even after the author's current roles change. Historical records with no saved role do not invent one from today's membership. Notification previews continue to omit exec role tags.
+
+
+## Current-month Upcoming and linked to-dos
+
+Calendar **Upcoming** shows remaining events overlapping the current month in America/Chicago, with a month/year heading. Day/date navigation still reaches other months; the Google sync window stays unchanged.
+
+When creating or editing an announcement without a linked task, enable **Also create a to-do** and choose an optional due date and individual/shared completion. Publishing saves both items together. The to-do starts with the announcement title/details and exact captured recipients; it appears in To-Dos with a link back, and the announcement links to that task. Reading and task completion are separate. Later task edits are independent; deleting either keeps the other, and deleting the task removes its announcement link. The task remains actionable if the announcement expires.
+
+The initial paired publication sends one announcement alert per device; attaching a task to an unchanged existing announcement keeps the task alert when no new announcement alert is queued. Normal due-task reminders remain; practice announcements still share the existing practice reminder. Notification previews keep the existing title/message style without exec tags.
+
+Apply `0018_announcement_todos.sql` after0017 before this frontend release. This is additive and preserves existing save entrypoints. No live announcement/task or notification is needed for schema rollout.

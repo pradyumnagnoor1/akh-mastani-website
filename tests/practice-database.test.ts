@@ -54,6 +54,7 @@ beforeAll(async () => {
     "0015_custom_practices",
     "0016_exec_role_eligibility",
     "0017_additional_exec_roles",
+    "0018_announcement_todos",
   ])
     await db.exec(readFileSync(`supabase/migrations/${name}.sql`, "utf8"));
 });
@@ -781,4 +782,207 @@ it("to-do author roles are validated and remain original after edits by another 
       post,
     ]),
   ).toBe("Hospitality");
+});
+
+function linkedData(id = post) {
+  return {
+    target_id: id,
+    expected_version: 0,
+    post_kind: "announcement",
+    post_title: "Bring forms",
+    post_body: "Submit the forms",
+    task_mode: "individual",
+    audience: "selected",
+    recipient_ids: [a],
+    source_id: null,
+    due_date: null,
+    expiration_date: null,
+    image_object: null,
+    image_alt: "",
+    reminder_time: null,
+    reminder_type: null,
+    reminder_text: "",
+    linked_task: null,
+    posting_role: null,
+    practice_id: null,
+    calendar_source: null,
+  };
+}
+it("linked announcements create a canonical task with independent progress, private recipients and one publication", async () => {
+  await device(a);
+  await role();
+  await q("save_announcement_with_todo($1::jsonb,$2,null,'individual')", [
+    JSON.stringify(linkedData()),
+    other,
+  ]);
+  expect(
+    await q("(select linked_todo_id from communication_posts where id=$1)", [
+      post,
+    ]),
+  ).toBe(other);
+  expect(
+    await q("(select title from communication_posts where id=$1)", [other]),
+  ).toBe("Bring forms");
+  await role("postgres");
+  expect(await q("(select count(*)::int from push_jobs)")).toBe(1);
+  expect(
+    await q("(select count(*)::int from push_jobs where source_id=$1)", [
+      other,
+    ]),
+  ).toBe(0);
+  await role("authenticated", b);
+  expect(
+    await q(
+      "(select count(*)::int from communication_posts where id=any($1::uuid[]))",
+      [[post, other]],
+    ),
+  ).toBe(0);
+  await expect(
+    q("save_announcement_with_todo($1::jsonb,$2,null,'individual')", [
+      JSON.stringify(linkedData(randomUUID())),
+      randomUUID(),
+    ]),
+  ).rejects.toThrow(/Management/);
+  await role("authenticated", a);
+  await q("complete_communication($1,1)", [post]);
+  expect(
+    await q(
+      "(select completed_at is null from communication_recipients where post_id=$1 and member_id=$2)",
+      [other, a],
+    ),
+  ).toBe(true);
+  await q("complete_communication($1,1)", [other]);
+  expect(
+    await q(
+      "(select completed_at is not null from communication_recipients where post_id=$1 and member_id=$2)",
+      [post, a],
+    ),
+  ).toBe(true);
+});
+it("linked save rolls back conflicts and deleting a task detaches the announcement with a new revision", async () => {
+  await role();
+  await q("save_announcement_with_todo($1::jsonb,$2,null,'shared')", [
+    JSON.stringify(linkedData()),
+    other,
+  ]);
+  const extra = randomUUID();
+  await expect(
+    q("save_announcement_with_todo($1::jsonb,$2,null,'individual')", [
+      JSON.stringify({
+        ...linkedData(),
+        expected_version: 1,
+        post_body: "Must roll back",
+      }),
+      extra,
+    ]),
+  ).rejects.toThrow(/already has/);
+  expect(
+    await q("(select body from communication_posts where id=$1)", [post]),
+  ).toBe("Submit the forms");
+  expect(
+    await q("(select count(*)::int from communication_posts where id=$1)", [
+      extra,
+    ]),
+  ).toBe(0);
+  await q("delete_team_item($1,1,'communication')", [other]);
+  expect(
+    await q(
+      "(select linked_todo_id is null and version=2 from communication_posts where id=$1)",
+      [post],
+    ),
+  ).toBe(true);
+  await expect(
+    q("save_announcement_with_todo($1::jsonb,$2,null,'individual')", [
+      JSON.stringify({ ...linkedData(), expected_version: 1 }),
+      extra,
+    ]),
+  ).rejects.toThrow(/changed/);
+});
+it("deleting the announcement preserves its actionable task and task edits remain independent", async () => {
+  await role();
+  await q("save_announcement_with_todo($1::jsonb,$2,null,'shared')", [
+    JSON.stringify(linkedData()),
+    other,
+  ]);
+  await q(
+    "save_announcement($1,1,'task','New task title','New instructions','shared','selected',array[$2::uuid],null,null,null,null,'',null,null,'',null,null,null,null)",
+    [other, a],
+  );
+  expect(
+    await q("(select body from communication_posts where id=$1)", [post]),
+  ).toBe("Submit the forms");
+  await q("delete_team_item($1,1,'communication')", [post]);
+  expect(
+    await q("(select count(*)::int from communication_posts where id=$1)", [
+      other,
+    ]),
+  ).toBe(1);
+});
+
+it("adding a to-do to an existing unchanged announcement still notifies its recipients", async () => {
+  await device(a);
+  await announcement();
+  await role("postgres");
+  await db.exec("delete from push_jobs");
+  await role();
+  await q("save_announcement_with_todo($1::jsonb,$2,null,'individual')", [
+    JSON.stringify({
+      ...linkedData(),
+      expected_version: 1,
+      post_title: "Practice notes",
+      post_body: "Bring shoes",
+    }),
+    other,
+  ]);
+  await role("postgres");
+  expect(
+    await q("(select count(*)::int from push_jobs where source_id=$1)", [
+      other,
+    ]),
+  ).toBe(1);
+});
+it("a custom practice announcement can create a shared to-do in the same transaction", async () => {
+  const custom = randomUUID();
+  await role();
+  const data = {
+    ...linkedData(),
+    recipient_ids: [a, b],
+    practice_id: "__custom__",
+    custom_id: custom,
+    custom_version: 0,
+    custom_title: "Extra rehearsal",
+    custom_start: new Date(Date.now() + 86400000).toISOString(),
+    custom_end: new Date(Date.now() + 90000000).toISOString(),
+    custom_location: "PEAP",
+  };
+  await q("save_announcement_with_todo($1::jsonb,$2,null,'shared')", [
+    JSON.stringify(data),
+    other,
+  ]);
+  expect(
+    await q("(select practice_event_id from communication_posts where id=$1)", [
+      post,
+    ]),
+  ).toBe(`custom:${custom}`);
+  expect(
+    await q(
+      "(select practice_event_id is null and completion_mode='shared' from communication_posts where id=$1)",
+      [other],
+    ),
+  ).toBe(true);
+  await role("authenticated", b);
+  await q("complete_communication($1,1)", [other]);
+  await role("authenticated", a);
+  expect(
+    await q(
+      "(select completed_at is not null from communication_posts where id=$1)",
+      [other],
+    ),
+  ).toBe(true);
+  expect(
+    await q(
+      "(select completed_at is null from communication_recipients where post_id=$1 and member_id=$2)",
+      [post, a],
+    ),
+  ).toBe(true);
 });

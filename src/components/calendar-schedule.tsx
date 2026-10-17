@@ -11,6 +11,7 @@ import {
 import {
   chicagoDay,
   eventOnDay,
+  eventInMonth,
   eventStatus,
   moveDay,
   practiceIdentity,
@@ -119,7 +120,11 @@ export function CalendarSchedule({
       ? items.filter(({ event, featured }) =>
           featured ? featured.event_date === day : eventOnDay(event, day),
         )
-      : upcoming;
+      : upcoming.filter(({ event, featured }) =>
+          featured
+            ? featured.event_date.slice(0, 7) === today.slice(0, 7)
+            : eventInMonth(event, today),
+        );
   const next = upcoming[0];
   const dateLabel = new Intl.DateTimeFormat("en-US", {
     timeZone: "UTC",
@@ -252,7 +257,7 @@ export function CalendarSchedule({
         <h2>
           {view === "day"
             ? `${day === today ? "Today · " : ""}${dateLabel}`
-            : "Coming up"}
+            : `Coming up · ${new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", month: "long", year: "numeric" }).format(now)}`}
         </h2>
         <span className="muted small">
           {visible.length} {visible.length === 1 ? "event" : "events"}
@@ -379,7 +384,7 @@ export function CalendarSchedule({
               ? day === today
                 ? "No events today"
                 : "No events on this day"
-              : "No upcoming events"}
+              : "No upcoming events this month"}
           </h2>
           {next && view === "day" && (
             <>

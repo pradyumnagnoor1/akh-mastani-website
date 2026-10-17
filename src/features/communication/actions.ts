@@ -70,6 +70,7 @@ export async function saveCommunication(
   let expiration;
   let reminder;
   let custom;
+  let todo;
   try {
     args = revision(form);
     expiration = validateExpiration(value(form, "expiration_date"));
@@ -83,6 +84,20 @@ export async function saveCommunication(
       sourceId: value(form, "source_id"),
       dueOn: value(form, "due_on"),
     });
+    if (form.has("also_todo")) {
+      if (input.kind !== "announcement")
+        return { error: "Only announcements can create a linked to-do." };
+      const todo_id = value(form, "todo_id");
+      validVersion(todo_id, 0);
+      const task = validatePost({
+        ...input,
+        kind: "task",
+        mode: value(form, "todo_mode"),
+        sourceId: input.sourceId ?? "",
+        dueOn: value(form, "todo_due"),
+      });
+      todo = { todo_id, todo_due: task.dueOn, todo_mode: task.mode };
+    }
     if (value(form, "practice_id") === "__custom__") {
       const custom_id = value(form, "custom_id");
       const custom_version = Number(form.get("custom_version"));
@@ -99,31 +114,36 @@ export async function saveCommunication(
     return { error: (error as Error).message };
   }
   try {
+    const postData = {
+      ...args,
+      post_kind: input.kind,
+      post_title: input.title,
+      post_body: input.body,
+      task_mode: input.mode,
+      audience: input.audience,
+      recipient_ids: input.members,
+      source_id: input.sourceId,
+      due_date: input.dueOn,
+      expiration_date: expiration,
+      image_object: value(form, "image_path") || null,
+      image_alt: value(form, "image_description"),
+      reminder_time: null,
+      reminder_type: null,
+      reminder_text: "",
+      linked_task: null,
+      ...reminder,
+      posting_role: value(form, "posting_role") || null,
+      practice_id: value(form, "practice_id") || null,
+      calendar_source: value(form, "calendar_source") || null,
+      ...custom,
+    };
     const { error } = await supabase.rpc(
-      custom ? "save_announcement_custom" : "save_announcement",
-      {
-        ...args,
-        post_kind: input.kind,
-        post_title: input.title,
-        post_body: input.body,
-        task_mode: input.mode,
-        audience: input.audience,
-        recipient_ids: input.members,
-        source_id: input.sourceId,
-        due_date: input.dueOn,
-        expiration_date: expiration,
-        image_object: value(form, "image_path") || null,
-        image_alt: value(form, "image_description"),
-        reminder_time: null,
-        reminder_type: null,
-        reminder_text: "",
-        linked_task: null,
-        ...reminder,
-        posting_role: value(form, "posting_role") || null,
-        practice_id: value(form, "practice_id") || null,
-        calendar_source: value(form, "calendar_source") || null,
-        ...custom,
-      },
+      todo
+        ? "save_announcement_with_todo"
+        : custom
+          ? "save_announcement_custom"
+          : "save_announcement",
+      todo ? { post_data: postData, ...todo } : postData,
     );
     if (error) return failure(error);
   } catch {

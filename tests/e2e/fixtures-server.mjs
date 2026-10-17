@@ -117,6 +117,9 @@ await db.exec(
 await db.exec(
   readFileSync("supabase/migrations/0017_additional_exec_roles.sql", "utf8"),
 );
+await db.exec(
+  readFileSync("supabase/migrations/0018_announcement_todos.sql", "utf8"),
+);
 for (const person of users.values()) {
   await db.query(
     `insert into auth.users values($1,$2,now(),'{"provider":"google"}')`,
@@ -393,6 +396,39 @@ createServer((req, res) => {
     }
     if (url.pathname === "/fixture/calendar") {
       await seedCalendar(url.searchParams.get("state") === "stale");
+      if (url.searchParams.get("state") === "months") {
+        const day = new Intl.DateTimeFormat("en-CA", {
+          timeZone: "America/Chicago",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }).format(new Date());
+        const date = new Date(`${day}T12:00:00Z`);
+        const next = new Date(
+          Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1),
+        )
+          .toISOString()
+          .slice(0, 10);
+        const events = [
+          { id: "this-month", title: "This month event", start: day },
+          { id: "next-month", title: "Next month event", start: next },
+        ].map((e) => ({
+          ...e,
+          end: new Date(Date.parse(e.start) + 86400000)
+            .toISOString()
+            .slice(0, 10),
+          allDay: true,
+          location: null,
+          url: null,
+          recurringEventId: null,
+          originalStart: null,
+        }));
+        await db.exec("reset role");
+        await db.query(
+          "update calendar_snapshot set events=$1::jsonb,last_success_at=now()",
+          [JSON.stringify(events)],
+        );
+      }
       if (url.searchParams.get("state") === "today") {
         const day = new Intl.DateTimeFormat("en-CA", {
           timeZone: "America/Chicago",
@@ -460,6 +496,12 @@ createServer((req, res) => {
             "practice_location",
           ],
           delete_custom_practice: ["target_id", "expected_version"],
+          save_announcement_with_todo: [
+            "post_data",
+            "todo_id",
+            "todo_due",
+            "todo_mode",
+          ],
           set_exec_roles: ["target_id", "roles", "expected_roles"],
           save_announcement: [
             "target_id",
@@ -764,6 +806,7 @@ createServer((req, res) => {
             "author_name",
             "author_exec_role",
             "edited_at",
+            "linked_todo_id",
             "practice_event_id",
             "practice_source",
             "practice_snapshot",

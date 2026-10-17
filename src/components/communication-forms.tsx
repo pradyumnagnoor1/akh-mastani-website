@@ -105,6 +105,7 @@ function PeoplePicker({
 export function CommunicationForm({
   id: initialId,
   customPracticeDraftId,
+  todoDraftId,
   kind,
   post,
   people,
@@ -119,6 +120,7 @@ export function CommunicationForm({
 }: {
   id: string;
   customPracticeDraftId: string;
+  todoDraftId: string;
   kind: PostKind;
   post?: CommunicationPost;
   people: Member[];
@@ -157,6 +159,8 @@ export function CommunicationForm({
       (e.source ?? calendar?.source) === practiceSource,
   );
   const custom = practice === "__custom__";
+  const [createTodo, setCreateTodo] = useState(false);
+  const [todoId] = useState(todoDraftId);
   const [imageBusy, setImageBusy] = useState(false);
   const [title, setTitle] = useState(post?.title ?? "");
   const [body, setBody] = useState(post?.body ?? "");
@@ -488,6 +492,57 @@ export function CommunicationForm({
           </>
         )}
       </section>
+      {kind === "announcement" && !post?.linked_todo_id && (
+        <section className="panel stack">
+          <label className="reminder-toggle">
+            <input
+              type="checkbox"
+              name="also_todo"
+              checked={createTodo}
+              disabled={changed}
+              onChange={(e) => setCreateTodo(e.target.checked)}
+            />
+            Also create a to-do
+          </label>
+          <p className="muted small">
+            Starts with this announcement’s title, details and recipients.
+            Reading the announcement and completing the to-do are separate.
+            Manage later to-do edits from To-Dos.
+          </p>
+          {createTodo && (
+            <>
+              <input type="hidden" name="todo_id" value={todoId} />
+              <label htmlFor="todo-due">To-do due date (optional)</label>
+              <input
+                id="todo-due"
+                name="todo_due"
+                type="date"
+                disabled={changed}
+              />
+              <label htmlFor="todo-mode">To-do completion</label>
+              <select
+                id="todo-mode"
+                name="todo_mode"
+                defaultValue="individual"
+                disabled={changed}
+              >
+                <option value="individual">
+                  Each dancer completes individually
+                </option>
+                <option value="shared">
+                  One person completes for everyone
+                </option>
+              </select>
+            </>
+          )}
+        </section>
+      )}
+      {kind === "announcement" && post?.linked_todo_id && (
+        <p className="notice">
+          This announcement has a linked to-do. Manage its details and
+          completion from the to-do page.
+        </p>
+      )}
       <DraftConflict changed={changed} />
       {kind === "announcement" && announcementType !== "practice" && (
         <AnnouncementReminderFields
