@@ -1,6 +1,8 @@
 export const CALENDAR_ZONE = "America/Chicago" as const;
 export const FRESHNESS_MS = 300_000;
 export type CalendarEvent = {
+  source?: "custom";
+  version?: number;
   id: string;
   title: string;
   location: string | null;

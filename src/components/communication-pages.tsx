@@ -199,12 +199,11 @@ export async function CommunicationDetail({
   const calendar = post.practice_event_id
     ? (await calendarData()).calendar
     : null;
-  const practice =
-    calendar && calendar.source === post.practice_source
-      ? calendar.events.find(
-          (e) => practiceIdentity(e) === post.practice_event_id,
-        )
-      : null;
+  const practice = calendar?.events.find(
+    (e) =>
+      practiceIdentity(e) === post.practice_event_id &&
+      (e.source ?? calendar.source) === post.practice_source,
+  );
   const memberIds = manager ? rows.map((r) => r.member_id) : [];
   if (post.completed_by) memberIds.push(post.completed_by);
   const names = new Map<string, string>();
@@ -433,6 +432,7 @@ export async function CommunicationEditor({
           key={id ?? `new-${kind}`}
           {...editor}
           id={id ?? crypto.randomUUID()}
+          customPracticeDraftId={crypto.randomUUID()}
           kind={kind}
           calendar={calendar}
           post={post}

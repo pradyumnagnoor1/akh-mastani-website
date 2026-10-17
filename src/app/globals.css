@@ -2007,3 +2007,111 @@ button:enabled:active {
 .calendar-day-controls .actions {
   align-items: end;
 }
+
+/* Shared hierarchy: titles, key details, then supporting copy. */
+:root {
+  --title-color: #ffffff;
+  --title-weight: 780;
+}
+h1,
+h2,
+h3 {
+  color: var(--title-color);
+  font-family: var(--font-body), sans-serif;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+h1,
+.page-heading h1 {
+  font-size: clamp(32px, 4vw, 44px);
+  font-weight: 850;
+  letter-spacing: -0.045em;
+  line-height: 1.12;
+}
+.page-heading h1::after {
+  content: "";
+  display: block;
+  width: 44px;
+  height: 4px;
+  margin: 16px 0 18px;
+  border-radius: 4px;
+  background: var(--accent-fill);
+}
+h2 {
+  font-size: 25px;
+  font-weight: var(--title-weight);
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+}
+h3 {
+  font-size: 19px;
+  font-weight: var(--title-weight);
+  letter-spacing: -0.015em;
+  line-height: 1.35;
+}
+.calendar-event h2,
+.communication-card h2 {
+  font-size: 25px;
+  line-height: 1.3;
+  font-weight: 800;
+}
+.today-item-content > strong,
+.my-segment-row strong,
+.practice-note > a > strong {
+  color: var(--title-color);
+  font-size: 18px;
+  font-weight: var(--title-weight);
+  line-height: 1.4;
+}
+.notice > strong,
+.metric {
+  font-weight: 800;
+  color: var(--title-color);
+}
+.calendar-event .eyebrow {
+  font-size: 14px;
+  font-weight: 750;
+  letter-spacing: 0.045em;
+}
+.calendar-location {
+  color: var(--text);
+  font-weight: 650;
+}
+.announcement-attribution strong {
+  font-weight: 700;
+}
+.custom-practice-fields {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 20px;
+  background: var(--surface-raised);
+}
+.custom-practice-fields legend {
+  font-size: 19px;
+  color: var(--title-color);
+  font-weight: 750;
+  padding: 0 8px;
+}
+.practice-time-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.practice-time-grid input {
+  min-width: 0;
+  width: 100%;
+}
+@media (max-width: 480px) {
+  .practice-time-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .custom-practice-fields {
+    padding: 16px;
+  }
+  h2,
+  .calendar-event h2,
+  .communication-card h2 {
+    font-size: 23px;
+  }
+}

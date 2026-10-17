@@ -51,6 +51,7 @@ beforeAll(async () => {
     "0012_digest_nudges",
     "0013_announcement_push_preview",
     "0014_practice_announcements",
+    "0015_custom_practices",
   ])
     await db.exec(readFileSync(`supabase/migrations/${name}.sql`, "utf8"));
 });
@@ -471,4 +472,215 @@ it("keeps a new publication after a practice reminder was sent and merges only i
   );
   await role("service_role");
   expect(await q("push_prepare_delivery($1,$2)", [job.id, token])).toBeNull();
+});
+
+async function customAnnouncement(
+  id = post,
+  body = "Bring extra shoes",
+  version = 0,
+) {
+  const { chicagoReminderTime } =
+    await import("../src/features/notifications/reminder-policy");
+  const { chicagoDay, moveDay } = await import("../src/features/calendar/day");
+  const day = moveDay(chicagoDay(), 1),
+    start = chicagoReminderTime(day, "13:00"),
+    end = chicagoReminderTime(day, "15:00");
+  const args = [
+    id,
+    version,
+    "announcement",
+    "Extra practice note",
+    body,
+    "individual",
+    "selected",
+    [a],
+    null,
+    null,
+    null,
+    null,
+    "",
+    null,
+    null,
+    "",
+    null,
+    null,
+    null,
+    null,
+    id,
+    version,
+    "Extra team practice",
+    start,
+    end,
+    "PEAP",
+  ];
+  await role();
+  await q(
+    `save_announcement_custom(${args.map((_, i) => `$${i + 1}`).join(",")})`,
+    args,
+  );
+  return { start, end, day, due: chicagoReminderTime(day, "12:00"), id };
+}
+it("custom practice and announcement save atomically and stay canonical across changes", async () => {
+  const { start, end } = await customAnnouncement();
+  await role("postgres");
+  expect(
+    await q(
+      "(select practice_source='custom' and practice_event_id='custom:'||id and reminder_at is null from communication_posts where id=$1)",
+      [post],
+    ),
+  ).toBe(true);
+  expect(await q("(select count(*)::int from custom_practices)")).toBe(1);
+  await role("authenticated", a);
+  await expect(
+    q("save_custom_practice($1,1,'Forged',$2,$3,'PEAP')", [post, start, end]),
+  ).rejects.toThrow(/Management/);
+  await expect(q("practice_schedule()")).rejects.toThrow(/permission/);
+  await role();
+  await expect(
+    q("save_custom_practice($1,0,'Stale',$2,$3,'PEAP')", [post, start, end]),
+  ).rejects.toThrow(/changed/);
+  await q(
+    "save_custom_practice($1,1,'Moved practice',$2::timestamptz+interval '1 hour',$3::timestamptz+interval '1 hour','Rudder')",
+    [post, start, end],
+  );
+  await role("postgres");
+  const event = await q<{ title: string; location: string; start: string }>(
+    "practice_event('custom',$1)",
+    [`custom:${post}`],
+  );
+  expect(event.title).toBe("Moved practice");
+  expect(event.location).toBe("Rudder");
+  expect(event.start).not.toBe(start);
+  await role();
+  await expect(customAnnouncement(other, "", 0)).rejects.toThrow(/message/);
+  await role("postgres");
+  expect(
+    await q("(select count(*)::int from custom_practices where id=$1)", [
+      other,
+    ]),
+  ).toBe(0);
+});
+it("custom practices remind without Google, share recipient-safe notes, and deletion cleans history/jobs", async () => {
+  const { due } = await customAnnouncement();
+  await device(a);
+  await device(b);
+  await role("postgres");
+  await db.exec("delete from calendar_snapshot;delete from push_jobs");
+  await enqueue(due);
+  await enqueue(due);
+  await role("postgres");
+  expect(await q("(select count(*)::int from push_jobs)")).toBe(2);
+  expect(
+    await q(
+      "(select count(*)::int from nudge_occurrences where source_kind='announcement')",
+    ),
+  ).toBe(0);
+  const bundle = await q<string>(
+    "(select id from nudge_bundles where member_id=$1)",
+    [a],
+  );
+  const payload = await q<{ title: string; body: string; url: string }>(
+    "nudge_payload($1,$2::timestamptz)",
+    [bundle, due],
+  );
+  expect(payload.body).toContain("Bring extra shoes");
+  expect(payload.title).toContain("PEAP");
+  expect(payload.url).toContain("custom:");
+  const hidden = await q<{ body: string }>(
+    "nudge_payload((select id from nudge_bundles where member_id=$1),$2::timestamptz)",
+    [b, due],
+  );
+  expect(hidden.body).not.toContain("Bring extra shoes");
+  await role();
+  await q("delete_custom_practice($1,1)", [post]);
+  await role("postgres");
+  expect(await q("practice_event('custom',$1)", [`custom:${post}`])).toBeNull();
+  expect(await q("(select count(*)::int from custom_practice_audit)")).toBe(0);
+  expect(await q("(select count(*)::int from nudge_occurrences)")).toBe(0);
+  expect(await q("(select count(*)::int from push_jobs)")).toBe(0);
+  expect(
+    await q(
+      "(select practice_snapshot is null from communication_posts where id=$1)",
+      [post],
+    ),
+  ).toBe(true);
+});
+it("legacy custom practice reminders validate and deliver through the existing worker", async () => {
+  await customAnnouncement();
+  await device(a);
+  await role("postgres");
+  await db.exec("update nudge_control set enabled=false;delete from push_jobs");
+  const start = new Date(Date.now() + 45 * 60000).toISOString(),
+    end = new Date(Date.now() + 105 * 60000).toISOString();
+  await role();
+  await q("save_custom_practice($1,1,'Extra team practice',$2,$3,'PEAP')", [
+    post,
+    start,
+    end,
+  ]);
+  await role("service_role");
+  await q("push_enqueue_reminders()");
+  await role("postgres");
+  const job = await q<string>(
+    "(select id from push_jobs where source_kind='practice')",
+  );
+  expect(job).toBeTruthy();
+  const token = randomUUID();
+  await db.query(
+    "update push_jobs set lease_token=$1,lease_until=now()+interval '1 minute' where id=$2",
+    [token, job],
+  );
+  await role("service_role");
+  expect(
+    (await q<{ body: string }>("push_prepare_delivery($1,$2)", [job, token]))
+      .body,
+  ).toContain("Bring extra shoes");
+});
+
+it("deleting a custom practice scrubs mixed reminder payloads and preserves the task", async () => {
+  const { due, day } = await customAnnouncement();
+  await role();
+  await q(
+    "save_communication($1,0,'task','Finish forms','Submit forms','individual','selected',$2::uuid[],null,$3::date)",
+    [other, [a], day],
+  );
+  await device(a);
+  await role("postgres");
+  await db.exec("delete from push_jobs");
+  await enqueue(due);
+  await role("postgres");
+  const bundle = await q<string>(
+    "(select id from nudge_bundles where member_id=$1)",
+    [a],
+  );
+  expect(
+    await q(
+      "(select count(*)::int from nudge_occurrences where bundle_id=$1)",
+      [bundle],
+    ),
+  ).toBeGreaterThan(1);
+  expect(
+    JSON.stringify(
+      await q("(select payload from push_jobs where source_id=$1)", [bundle]),
+    ),
+  ).toContain("PEAP");
+  await role();
+  await q("delete_custom_practice($1,1)", [post]);
+  await role("postgres");
+  expect(
+    await q("(select count(*)::int from push_jobs where source_id=$1)", [
+      bundle,
+    ]),
+  ).toBe(1);
+  const stored = JSON.stringify(
+    await q("(select payload from push_jobs where source_id=$1)", [bundle]),
+  );
+  expect(stored).not.toMatch(/PEAP|extra shoes|custom:/);
+  const payload = await q<{ title: string; body: string }>(
+    "nudge_payload($1,$2::timestamptz)",
+    [bundle, due],
+  );
+  expect(JSON.stringify(payload)).toContain(`/todos/${other}`);
+  expect(payload.body).toContain("1 to-do");
+  expect(JSON.stringify(payload)).not.toMatch(/PEAP|extra shoes|custom:/);
 });

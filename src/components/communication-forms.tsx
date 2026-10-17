@@ -1,4 +1,5 @@
 "use client";
+import { CustomPracticeFields } from "./custom-practice-fields";
 import { savedAudience } from "@/features/communication/saved-groups";
 import { SavedGroupOptions } from "./saved-group-options";
 import Link from "@/components/app-link";
@@ -103,6 +104,7 @@ function PeoplePicker({
 }
 export function CommunicationForm({
   id: initialId,
+  customPracticeDraftId,
   kind,
   post,
   people,
@@ -116,6 +118,7 @@ export function CommunicationForm({
   calendar,
 }: {
   id: string;
+  customPracticeDraftId: string;
   kind: PostKind;
   post?: CommunicationPost;
   people: Member[];
@@ -143,14 +146,17 @@ export function CommunicationForm({
     post?.practice_source ?? calendar?.source ?? "",
   );
   const [openedAt] = useState(() => Date.now());
+  const [customPracticeId] = useState(customPracticeDraftId);
   const practices =
     calendar?.events.filter(
       (e) => !e.allDay && Date.parse(e.start) > openedAt,
     ) ?? [];
-  const selectedPractice =
-    calendar?.source === practiceSource
-      ? calendar?.events.find((e) => practiceIdentity(e) === practice)
-      : undefined;
+  const selectedPractice = calendar?.events.find(
+    (e) =>
+      practiceIdentity(e) === practice &&
+      (e.source ?? calendar?.source) === practiceSource,
+  );
+  const custom = practice === "__custom__";
   const [imageBusy, setImageBusy] = useState(false);
   const [title, setTitle] = useState(post?.title ?? "");
   const [body, setBody] = useState(post?.body ?? "");
@@ -249,10 +255,19 @@ export function CommunicationForm({
                   disabled={changed}
                   onChange={(e) => {
                     setPractice(e.target.value);
-                    setPracticeSource(calendar?.source ?? "");
+                    setPracticeSource(
+                      calendar?.events.find(
+                        (item) => practiceIdentity(item) === e.target.value,
+                      )?.source ??
+                        calendar?.source ??
+                        "",
+                    );
                   }}
                 >
                   <option value="">Choose an upcoming practice</option>
+                  <option value="__custom__">
+                    Custom practice (not on Google Calendar)
+                  </option>
                   {post?.practice_event_id &&
                     !practices.some(
                       (e) => practiceIdentity(e) === post.practice_event_id,
@@ -274,16 +289,28 @@ export function CommunicationForm({
                   name="calendar_source"
                   value={practiceSource}
                 />
-                {!practices.length && (
+                {custom && (
+                  <>
+                    <input
+                      type="hidden"
+                      name="custom_id"
+                      value={customPracticeId}
+                    />
+                    <input type="hidden" name="custom_version" value="0" />
+                    <CustomPracticeFields disabled={changed} />
+                  </>
+                )}
+                {!practices.length && !custom && (
                   <p className="notice">
-                    No upcoming timed practices are available. Check the
-                    calendar connection and try again.
+                    No upcoming practices are available. Choose Custom practice
+                    to add one here.
                   </p>
                 )}
                 <p className="notice">
-                  This announcement shares the practice reminder, scheduled one
-                  hour before practice. It will not send a separate announcement
-                  reminder. Quiet hours and notification preferences apply.
+                  This announcement shares the practice reminder, normally
+                  around one hour before practice. It will not send a separate
+                  announcement reminder. Quiet hours and notification
+                  preferences apply.
                 </p>
                 {selectedPractice && (
                   <p className="muted small">

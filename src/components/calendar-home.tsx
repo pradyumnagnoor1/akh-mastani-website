@@ -23,11 +23,11 @@ export async function CalendarHome() {
           View calendar →
         </Link>
       </div>
-      {!calendar.configured ? (
+      {!calendar.configured && !events.length ? (
         <p className="muted">The team calendar hasn’t been connected yet.</p>
       ) : (
         <>
-          {calendar.stale && (
+          {calendar.stale && calendar.configured && (
             <p className="notice">
               {calendar.unavailable
                 ? "The schedule is temporarily unavailable."

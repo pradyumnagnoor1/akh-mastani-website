@@ -1,5 +1,14 @@
 // Deliberate columns: never export auth identities, OAuth credentials or Storage bytes.
 export const EXPORT_TABLES = {
+  custom_practices: {
+    columns:
+      "id,title,starts_at,ends_at,location,version,created_by,created_at,updated_at",
+    order: ["id"],
+  },
+  custom_practice_audit: {
+    columns: "id,practice_id,actor_id,action,details,created_at",
+    order: ["id"],
+  },
   members: {
     columns: "id,email,display_name,status,is_admin,exec_roles",
     order: ["id"],

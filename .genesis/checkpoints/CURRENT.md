@@ -32,3 +32,5 @@
 - tokens_used: exact telemetry unavailable
 
 - latest_segment_groups: Set Design lineups dynamically reused in Saved groups for announcement/to-do/payment targeting and admin list, subtle roster tags. Local COMPLETE, fresh independent APPROVE;266 tests/typecheck/lint/build/format and26 distinct affected desktop/mobile browser flows passed across corrected runs. See segment-groups-tags.md. Code redeploy required; no migration.
+
+- latest_custom_practices: Custom practice composer option, canonical website events, management CRUD/shared reminders and clearer titles locally complete. Independent APPROVE;352 tests/typecheck/lint/build,31 affected browser checks plus final2 replacement-practice regressions pass (1 intended desktop skip). Migration0015 applied and verified; no live records/notifications created. Testing deployment in progress. checkpoints/custom-practices.md.

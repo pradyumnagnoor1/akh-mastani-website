@@ -45,6 +45,29 @@ export function pushSubscription(input: unknown) {
   return { endpoint, p256dh: publicKey.toString("base64url"), auth };
 }
 export function notificationPath(value: unknown) {
+  if (typeof value === "string" && value.startsWith("/calendar?")) {
+    try {
+      const url = new URL(value, "https://mastani.invalid");
+      const date = url.searchParams.get("date"),
+        event = url.searchParams.get("event");
+      if (
+        url.pathname === "/calendar" &&
+        !url.hash &&
+        date &&
+        /^\d{4}-\d{2}-\d{2}$/.test(date) &&
+        Number.isFinite(Date.parse(date)) &&
+        new Date(date).toISOString().slice(0, 10) === date &&
+        [...url.searchParams.keys()].every(
+          (k) => k === "date" || k === "event",
+        ) &&
+        url.searchParams.getAll("date").length === 1 &&
+        url.searchParams.getAll("event").length <= 1 &&
+        (!event || /^[A-Za-z0-9_:@.-]{1,1200}$/.test(event))
+      )
+        return `/calendar?date=${date}${event ? `&event=${encodeURIComponent(event)}` : ""}`;
+    } catch {}
+    return "/home";
+  }
   return typeof value === "string" &&
     /^\/(?:home|calendar|roster|segments|payments|todos|announcements)(?:\/[0-9a-f-]{36})?$/.test(
       value,

@@ -108,6 +108,9 @@ await db.exec(
 await db.exec(
   readFileSync("supabase/migrations/0014_practice_announcements.sql", "utf8"),
 );
+await db.exec(
+  readFileSync("supabase/migrations/0015_custom_practices.sql", "utf8"),
+);
 for (const person of users.values()) {
   await db.query(
     `insert into auth.users values($1,$2,now(),'{"provider":"google"}')`,
@@ -434,6 +437,15 @@ createServer((req, res) => {
           push_register_subscription: ["p_endpoint", "p_p256dh", "p_auth"],
           push_unregister_subscription: ["p_endpoint"],
           active_member: [],
+          save_custom_practice: [
+            "target_id",
+            "expected_version",
+            "practice_title",
+            "starts",
+            "ends",
+            "practice_location",
+          ],
+          delete_custom_practice: ["target_id", "expected_version"],
           set_exec_roles: ["target_id", "roles", "expected_roles"],
           save_announcement: [
             "target_id",
@@ -587,6 +599,15 @@ createServer((req, res) => {
           archive_segment: ["target_id", "expected_version"],
           correct_member_name: ["target_id", "member_name"],
         };
+        functions.save_announcement_custom = [
+          ...functions.save_announcement,
+          "custom_id",
+          "custom_version",
+          "custom_title",
+          "custom_start",
+          "custom_end",
+          "custom_location",
+        ];
         functions.save_communication_reminder = [
           ...functions.save_communication_media,
           "reminder_time",
@@ -625,6 +646,25 @@ createServer((req, res) => {
       if (url.pathname.startsWith("/rest/v1/")) {
         const table = url.pathname.split("/").pop();
         const allowed = {
+          custom_practices: [
+            "id",
+            "title",
+            "starts_at",
+            "ends_at",
+            "location",
+            "version",
+            "created_by",
+            "created_at",
+            "updated_at",
+          ],
+          custom_practice_audit: [
+            "id",
+            "practice_id",
+            "actor_id",
+            "action",
+            "details",
+            "created_at",
+          ],
           featured_events: [
             "expires_at",
             "id",

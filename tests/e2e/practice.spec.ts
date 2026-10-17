@@ -58,11 +58,14 @@ test("practice: exec posts attributed practice notes, calendar shares them and b
     await exec
       .getByLabel("Announcement type", { exact: true })
       .selectOption("practice");
+    const googlePractice = await exec
+      .getByRole("option", { name: /^Team practice ·/ })
+      .getAttribute("value");
     await exec
       .getByLabel("Practice", { exact: true })
-      .selectOption({ index: 1 });
+      .selectOption(googlePractice!);
     await expect(
-      exec.getByText(/shares the practice reminder, scheduled/),
+      exec.getByText(/shares the practice reminder, normally/),
     ).toBeVisible();
     await expect(exec.getByText("Add a reminder", { exact: true })).toHaveCount(
       0,
@@ -188,4 +191,142 @@ test("practice: Today shows every event and date controls find the selected day"
   } finally {
     await request.get("http://127.0.0.1:3201/fixture/calendar?state=fresh");
   }
+});
+
+test("practice: create, reuse, edit and delete a custom practice with a shared announcement", async ({
+  page,
+  context,
+  request,
+  browser,
+}, info) => {
+  await login(context, request);
+  await page.goto("/announcements/new");
+  await page
+    .getByLabel("Announcement type", { exact: true })
+    .selectOption("practice");
+  await page.getByLabel("Practice", { exact: true }).selectOption("__custom__");
+  const date = new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10);
+  const name = `Extra rehearsal ${info.project.name}`,
+    title = `Extra instructions ${info.project.name}`;
+  await page.getByLabel("Practice name", { exact: true }).fill(name);
+  await page.getByLabel("Practice date", { exact: true }).fill(date);
+  await page.getByLabel("Start time (Texas)", { exact: true }).fill("18:00");
+  await page.getByLabel("End time (Texas)", { exact: true }).fill("20:00");
+  await page
+    .getByLabel("Practice location", { exact: true })
+    .fill("PEAP Studio");
+  await page.getByLabel("Title", { exact: true }).fill(title);
+  await page
+    .getByLabel("Details", { exact: true })
+    .fill("Bring black shoes and review https://example.com/extra.");
+  await expect(page.getByLabel("Add a reminder", { exact: true })).toHaveCount(
+    0,
+  );
+  await page.screenshot({
+    path: info.outputPath("custom-practice-form.png"),
+    fullPage: true,
+  });
+  await page
+    .getByRole("button", { name: "Publish announcement", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: title, exact: true }),
+  ).toBeVisible();
+  const postUrl = page.url();
+  await page
+    .getByRole("link", { name: "View practice calendar →", exact: true })
+    .click();
+  const card = page
+    .locator(".calendar-event")
+    .filter({ has: page.getByRole("heading", { name, exact: true }) });
+  await expect(card).toBeVisible();
+  await expect(
+    card.getByText("Custom practice", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    card.getByRole("link", { name: title, exact: true }),
+  ).toBeVisible();
+  const edit = await card
+    .getByRole("link", { name: "Edit practice", exact: true })
+    .getAttribute("href");
+  await page.screenshot({
+    path: info.outputPath("custom-practice-calendar.png"),
+    fullPage: true,
+  });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.goto("/announcements/new");
+  await page
+    .getByLabel("Announcement type", { exact: true })
+    .selectOption("practice");
+  const existing = await page
+    .getByRole("option", { name: new RegExp(`^${name} ·`) })
+    .getAttribute("value");
+  await page.getByLabel("Practice", { exact: true }).selectOption(existing!);
+  await page.getByLabel("Title", { exact: true }).fill(title + " second");
+  await page.getByLabel("Details", { exact: true }).fill("Bring water too.");
+  await page
+    .getByRole("button", { name: "Publish announcement", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: title + " second", exact: true }),
+  ).toBeVisible();
+  // A previously saved note can create another practice without reusing its old ID.
+  await page.goto(postUrl);
+  await page
+    .getByRole("link", { name: "Edit announcement", exact: true })
+    .click();
+  await page.getByLabel("Practice", { exact: true }).selectOption("__custom__");
+  await page
+    .getByLabel("Practice name", { exact: true })
+    .fill(name + " replacement");
+  await page.getByLabel("Practice date", { exact: true }).fill(date);
+  await page.getByLabel("Start time (Texas)", { exact: true }).fill("18:00");
+  await page.getByLabel("End time (Texas)", { exact: true }).fill("20:00");
+  await page
+    .getByLabel("Practice location", { exact: true })
+    .fill("Rec Center");
+  await page.getByRole("button", { name: "Save changes", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: title, exact: true }),
+  ).toBeVisible();
+  // Re-link to the original practice to exercise its unavailable state after deletion.
+  await page
+    .getByRole("link", { name: "Edit announcement", exact: true })
+    .click();
+  await page.getByLabel("Practice", { exact: true }).selectOption(existing!);
+  await page.getByRole("button", { name: "Save changes", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: title, exact: true }),
+  ).toBeVisible();
+  const dancerContext = await browser.newContext();
+  await login(dancerContext, request, "dancer");
+  const dancer = await dancerContext.newPage();
+  try {
+    await dancer.goto(`http://127.0.0.1:3102${edit}`);
+    await expect(dancer).toHaveURL(/\/home$/);
+  } finally {
+    await dancerContext.close();
+  }
+  await page.goto(edit!);
+  await page
+    .getByLabel("Practice location", { exact: true })
+    .fill("Rudder Studio");
+  await page.getByLabel("End time (Texas)", { exact: true }).fill("21:00");
+  await page
+    .getByRole("button", { name: "Save practice", exact: true })
+    .click();
+  await expect(card.getByText("Rudder Studio", { exact: true })).toBeVisible();
+  await expect(card.getByRole("region")).toContainText("Bring water too.");
+  page.once("dialog", (dialog) => dialog.accept());
+  await card
+    .getByRole("button", { name: "Delete practice", exact: true })
+    .click();
+  await page.goto(postUrl);
+  await expect(
+    page.getByText(/Practice unavailable in the current schedule/),
+  ).toBeVisible();
 });

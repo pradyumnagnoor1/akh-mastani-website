@@ -1,4 +1,5 @@
 "use server";
+import { validateCustomPractice } from "../custom-practices/policy";
 import { validateExpiration } from "@/features/expiration/policy";
 import { scheduleImageCleanup } from "@/features/announcement-images/cleanup";
 import { schedulePush } from "@/features/notifications/dispatch";
@@ -27,7 +28,7 @@ function failure(error: { message: string; code?: string }): FormState {
   )
     return { error: error.message };
   if (
-    /^(Practice unavailable|Choose an upcoming practice|Choose one of your assigned exec roles|Choose a posting role|Original posting role|Announcement management access)/.test(
+    /^(Enter a practice|Choose a valid practice|Practice unavailable|Choose an upcoming practice|Choose one of your assigned exec roles|Choose a posting role|Original posting role|Announcement management access)/.test(
       error.message,
     )
   )
@@ -68,6 +69,7 @@ export async function saveCommunication(
   let input;
   let expiration;
   let reminder;
+  let custom;
   try {
     args = revision(form);
     expiration = validateExpiration(value(form, "expiration_date"));
@@ -81,6 +83,12 @@ export async function saveCommunication(
       sourceId: value(form, "source_id"),
       dueOn: value(form, "due_on"),
     });
+    if (value(form, "practice_id") === "__custom__") {
+      const custom_id = value(form, "custom_id");
+      const custom_version = Number(form.get("custom_version"));
+      validVersion(custom_id, custom_version);
+      custom = { ...validateCustomPractice(form), custom_id, custom_version };
+    }
     if (
       input.kind === "announcement" &&
       !value(form, "practice_id") &&
@@ -91,28 +99,32 @@ export async function saveCommunication(
     return { error: (error as Error).message };
   }
   try {
-    const { error } = await supabase.rpc("save_announcement", {
-      ...args,
-      post_kind: input.kind,
-      post_title: input.title,
-      post_body: input.body,
-      task_mode: input.mode,
-      audience: input.audience,
-      recipient_ids: input.members,
-      source_id: input.sourceId,
-      due_date: input.dueOn,
-      expiration_date: expiration,
-      image_object: value(form, "image_path") || null,
-      image_alt: value(form, "image_description"),
-      reminder_time: null,
-      reminder_type: null,
-      reminder_text: "",
-      linked_task: null,
-      ...reminder,
-      posting_role: value(form, "posting_role") || null,
-      practice_id: value(form, "practice_id") || null,
-      calendar_source: value(form, "calendar_source") || null,
-    });
+    const { error } = await supabase.rpc(
+      custom ? "save_announcement_custom" : "save_announcement",
+      {
+        ...args,
+        post_kind: input.kind,
+        post_title: input.title,
+        post_body: input.body,
+        task_mode: input.mode,
+        audience: input.audience,
+        recipient_ids: input.members,
+        source_id: input.sourceId,
+        due_date: input.dueOn,
+        expiration_date: expiration,
+        image_object: value(form, "image_path") || null,
+        image_alt: value(form, "image_description"),
+        reminder_time: null,
+        reminder_type: null,
+        reminder_text: "",
+        linked_task: null,
+        ...reminder,
+        posting_role: value(form, "posting_role") || null,
+        practice_id: value(form, "practice_id") || null,
+        calendar_source: value(form, "calendar_source") || null,
+        ...custom,
+      },
+    );
     if (error) return failure(error);
   } catch {
     return failure({ message: "Network error" });

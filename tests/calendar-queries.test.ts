@@ -4,6 +4,10 @@ const mocks = vi.hoisted(() => ({
   config: vi.fn(),
   createClient: vi.fn(),
   fetchCalendar: vi.fn(),
+  custom: vi.fn(),
+}));
+vi.mock("@/features/custom-practices/queries", () => ({
+  customPracticeData: mocks.custom,
 }));
 vi.mock("server-only", () => ({}));
 vi.mock("react", () => ({ cache: (fn: unknown) => fn }));
@@ -44,6 +48,7 @@ let active: ReturnType<typeof vi.fn>,
   write: ReturnType<typeof vi.fn>;
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.custom.mockResolvedValue({ events: [] });
   mocks.config.mockReturnValue({
     source: "source",
     secretKey: "secret",
@@ -106,4 +111,12 @@ it("missing configuration returns an honest unavailable state without cache acce
     events: [],
   });
   expect(read).not.toHaveBeenCalled();
+});
+
+it("shows custom practices even without a Google connection", async () => {
+  mocks.config.mockReturnValue(null);
+  mocks.custom.mockResolvedValue({
+    events: [{ id: "custom:one", start: "2026-12-01T00:00:00Z" }],
+  });
+  expect((await calendarData()).calendar.events).toHaveLength(1);
 });

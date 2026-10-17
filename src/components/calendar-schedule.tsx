@@ -23,6 +23,7 @@ import type { CommunicationPost } from "@/features/communication/types";
 import { ReadBadge } from "./read-badge";
 import { AnnouncementAttribution } from "./announcement-attribution";
 import { MessageText } from "./message-text";
+import { DeleteCustomPractice } from "./custom-practice-form";
 import { DeleteFeaturedEvent } from "./featured-event-form";
 
 type ScheduleItem = { event: CalendarEvent; featured?: FeaturedEvent };
@@ -264,7 +265,7 @@ export function CalendarSchedule({
             : announcements.filter(
                 (p) =>
                   p.kind === "announcement" &&
-                  p.practice_source === calendar.source &&
+                  p.practice_source === (event.source ?? calendar.source) &&
                   p.practice_event_id === practiceIdentity(event) &&
                   (!p.expires_at || Date.parse(p.expires_at) > now.getTime()),
               );
@@ -298,6 +299,9 @@ export function CalendarSchedule({
                     {event.location}
                   </p>
                 )}
+                {event.source === "custom" && (
+                  <span className="badge">Custom practice</span>
+                )}
                 {event.recurringEventId && (
                   <span className="badge">Recurring practice</span>
                 )}
@@ -327,6 +331,17 @@ export function CalendarSchedule({
                       </div>
                     ))}
                   </section>
+                )}
+                {event.source === "custom" && admin && (
+                  <div className="actions">
+                    <Link
+                      className="button secondary"
+                      href={`/calendar/practices/${event.id.slice(7)}/edit`}
+                    >
+                      Edit practice
+                    </Link>
+                    <DeleteCustomPractice event={event} />
+                  </div>
                 )}
                 {custom && admin && (
                   <div className="actions">
@@ -389,8 +404,9 @@ export function CalendarSchedule({
         </section>
       )}
       <p className="muted small calendar-footnote">
-        Schedule changes are made in Google Calendar and sync every five
-        minutes. Linked practice announcements share the practice reminder.
+        Google Calendar changes sync every five minutes. Exec members can edit
+        custom practices here. Linked practice announcements share the practice
+        reminder.
       </p>
     </>
   );

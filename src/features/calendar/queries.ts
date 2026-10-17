@@ -1,4 +1,5 @@
 import "server-only";
+import { customPracticeData } from "@/features/custom-practices/queries";
 import { cache } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { requireMember } from "@/features/identity/session";
@@ -12,7 +13,19 @@ export class CalendarAccessError extends Error {}
 export const calendarData = cache(async () => {
   const context = await requireMember(),
     config = await calendarConfig();
-  if (!config) return { ...context, calendar: viewFromSnapshot(null, null) };
+  async function withCustom(calendar: ReturnType<typeof viewFromSnapshot>) {
+    const { events } = await customPracticeData();
+    return {
+      ...context,
+      calendar: {
+        ...calendar,
+        events: [...calendar.events, ...events].sort((a, b) =>
+          a.start.localeCompare(b.start),
+        ),
+      },
+    };
+  }
+  if (!config) return withCustom(viewFromSnapshot(null, null));
   async function read() {
     // Explicit active-member RPC also distinguishes revoked access from an empty cache.
     const active = await context.supabase.rpc("active_member");
@@ -81,5 +94,5 @@ export const calendarData = cache(async () => {
     if (storageFailure && snapshot?.source_fingerprint === config.source)
       snapshot = { ...snapshot, last_error: "storage" };
   }
-  return { ...context, calendar: viewFromSnapshot(snapshot, config.source) };
+  return withCustom(viewFromSnapshot(snapshot, config.source));
 });

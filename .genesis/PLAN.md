@@ -94,3 +94,7 @@ Shared loading boundary retains team nav during page data fetching; framework-ow
 
 ## User-authorized extension — Exec roles and practice announcements
 All four singular exec roles receive identical full management access; original manually assigned admin controls exec role assignment. Snapshot announcement attribution and red/green unread/read states. Link announcement records to stable Google occurrences and show authorized notes in a Today-default day calendar with date/Upcoming navigation and all-day/overnight/featured support. Practice and linked announcements share one reminder flow with recipient-safe current previews and no exec labels on notifications. No individual exec workspaces. Freeze: src/**, additive0014, tests/config, docs and Genesis notes. Demo: npm run check and npm run test:e2e:team. Details: checkpoints/practice-announcements.md and docs/practice-announcements.md. Apply0014 with matching code release; refresh old clients due to retired lower communication save entrypoints.
+
+
+## User-authorized extension — Custom practices and clearer hierarchy
+Add a custom practice option to practice announcements for events outside Google Calendar, reusable canonical events with management edit/delete and shared reminders. Strengthen shared title and important-data typography. Freeze src/**, migration0015, tests/docs/Genesis notes. Checkpoint: checkpoints/custom-practices.md; no separate exec pages.
