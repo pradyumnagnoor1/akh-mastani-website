@@ -12,3 +12,5 @@
 - Full check passed:355 tests/42 suites/typecheck/lint/production build. Six affected desktop/mobile browser checks passed (task author/save/edit/list/Home plus existing announcement/calendar/read and task-progress flows). Inspected mobile task detail/desktop Home screenshots: explicit EXEC ROLE label and role distinguish it from status/audience; no horizontal overflow.
 - Independent review APPROVE;21 focused SQL/digest tests independently passed. Delegated quiz (assistant answers, not human evidence): badges identify sender role rather than task audience; saved roles stay fixed through later edits/member changes; historical unknown roles and notification previews are preserved.
 - Deployment: follow current production release workflow; no live synthetic actions or database writes required.
+
+- Production release d0eef02 pushed to main, Vercel dpl_36MxDtMmSjX7UpNpWcVjqM4JLeTr READY and canonical https://akh-mastani.vercel.app aliased. Public health200/statusok and login200/Google sign-in rendering verified. Authenticated visual evidence is local desktop/mobile fixtures; no live posts or notifications created.
