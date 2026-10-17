@@ -114,6 +114,9 @@ await db.exec(
 await db.exec(
   readFileSync("supabase/migrations/0016_exec_role_eligibility.sql", "utf8"),
 );
+await db.exec(
+  readFileSync("supabase/migrations/0017_additional_exec_roles.sql", "utf8"),
+);
 for (const person of users.values()) {
   await db.query(
     `insert into auth.users values($1,$2,now(),'{"provider":"google"}')`,

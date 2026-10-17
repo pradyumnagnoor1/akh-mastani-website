@@ -53,6 +53,7 @@ beforeAll(async () => {
     "0014_practice_announcements",
     "0015_custom_practices",
     "0016_exec_role_eligibility",
+    "0017_additional_exec_roles",
   ])
     await db.exec(readFileSync(`supabase/migrations/${name}.sql`, "utf8"));
 });
@@ -173,6 +174,8 @@ it("all exec groups get full management while role spoofing is blocked and legac
     "Captain",
     "Logistics & Finance",
     "Production",
+    "AO",
+    "Hospitality",
     "Social",
   ]) {
     await roles(a, [group]);
@@ -721,4 +724,29 @@ it("only existing active admins can receive exec roles and stale saves cannot ov
   await expect(
     q("set_exec_roles($1,array['Social'],'{}')", [a]),
   ).rejects.toThrow(/existing active admin/);
+});
+
+it("AO and Hospitality are valid attributed roles with preserved eligibility and post history", async () => {
+  await roles(a, ["AO"]);
+  await announcement(post, undefined, a, "AO");
+  await roles(a, ["Hospitality"]);
+  await announcement(other, undefined, a, "Hospitality");
+  await role("postgres");
+  expect(
+    await q("(select author_exec_role from communication_posts where id=$1)", [
+      post,
+    ]),
+  ).toBe("AO");
+  expect(
+    await q("(select author_exec_role from communication_posts where id=$1)", [
+      other,
+    ]),
+  ).toBe("Hospitality");
+  await role();
+  await expect(
+    q("set_exec_roles($1,array['Hospitality'],'{}')", [b]),
+  ).rejects.toThrow(/existing active admin/);
+  await expect(
+    q("set_exec_roles($1,array['Unknown'],'{}')", [admin]),
+  ).rejects.toThrow(/valid exec/);
 });

@@ -3,6 +3,8 @@ export const EXEC_ROLES = [
   "Logistics & Finance",
   "Production",
   "Social",
+  "AO",
+  "Hospitality",
 ] as const;
 export type ExecRole = (typeof EXEC_ROLES)[number];
 export function canPostAnnouncements(member: Member) {

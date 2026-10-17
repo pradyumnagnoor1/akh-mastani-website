@@ -51,7 +51,14 @@ async function assign(
   const form = member
     .locator("form")
     .filter({ has: page.locator('input[name="expected_roles"]') });
-  for (const role of ["Captain", "Logistics & Finance", "Production", "Social"])
+  for (const role of [
+    "Captain",
+    "Logistics & Finance",
+    "Production",
+    "Social",
+    "AO",
+    "Hospitality",
+  ])
     await group
       .getByLabel(role, { exact: true })
       .setChecked(roles.includes(role));
@@ -379,11 +386,9 @@ test("practice: exec role editor protects a pending save and reopens saved roles
 }) => {
   await login(context, request);
   await page.goto("/admin");
-  const dancer = page
-    .locator(".admin-member")
-    .filter({
-      has: page.getByRole("heading", { name: "Anika Dancer", exact: true }),
-    });
+  const dancer = page.locator(".admin-member").filter({
+    has: page.getByRole("heading", { name: "Anika Dancer", exact: true }),
+  });
   await expect(dancer).toBeVisible();
   await expect(
     dancer.getByRole("group", { name: /^Exec roles for / }),
@@ -438,4 +443,33 @@ test("practice: exec role editor protects a pending save and reopens saved roles
   await expect(member.getByLabel("Social", { exact: true })).not.toBeChecked();
   await member.getByRole("button", { name: "Cancel", exact: true }).click();
   await assign(page, [], request);
+});
+
+test("practice: AO and Hospitality tags can be assigned and used for posting", async ({
+  page,
+  context,
+  request,
+}) => {
+  await login(context, request);
+  try {
+    await assign(page, ["AO", "Hospitality"], request, true);
+    const member = page
+      .locator(".admin-member")
+      .filter({
+        has: page.getByRole("heading", { name: "Anika Dancer", exact: true }),
+      });
+    await expect(member.getByText("AO", { exact: true })).toBeVisible();
+    await expect(
+      member.getByText("Hospitality", { exact: true }),
+    ).toBeVisible();
+    await login(context, request, "dancer");
+    await page.goto("/announcements/new");
+    await page.getByLabel("Posting as", { exact: true }).selectOption("AO");
+    await page
+      .getByLabel("Posting as", { exact: true })
+      .selectOption("Hospitality");
+  } finally {
+    await login(context, request);
+    await assign(page, [], request);
+  }
 });
