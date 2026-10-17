@@ -21,7 +21,7 @@ import { featuredWhen } from "@/features/featured-events/types";
 import type { FeaturedEvent } from "@/features/featured-events/types";
 import type { CommunicationPost } from "@/features/communication/types";
 import { ReadBadge } from "./read-badge";
-import { AnnouncementAttribution } from "./announcement-attribution";
+import { CommunicationAttribution } from "./communication-attribution";
 import { MessageText } from "./message-text";
 import { DeleteCustomPractice } from "./custom-practice-form";
 import { DeleteFeaturedEvent } from "./featured-event-form";
@@ -321,7 +321,7 @@ export function CalendarSchedule({
                         <Link href={`/announcements/${post.id}`}>
                           <strong>{post.title}</strong>
                         </Link>
-                        <AnnouncementAttribution post={post} />
+                        <CommunicationAttribution post={post} />
                         {post.viewer_read !== undefined && (
                           <ReadBadge read={post.viewer_read} />
                         )}

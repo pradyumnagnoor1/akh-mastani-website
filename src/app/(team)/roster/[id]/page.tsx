@@ -1,3 +1,4 @@
+import { ExecRoleBadge } from "@/components/exec-role-badge";
 import Link from "@/components/app-link";
 import { notFound } from "next/navigation";
 import { segmentData } from "@/features/segments/queries";
@@ -44,9 +45,7 @@ export default async function MemberDetail({
         <h1>{person.display_name ?? "Name pending"}</h1>
         <p className="muted">{person.email}</p>
         {person.exec_roles?.map((role: string) => (
-          <span className="badge" key={role}>
-            {role}
-          </span>
+          <ExecRoleBadge key={role} role={role} />
         ))}
         <span className="badge">
           Dancer{person.is_admin ? " · Admin access" : ""} · {person.status}

@@ -1,5 +1,6 @@
 import type { CommunicationPost } from "@/features/communication/types";
-export function AnnouncementAttribution({ post }: { post: CommunicationPost }) {
+import { ExecRoleBadge } from "./exec-role-badge";
+export function CommunicationAttribution({ post }: { post: CommunicationPost }) {
   const format = (value: string) =>
     new Intl.DateTimeFormat("en-US", {
       timeZone: "America/Chicago",
@@ -17,12 +18,13 @@ export function AnnouncementAttribution({ post }: { post: CommunicationPost }) {
         {post.author_exec_role && (
           <>
             {" "}
-            · <span className="badge">{post.author_exec_role}</span>
+            <ExecRoleBadge role={post.author_exec_role} />
           </>
         )}
       </span>
       <span className="muted small">
-        Posted <time dateTime={post.created_at}>{format(post.created_at)}</time>
+        {post.kind === "task" ? "Created" : "Posted"}{" "}
+        <time dateTime={post.created_at}>{format(post.created_at)}</time>
         {post.edited_at && (
           <>
             {" "}

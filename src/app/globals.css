@@ -2115,3 +2115,30 @@ h3 {
     font-size: 23px;
   }
 }
+
+/* Exec identity is visually distinct from audience and progress/status tags. */
+.exec-role-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 100%;
+  border: 1px solid #b5adff80;
+  background: #9690ff1f;
+  color: #e0dcff;
+  vertical-align: middle;
+  white-space: normal;
+  text-align: left;
+}
+.exec-role-label {
+  color: #c1baff;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.exec-role-badge strong {
+  color: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}

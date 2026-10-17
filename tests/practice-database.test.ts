@@ -750,3 +750,35 @@ it("AO and Hospitality are valid attributed roles with preserved eligibility and
     q("set_exec_roles($1,array['Unknown'],'{}')", [admin]),
   ).rejects.toThrow(/valid exec/);
 });
+
+it("to-do author roles are validated and remain original after edits by another exec", async () => {
+  await roles(a, ["AO", "Hospitality"]);
+  const save = async (
+    version: number,
+    postingRole: string | null,
+    body = "Bring forms",
+  ) =>
+    q(
+      "save_announcement($1,$2,'task','Hospitality checklist',$3,'individual','selected',array[$4::uuid],null,null,null,null,'',null,null,'',null,$5,null,null)",
+      [post, version, body, a, postingRole],
+    );
+  await role("authenticated", a);
+  await expect(save(0, "Captain")).rejects.toThrow(/assigned/);
+  await save(0, "Hospitality");
+  expect(
+    await q("(select author_exec_role from communication_posts where id=$1)", [
+      post,
+    ]),
+  ).toBe("Hospitality");
+  await role();
+  await save(1, "Hospitality", "Updated checklist");
+  await expect(save(2, "AO")).rejects.toThrow(/Original posting role/);
+  await roles(a, ["AO"]);
+  await role("authenticated", a);
+  await save(2, "Hospitality", "Role changed later");
+  expect(
+    await q("(select author_exec_role from communication_posts where id=$1)", [
+      post,
+    ]),
+  ).toBe("Hospitality");
+});

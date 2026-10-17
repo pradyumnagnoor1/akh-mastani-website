@@ -204,36 +204,34 @@ export function CommunicationForm({
       ))}
       <section className="panel stack">
         <p className="eyebrow">01 / THE MESSAGE</p>
+        <label htmlFor="posting-role">Posting as</label>
+        <select
+          id="posting-role"
+          name="posting_role"
+          value={postingRole}
+          disabled={!!post}
+          onChange={(e) => setPostingRole(e.target.value)}
+        >
+          {(!editorMember.exec_roles?.length ||
+            (post && !post.author_exec_role)) && (
+            <option value="">{editorMember.display_name} · Team member</option>
+          )}
+          {[
+            ...new Set([
+              ...(editorMember.exec_roles ?? []),
+              ...(post?.author_exec_role ? [post.author_exec_role] : []),
+            ]),
+          ].map((role) => (
+            <option key={role} value={role}>
+              Exec role · {role}
+            </option>
+          ))}
+        </select>
+        {post && (
+          <input type="hidden" name="posting_role" value={postingRole} />
+        )}
         {kind === "announcement" && (
           <>
-            <label htmlFor="posting-role">Posting as</label>
-            <select
-              id="posting-role"
-              name="posting_role"
-              value={postingRole}
-              disabled={!!post}
-              onChange={(e) => setPostingRole(e.target.value)}
-            >
-              {(!editorMember.exec_roles?.length ||
-                (post && !post.author_exec_role)) && (
-                <option value="">
-                  {editorMember.display_name} · Team announcement
-                </option>
-              )}
-              {[
-                ...new Set([
-                  ...(editorMember.exec_roles ?? []),
-                  ...(post?.author_exec_role ? [post.author_exec_role] : []),
-                ]),
-              ].map((role) => (
-                <option key={role} value={role}>
-                  {role}
-                </option>
-              ))}
-            </select>
-            {post && (
-              <input type="hidden" name="posting_role" value={postingRole} />
-            )}
             <label htmlFor="announcement-type">Announcement type</label>
             <select
               id="announcement-type"

@@ -1,3 +1,4 @@
+import { ExecRoleBadge } from "@/components/exec-role-badge";
 import { segmentData } from "@/features/segments/queries";
 import Link from "@/components/app-link";
 import type { Member } from "@/features/identity/policy";
@@ -58,9 +59,7 @@ export default async function Roster({
                 </a>
                 <div className="roster-segments">
                   {person.exec_roles?.map((role) => (
-                    <span className="badge" key={role}>
-                      {role}
-                    </span>
+                    <ExecRoleBadge key={role} role={role} />
                   ))}
                   {segments
                     .filter(

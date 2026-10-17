@@ -1,5 +1,5 @@
 "use client";
-import { AnnouncementAttribution } from "./announcement-attribution";
+import { CommunicationAttribution } from "./communication-attribution";
 import { ReadBadge } from "./read-badge";
 import Link from "@/components/app-link";
 import { useState } from "react";
@@ -119,8 +119,11 @@ export function TodayCard({
                       {item.announcement && (
                         <>
                           <ReadBadge read={false} />
-                          <AnnouncementAttribution post={item.announcement} />
+                          <CommunicationAttribution post={item.announcement} />
                         </>
+                      )}
+                      {item.task && (
+                        <CommunicationAttribution post={item.task} />
                       )}
                       <span className="today-item-action">
                         {kind === "task"

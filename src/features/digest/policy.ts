@@ -26,6 +26,7 @@ export function announcementExcerpt(body: string, limit = 150) {
 }
 export type DigestItem = {
   announcement?: CommunicationPost;
+  task?: CommunicationPost;
   id: string;
   section: "Needs attention" | "Your to-dos" | "Announcements";
   title: string;
@@ -72,6 +73,7 @@ export function buildDigest(input: {
     if (post.kind === "task")
       items.push({
         id: `task-${post.id}`,
+        task: post,
         section:
           post.due_on && post.due_on <= today
             ? "Needs attention"

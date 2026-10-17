@@ -1,3 +1,4 @@
+import { ExecRoleBadge } from "@/components/exec-role-badge";
 import { AdminSummary } from "@/components/admin-summary";
 import Link from "@/components/app-link";
 import { requireAdmin } from "@/features/identity/session";
@@ -82,9 +83,7 @@ export default async function Admin() {
               </span>
               {person.is_admin && <span className="badge">Admin access</span>}
               {person.exec_roles?.map((role) => (
-                <span className="badge" key={role}>
-                  {role}
-                </span>
+                <ExecRoleBadge key={role} role={role} />
               ))}
             </div>
             {member.is_owner &&

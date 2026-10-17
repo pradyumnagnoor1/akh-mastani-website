@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/purity -- Server components capture request time for expiration timers. */
-import { AnnouncementAttribution } from "./announcement-attribution";
+import { CommunicationAttribution } from "./communication-attribution";
 import { ReadBadge } from "./read-badge";
 import {
   canPostAnnouncements,
@@ -129,9 +129,9 @@ export async function CommunicationList({
                     </span>
                   )}
                 </div>
+                <CommunicationAttribution post={post} />
                 {kind === "announcement" && (
                   <>
-                    <AnnouncementAttribution post={post} />
                     {post.practice_event_id && (
                       <span className="badge">Practice announcement</span>
                     )}
@@ -224,12 +224,8 @@ export async function CommunicationDetail({
         </Link>
         <p className="eyebrow">{post.audience_label}</p>
         <h1>{post.title}</h1>
-        {kind === "announcement" && (
-          <>
-            <AnnouncementAttribution post={post} />
-            {mine && <ReadBadge read={done} />}
-          </>
-        )}
+        <CommunicationAttribution post={post} />
+        {kind === "announcement" && mine && <ReadBadge read={done} />}
         {post.practice_event_id && (
           <section className="notice">
             <strong>

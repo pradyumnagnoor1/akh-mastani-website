@@ -453,11 +453,9 @@ test("practice: AO and Hospitality tags can be assigned and used for posting", a
   await login(context, request);
   try {
     await assign(page, ["AO", "Hospitality"], request, true);
-    const member = page
-      .locator(".admin-member")
-      .filter({
-        has: page.getByRole("heading", { name: "Anika Dancer", exact: true }),
-      });
+    const member = page.locator(".admin-member").filter({
+      has: page.getByRole("heading", { name: "Anika Dancer", exact: true }),
+    });
     await expect(member.getByText("AO", { exact: true })).toBeVisible();
     await expect(
       member.getByText("Hospitality", { exact: true }),
@@ -468,6 +466,92 @@ test("practice: AO and Hospitality tags can be assigned and used for posting", a
     await page
       .getByLabel("Posting as", { exact: true })
       .selectOption("Hospitality");
+  } finally {
+    await login(context, request);
+    await assign(page, [], request);
+  }
+});
+
+test("practice: to-do actions show explicit saved exec identity on detail, lists and Home", async ({
+  page,
+  context,
+  request,
+}, info) => {
+  await login(context, request);
+  await assign(page, ["AO", "Hospitality"], request, true);
+  const title = `Hospitality checklist ${info.project.name}`;
+  try {
+    await login(context, request, "dancer");
+    await page.goto("/todos/new");
+    await page
+      .getByLabel("Posting as", { exact: true })
+      .selectOption("Hospitality");
+    await page.getByLabel("Title", { exact: true }).fill(title);
+    await page
+      .getByLabel("Details", { exact: true })
+      .fill("Prepare the welcome table.");
+    await page
+      .getByRole("button", { name: "Create to-do", exact: true })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: title, exact: true }),
+    ).toBeVisible();
+    const url = page.url();
+    const attribution = page.locator(".page-heading .announcement-attribution");
+    await expect(attribution).toContainText("Anika Dancer");
+    await expect(attribution.locator(".exec-role-badge")).toHaveText(
+      /Exec roleHospitality/,
+    );
+    await expect(attribution).toContainText("Created");
+    await page.screenshot({
+      path: info.outputPath("exec-task-detail.png"),
+      fullPage: true,
+    });
+    await page.getByRole("link", { name: "Edit to-do", exact: true }).click();
+    await expect(page.getByLabel("Posting as", { exact: true })).toBeDisabled();
+    await page
+      .getByLabel("Details", { exact: true })
+      .fill("Prepare the welcome table and water.");
+    await page
+      .getByRole("button", { name: "Save changes", exact: true })
+      .click();
+    await expect(attribution.locator(".exec-role-badge")).toContainText(
+      "Hospitality",
+    );
+    await page.goto("/todos");
+    const card = page
+      .locator(".communication-card")
+      .filter({ has: page.getByRole("heading", { name: title, exact: true }) });
+    await expect(card.locator(".exec-role-badge")).toHaveText(
+      /Exec roleHospitality/,
+    );
+    await page.goto("/home");
+    const home = page
+      .locator(".home-grid section")
+      .filter({ has: page.getByRole("heading", { name: /Your to-dos/ }) });
+    const row = home
+      .locator(".announcement-attribution")
+      .filter({ hasText: "Hospitality" });
+    await expect(row).toBeVisible();
+    const today = page.locator(".today-item").filter({ hasText: title });
+    if (await today.count())
+      await expect(today.locator(".exec-role-badge")).toContainText(
+        "Hospitality",
+      );
+    await page.screenshot({
+      path: info.outputPath("exec-task-home.png"),
+      fullPage: true,
+    });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    await page.goto(url);
+    page.once("dialog", (dialog) => dialog.accept());
+    await page
+      .getByRole("button", { name: "Delete to-do", exact: true })
+      .click();
   } finally {
     await login(context, request);
     await assign(page, [], request);

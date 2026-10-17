@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/purity -- Server components capture request time for expiration timers. */
 import { ReadBadge } from "./read-badge";
-import { AnnouncementAttribution } from "./announcement-attribution";
+import { CommunicationAttribution } from "./communication-attribution";
 import { Expires } from "./expires";
 import { AnnouncementImage } from "./announcement-image";
 import Link from "@/components/app-link";
@@ -36,12 +36,15 @@ export async function CommunicationHome() {
         {todos.length ? (
           todos.slice(0, 4).map((p) => (
             <Expires key={p.id} at={p.expires_at} serverNow={Date.now()}>
-              <Link className="my-segment-row" href={`/todos/${p.id}`}>
-                <strong>{p.title}</strong>
-                <span className="muted small">
-                  {p.due_on ? `Due ${p.due_on}` : "No due date"}
-                </span>
-              </Link>
+              <div>
+                <Link className="my-segment-row" href={`/todos/${p.id}`}>
+                  <strong>{p.title}</strong>
+                  <span className="muted small">
+                    {p.due_on ? `Due ${p.due_on}` : "No due date"}
+                  </span>
+                </Link>
+                <CommunicationAttribution post={p} />
+              </div>
             </Expires>
           ))
         ) : (
@@ -72,7 +75,7 @@ export async function CommunicationHome() {
                     }
                   />
                 </Link>
-                <AnnouncementAttribution post={p} />
+                <CommunicationAttribution post={p} />
                 <AnnouncementImage
                   id={p.id}
                   path={p.image_path}
