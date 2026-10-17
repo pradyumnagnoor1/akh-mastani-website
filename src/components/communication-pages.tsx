@@ -156,6 +156,13 @@ export async function CommunicationList({
                     {member.is_admin &&
                       ` · ${post.completion_mode === "shared" ? (post.completed_at ? rows.length : 0) : rows.filter((r) => r.completed_at).length}/${rows.length} ${kind === "task" ? "done" : "read"}`}
                   </span>
+                  {tab === "mine" && !done && (
+                    <CommunicationAction
+                      post={post}
+                      operation="complete"
+                      label={kind === "task" ? "Mark done" : "Mark as read"}
+                    />
+                  )}
                   <Link
                     className="text-button accent"
                     href={`${base}/${post.id}`}

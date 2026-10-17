@@ -1391,6 +1391,9 @@ body:has(.nav-dialog[open]) {
   border-top: 1px solid var(--line);
   padding-top: 12px;
 }
+.communication-footer .communication-action {
+  margin: 0 auto 0 0;
+}
 .communication-excerpt {
   display: -webkit-box;
   -webkit-line-clamp: 3;
