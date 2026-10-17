@@ -21,7 +21,12 @@ vi.mock("@/features/identity/session", () => {
     },
     member: { id: "00000000-0000-4000-8000-000000000001", status: "active" },
   });
-  return { requireAdmin: context, requireMember: context, identity: context };
+  return {
+    requireAnnouncementEditor: context,
+    requireAdmin: context,
+    requireMember: context,
+    identity: context,
+  };
 });
 vi.mock("../src/features/identity/session", () => {
   const context = async () => ({
@@ -34,7 +39,12 @@ vi.mock("../src/features/identity/session", () => {
     },
     member: { id: "00000000-0000-4000-8000-000000000001", status: "active" },
   });
-  return { requireAdmin: context, requireMember: context, identity: context };
+  return {
+    requireAnnouncementEditor: context,
+    requireAdmin: context,
+    requireMember: context,
+    identity: context,
+  };
 });
 vi.mock("@/features/notifications/dispatch", () => ({ schedulePush: m.push }));
 vi.mock("@/features/announcement-images/cleanup", () => ({

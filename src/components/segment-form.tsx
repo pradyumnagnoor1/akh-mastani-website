@@ -1,5 +1,5 @@
 "use client";
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { useActionState, useState } from "react";
 import { FileText, Search, Upload } from "lucide-react";
 import {

@@ -1,6 +1,9 @@
 // Deliberate columns: never export auth identities, OAuth credentials or Storage bytes.
 export const EXPORT_TABLES = {
-  members: { columns: "id,email,display_name,status,is_admin", order: ["id"] },
+  members: {
+    columns: "id,email,display_name,status,is_admin,exec_roles",
+    order: ["id"],
+  },
   segments: {
     columns:
       "id,name,document_path,document_label,version,archived_at,updated_at",
@@ -12,7 +15,7 @@ export const EXPORT_TABLES = {
   },
   communication_posts: {
     columns:
-      "id,title,body,kind,completion_mode,audience_type,audience_label,due_on,expires_at,image_path,image_description,version,archived_at,created_at,created_by,completed_at,completed_by",
+      "id,title,body,kind,completion_mode,audience_type,audience_label,due_on,expires_at,image_path,image_description,version,archived_at,created_at,created_by,author_name,author_exec_role,edited_at,practice_event_id,practice_snapshot,completed_at,completed_by",
     order: ["id"],
   },
   communication_recipients: {

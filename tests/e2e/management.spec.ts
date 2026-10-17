@@ -83,7 +83,7 @@ test("management: featured event create/edit/delete, Home and dancer access", as
   const dancerContext = await browser.newContext();
   await login(dancerContext, request, "dancer");
   const dancer = await dancerContext.newPage();
-  await dancer.goto("http://127.0.0.1:3102/calendar");
+  await dancer.goto("http://127.0.0.1:3102/calendar?date=2099-12-12");
   await expect(
     dancer.getByRole("heading", { name: title, exact: true }),
   ).toBeVisible();
@@ -120,7 +120,7 @@ test("management: featured event create/edit/delete, Home and dancer access", as
   await expect(
     page.getByRole("heading", { name: title + " revised", exact: true }),
   ).toHaveCount(0);
-  await dancer.goto("http://127.0.0.1:3102/calendar");
+  await dancer.goto("http://127.0.0.1:3102/calendar?date=2099-12-12");
   await expect(
     dancer.getByRole("heading", { name: title + " revised", exact: true }),
   ).toHaveCount(0);

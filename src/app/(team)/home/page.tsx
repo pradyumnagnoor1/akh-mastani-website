@@ -2,7 +2,7 @@ import { FeaturedEvents } from "@/components/featured-events";
 import { NotificationSettings } from "@/components/notification-settings";
 import { AdminSummary } from "@/components/admin-summary";
 import { CalendarHome } from "@/components/calendar-home";
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { PaymentHome } from "@/components/payment-home";
 import { CommunicationHome } from "@/components/communication-home";
 import { ArrowUpRight, ShieldCheck } from "lucide-react";

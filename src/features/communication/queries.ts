@@ -1,6 +1,9 @@
 import "server-only";
 import { cache } from "react";
-import { requireMember, requireAdmin } from "@/features/identity/session";
+import {
+  requireMember,
+  requireAnnouncementEditor,
+} from "@/features/identity/session";
 import type { Member } from "@/features/identity/policy";
 import type { Segment, Assignment } from "@/features/segments/policy";
 import type {
@@ -33,19 +36,25 @@ export const communicationData = cache(async () => {
   return {
     ...context,
     posts: (posts as CommunicationPost[])
+      .map((p) => {
+        const own = (recipients as Recipient[]).find(
+          (r) => r.post_id === p.id && r.member_id === context.member.id,
+        );
+        return { ...p, viewer_read: own ? !!own.completed_at : undefined };
+      })
       .filter((p) => !p.expires_at || Date.parse(p.expires_at) > Date.now())
       .sort((a, b) => b.created_at.localeCompare(a.created_at)),
     recipients: recipients as Recipient[],
   };
 });
 export const communicationEditorData = cache(async () => {
-  const { supabase } = await requireAdmin();
+  const { supabase } = await requireAnnouncementEditor();
   const [people, groups, groupMembers, segments, assignments] =
     await Promise.all([
       collectPages((from, to) =>
         supabase
           .from("members")
-          .select("id,email,display_name,status,is_admin")
+          .select("id,email,display_name,status,is_admin,exec_roles")
           .eq("status", "active")
           .order("id")
           .range(from, to),
@@ -84,6 +93,7 @@ export const communicationEditorData = cache(async () => {
       ),
     ]);
   return {
+    editorMember: (await requireAnnouncementEditor()).member,
     people: (people as Member[]).sort((a, b) =>
       (a.display_name ?? "").localeCompare(b.display_name ?? ""),
     ),

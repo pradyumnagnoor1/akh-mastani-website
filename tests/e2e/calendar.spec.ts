@@ -33,6 +33,7 @@ test("calendar: fresh schedule, stale fallback, Home, private API", async ({
   expect([307, 401, 403]).toContain(denied.status());
   await login(context, request, "dancer");
   await page.goto("/calendar");
+  await page.getByRole("button", { name: "Upcoming", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Team practice", exact: true }),
   ).toBeVisible();
@@ -54,6 +55,7 @@ test("calendar: fresh schedule, stale fallback, Home, private API", async ({
   expect((await response.json()).events).toHaveLength(2);
   await request.get("http://127.0.0.1:3201/fixture/calendar?state=stale");
   await page.reload();
+  await page.getByRole("button", { name: "Upcoming", exact: true }).click();
   await expect(
     page.getByText("Updates delayed", { exact: true }),
   ).toBeVisible();
@@ -73,6 +75,8 @@ test("calendar: fresh schedule, stale fallback, Home, private API", async ({
   await expect(
     page.getByRole("heading", { name: "Next practices", exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("Team practice", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Team practice", { exact: true }).first(),
+  ).toBeVisible();
   await request.get("http://127.0.0.1:3201/fixture/calendar?state=fresh");
 });

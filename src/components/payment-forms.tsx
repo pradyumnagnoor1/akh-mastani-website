@@ -1,7 +1,7 @@
 "use client";
 import { savedAudience } from "@/features/communication/saved-groups";
 import { SavedGroupOptions } from "./saved-group-options";
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { useActionState, useState } from "react";
 import { SubmitButton } from "./forms";
 import { DraftConflict, useDraftRevision } from "./draft-revision";

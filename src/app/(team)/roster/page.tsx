@@ -1,5 +1,5 @@
 import { segmentData } from "@/features/segments/queries";
-import Link from "next/link";
+import Link from "@/components/app-link";
 import type { Member } from "@/features/identity/policy";
 export default async function Roster({
   searchParams,
@@ -10,7 +10,7 @@ export default async function Roster({
   const { q = "" } = await searchParams;
   const { data, error } = await supabase
     .from("members")
-    .select("id,email,display_name,status,is_admin")
+    .select("id,email,display_name,status,is_admin,exec_roles")
     .eq("status", "active")
     .order("display_name");
   if (error) throw new Error("Unable to load the roster.");
@@ -57,6 +57,11 @@ export default async function Roster({
                   {person.email}
                 </a>
                 <div className="roster-segments">
+                  {person.exec_roles?.map((role) => (
+                    <span className="badge" key={role}>
+                      {role}
+                    </span>
+                  ))}
                   {segments
                     .filter(
                       (segment) =>

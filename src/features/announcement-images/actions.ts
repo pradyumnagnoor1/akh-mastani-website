@@ -1,13 +1,13 @@
 "use server";
 import { serviceClient } from "@/lib/supabase/service";
-import { requireAdmin } from "@/features/identity/session";
+import { requireAnnouncementEditor } from "@/features/identity/session";
 import { validVersion } from "@/features/communication/policy";
 import { normalizeJpeg } from "./validate";
 import { scheduleImageCleanup } from "./cleanup";
 export async function uploadAnnouncementImage(
   form: FormData,
 ): Promise<{ path?: string; error?: string }> {
-  const { supabase, member } = await requireAdmin();
+  const { supabase, member } = await requireAnnouncementEditor();
   let path: string | undefined;
   try {
     const id = String(form.get("id") ?? ""),
@@ -57,7 +57,7 @@ export async function uploadAnnouncementImage(
   }
 }
 export async function abandonAnnouncementImage(path: string) {
-  const { supabase } = await requireAdmin();
+  const { supabase } = await requireAnnouncementEditor();
   await supabase.rpc("abandon_announcement_image", { object_path: path });
   scheduleImageCleanup();
 }

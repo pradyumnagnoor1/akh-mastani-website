@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { communicationEditorData } from "@/features/communication/queries";
 import { GroupForm } from "@/components/communication-forms";
 export default async function NewGroup() {

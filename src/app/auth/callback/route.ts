@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     if (ensured.error) return finish("/login?error=membership");
     const member = await supabase
       .from("members")
-      .select("id,email,display_name,status,is_admin")
+      .select("id,email,display_name,status,is_admin,exec_roles")
       .eq("id", user.id)
       .single();
     if (member.error) return finish("/login?error=membership");

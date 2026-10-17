@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { requireAdmin } from "@/features/identity/session";
 import { SegmentForm } from "@/components/segment-form";
 import type { Member } from "@/features/identity/policy";
@@ -6,7 +6,7 @@ export default async function NewSegment() {
   const { supabase } = await requireAdmin();
   const { data, error } = await supabase
     .from("members")
-    .select("id,email,display_name,status,is_admin")
+    .select("id,email,display_name,status,is_admin,exec_roles")
     .eq("status", "active")
     .order("display_name");
   if (error) throw new Error("Unable to load dancers.");

@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/purity -- Server components capture request time for expiration timers. */
 import { Expires } from "./expires";
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { featuredData } from "@/features/featured-events/queries";
 import { featuredWhen } from "@/features/featured-events/types";
 import { DeleteFeaturedEvent } from "./featured-event-form";

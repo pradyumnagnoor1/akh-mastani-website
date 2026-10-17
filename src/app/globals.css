@@ -1339,6 +1339,37 @@ body:has(.nav-dialog[open]) {
 }
 
 /* Announcements, to-dos, and saved recipient groups. */
+.page-navigation-loading {
+  position: fixed;
+  z-index: 200;
+  top: max(16px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  display: grid;
+  gap: 4px;
+  padding: 16px 24px;
+  border: 1px solid var(--accent);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 8px 32px #0008;
+  pointer-events: none;
+}
+.page-navigation-loading span {
+  color: var(--muted);
+  font-size: 13px;
+}
+.message-link {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+.message-link:hover {
+  text-decoration-thickness: 2px;
+}
 .communication-list {
   display: grid;
   gap: 18px;
@@ -1921,4 +1952,58 @@ button:enabled:active {
   .reminder-time-fields {
     grid-template-columns: 1fr;
   }
+}
+
+.badge.unread {
+  color: #ffb6b6;
+  background: #ff66661a;
+  border: 1px solid #ff777744;
+}
+.announcement-attribution {
+  display: grid;
+  gap: 4px;
+  margin: 12px 0;
+  overflow-wrap: anywhere;
+}
+.calendar-day-controls {
+  display: grid;
+  gap: 16px;
+}
+.calendar-day-controls input[type="date"] {
+  min-width: 0;
+  width: 155px;
+}
+.practice-notes {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+.practice-note {
+  padding: 14px;
+  border-left: 3px solid var(--accent);
+  background: var(--surface-raised);
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+.practice-note > a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.exec-role-picker {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0;
+}
+.exec-role-picker label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.exec-role-picker input {
+  width: 20px;
+  height: 20px;
+}
+
+.calendar-day-controls .actions {
+  align-items: end;
 }

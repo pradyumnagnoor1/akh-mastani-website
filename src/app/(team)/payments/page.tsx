@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { collectPages } from "@/features/communication/pagination";
 import { paymentData } from "@/features/payments/queries";
 import {

@@ -1,7 +1,17 @@
 /* eslint-disable react-hooks/purity -- Server components capture request time for expiration timers. */
+import { AnnouncementAttribution } from "./announcement-attribution";
+import { ReadBadge } from "./read-badge";
+import {
+  canPostAnnouncements,
+  canManagePost,
+} from "@/features/identity/policy";
+import { calendarData } from "@/features/calendar/queries";
+import { practiceIdentity } from "@/features/calendar/day";
+import { eventWhen } from "@/features/calendar/types";
 import { Expires } from "./expires";
+import { MessageText } from "./message-text";
 import { AnnouncementImage } from "./announcement-image";
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { notFound, redirect } from "next/navigation";
 import {
   communicationData,
@@ -35,15 +45,20 @@ export async function CommunicationList({
 }) {
   const { member, posts, recipients } = await communicationData();
   const base = baseFor(kind);
-  const tab = member.is_admin && view === "all" ? "all" : "mine";
+  const writer =
+    member.is_admin ||
+    (kind === "announcement" && canPostAnnouncements(member));
+  const tab = writer && view === "all" ? "all" : "mine";
   const items = posts.filter(
     (p) =>
       p.kind === kind &&
       !p.archived_at &&
-      (tab !== "mine" ||
-        recipients.some(
-          (r) => r.post_id === p.id && r.member_id === member.id,
-        )),
+      (tab === "all" && !member.is_admin
+        ? p.created_by === member.id
+        : tab !== "mine" ||
+          recipients.some(
+            (r) => r.post_id === p.id && r.member_id === member.id,
+          )),
   );
   return (
     <>
@@ -56,13 +71,13 @@ export async function CommunicationList({
               : "The latest updates for your team."}
           </p>
         </div>
-        {member.is_admin && (
+        {writer && (
           <Link className="button primary" href={`${base}/new`}>
             {kind === "task" ? "Create to-do" : "New announcement"}
           </Link>
         )}
       </div>
-      {member.is_admin && (
+      {writer && (
         <div className="section-toolbar">
           <nav className="view-tabs" aria-label="Communication views">
             <Link className={tab === "mine" ? "active" : ""} href={base}>
@@ -72,12 +87,14 @@ export async function CommunicationList({
               className={tab === "all" ? "active" : ""}
               href={`${base}?view=all`}
             >
-              All team
+              {member.is_admin ? "All team" : "My posts"}
             </Link>
           </nav>
-          <Link className="text-button" href="/admin/groups">
-            Manage groups →
-          </Link>
+          {member.is_admin && (
+            <Link className="text-button" href="/admin/groups">
+              Manage groups →
+            </Link>
+          )}
         </div>
       )}
       <div className="communication-list">
@@ -99,7 +116,9 @@ export async function CommunicationList({
                     <span className="muted small">Due {post.due_on}</span>
                   )}
                   {tab === "mine" && (
-                    <span className={`badge ${done ? "success" : ""}`}>
+                    <span
+                      className={`badge ${done ? "success" : kind === "announcement" ? "unread" : ""}`}
+                    >
                       {done
                         ? kind === "task"
                           ? "Done"
@@ -110,10 +129,20 @@ export async function CommunicationList({
                     </span>
                   )}
                 </div>
+                {kind === "announcement" && (
+                  <>
+                    <AnnouncementAttribution post={post} />
+                    {post.practice_event_id && (
+                      <span className="badge">Practice announcement</span>
+                    )}
+                  </>
+                )}
                 <h2>
                   <Link href={`${base}/${post.id}`}>{post.title}</Link>
                 </h2>
-                <p className="muted communication-excerpt">{post.body}</p>
+                <p className="muted communication-excerpt">
+                  <MessageText text={post.body} />
+                </p>
                 <AnnouncementImage
                   id={post.id}
                   path={post.image_path}
@@ -166,7 +195,17 @@ export async function CommunicationDetail({
   const mine = rows.find((r) => r.member_id === member.id);
   const done = completed(post, rows, member.id);
   const base = baseFor(kind);
-  const memberIds = member.is_admin ? rows.map((r) => r.member_id) : [];
+  const manager = canManagePost(member, post);
+  const calendar = post.practice_event_id
+    ? (await calendarData()).calendar
+    : null;
+  const practice =
+    calendar && calendar.source === post.practice_source
+      ? calendar.events.find(
+          (e) => practiceIdentity(e) === post.practice_event_id,
+        )
+      : null;
+  const memberIds = manager ? rows.map((r) => r.member_id) : [];
   if (post.completed_by) memberIds.push(post.completed_by);
   const names = new Map<string, string>();
   if (memberIds.length) {
@@ -186,6 +225,43 @@ export async function CommunicationDetail({
         </Link>
         <p className="eyebrow">{post.audience_label}</p>
         <h1>{post.title}</h1>
+        {kind === "announcement" && (
+          <>
+            <AnnouncementAttribution post={post} />
+            {mine && <ReadBadge read={done} />}
+          </>
+        )}
+        {post.practice_event_id && (
+          <section className="notice">
+            <strong>
+              Practice announcement ·{" "}
+              {practice?.title ??
+                post.practice_snapshot?.title ??
+                "Linked practice"}
+            </strong>
+            <p>
+              {practice
+                ? eventWhen(practice)
+                : post.practice_snapshot
+                  ? eventWhen(post.practice_snapshot)
+                  : ""}
+            </p>
+            <p>{practice?.location ?? post.practice_snapshot?.location}</p>
+            {!practice && (
+              <p>
+                Practice unavailable in the current schedule. It may have been
+                cancelled, removed, or moved outside the calendar window.
+              </p>
+            )}
+            <p>This announcement shares the practice reminder.</p>
+            <Link
+              href={`/calendar${practice ? `?date=${practice.allDay ? practice.start : new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(practice.start))}` : ""}`}
+              className="text-button"
+            >
+              View practice calendar →
+            </Link>
+          </section>
+        )}
         <div className="communication-meta">
           <span className="badge">
             {post.completion_mode === "shared"
@@ -198,7 +274,9 @@ export async function CommunicationDetail({
         </div>
       </div>
       <section className="panel">
-        <p className="communication-body">{post.body}</p>
+        <p className="communication-body">
+          <MessageText text={post.body} />
+        </p>
         {post.reminder_at && (
           <div className="notice">
             <strong>
@@ -210,7 +288,11 @@ export async function CommunicationDetail({
               }).format(new Date(post.reminder_at))}{" "}
               Texas time
             </strong>
-            {post.reminder_message && <p>{post.reminder_message}</p>}
+            {post.reminder_message && (
+              <p>
+                <MessageText text={post.reminder_message} />
+              </p>
+            )}
             <p className="small">
               {post.reminder_mode === "preparation"
                 ? "Preparation reminder · acknowledgment does not stop it."
@@ -245,7 +327,7 @@ export async function CommunicationDetail({
           />
         )}
       </section>
-      {member.is_admin && (
+      {manager && (
         <section className="panel communication-management">
           <div className="section-toolbar">
             <h2>
@@ -269,7 +351,9 @@ export async function CommunicationDetail({
           {rows.map((row) => (
             <div className="lineup-person" key={row.member_id}>
               <span>{names.get(row.member_id) ?? "Former team member"}</span>
-              <span className="badge">
+              <span
+                className={`badge ${kind === "announcement" ? (row.completed_at ? "success" : "unread") : ""}`}
+              >
                 {(
                   post.completion_mode === "shared"
                     ? post.completed_at
@@ -326,9 +410,12 @@ export async function CommunicationEditor({
   id?: string;
 }) {
   const editor = await communicationEditorData();
+  if (kind === "task" && !editor.editorMember.is_admin) redirect("/home");
+  const calendar =
+    kind === "announcement" ? (await calendarData()).calendar : undefined;
   const data = id || kind === "announcement" ? await communicationData() : null;
   const post = data?.posts.find((p) => p.id === id && p.kind === kind);
-  if (id && !post) notFound();
+  if (id && (!post || !canManagePost(editor.editorMember, post))) notFound();
   if (post?.archived_at) redirect(`${baseFor(kind)}/${post.id}`);
   return (
     <>
@@ -347,6 +434,7 @@ export async function CommunicationEditor({
           {...editor}
           id={id ?? crypto.randomUUID()}
           kind={kind}
+          calendar={calendar}
           post={post}
           tasks={
             data?.posts.filter((p) => p.kind === "task" && !p.completed_at) ??

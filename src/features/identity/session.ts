@@ -21,12 +21,20 @@ export const identity = cache(async () => {
     redirect("/login?error=domain");
   const result = await supabase
     .from("members")
-    .select("id,email,display_name,status,is_admin")
+    .select("id,email,display_name,status,is_admin,exec_roles")
     .eq("id", user.id)
     .maybeSingle();
   if (result.error)
     throw new Error("Unable to load membership. Please try again.");
-  return { supabase, user, member: result.data as Member | null };
+  const raw = result.data as Member | null;
+  const member = raw
+    ? {
+        ...raw,
+        is_owner: raw.is_admin,
+        is_admin: raw.is_admin || !!raw.exec_roles?.length,
+      }
+    : null;
+  return { supabase, user, member };
 });
 
 export async function requireMember() {
@@ -40,5 +48,12 @@ export async function requireMember() {
 export async function requireAdmin() {
   const context = await requireMember();
   if (!context.member.is_admin) redirect("/home");
+  return context;
+}
+
+export async function requireAnnouncementEditor() {
+  const context = await requireMember();
+  if (!context.member.is_admin && !context.member.exec_roles?.length)
+    redirect("/home");
   return context;
 }

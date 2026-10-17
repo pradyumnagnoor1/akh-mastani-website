@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { requireAdmin } from "@/features/identity/session";
 import { connectionConfig } from "@/features/calendar/config";
 import { syncTime } from "@/features/calendar/types";

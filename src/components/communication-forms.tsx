@@ -1,7 +1,7 @@
 "use client";
 import { savedAudience } from "@/features/communication/saved-groups";
 import { SavedGroupOptions } from "./saved-group-options";
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { useActionState, useState } from "react";
 import { ExpirationField } from "./expiration-field";
 import { AnnouncementImageUpload } from "./announcement-image-upload";
@@ -23,6 +23,8 @@ import type {
   FormState,
   PostKind,
 } from "@/features/communication/types";
+import { eventWhen, type CalendarView } from "@/features/calendar/types";
+import { practiceIdentity } from "@/features/calendar/day";
 import type { Member } from "@/features/identity/policy";
 import type { Segment, Assignment } from "@/features/segments/policy";
 function Feedback({ state }: { state: FormState }) {
@@ -110,6 +112,8 @@ export function CommunicationForm({
   assignments,
   assigned = [],
   tasks = [],
+  editorMember,
+  calendar,
 }: {
   id: string;
   kind: PostKind;
@@ -121,11 +125,32 @@ export function CommunicationForm({
   assignments: Assignment[];
   assigned?: string[];
   tasks?: CommunicationPost[];
+  editorMember: Member;
+  calendar?: CalendarView;
 }) {
   const { id, version, changed } = useDraftRevision(initialId, post?.version);
   const [state, action] = useActionState(saveCommunication, {
     error: null,
   } as FormState);
+  const [announcementType, setAnnouncementType] = useState(
+    post?.practice_event_id ? "practice" : "announcement",
+  );
+  const [practice, setPractice] = useState(post?.practice_event_id ?? "");
+  const [postingRole, setPostingRole] = useState(
+    post ? (post.author_exec_role ?? "") : (editorMember.exec_roles?.[0] ?? ""),
+  );
+  const [practiceSource, setPracticeSource] = useState(
+    post?.practice_source ?? calendar?.source ?? "",
+  );
+  const [openedAt] = useState(() => Date.now());
+  const practices =
+    calendar?.events.filter(
+      (e) => !e.allDay && Date.parse(e.start) > openedAt,
+    ) ?? [];
+  const selectedPractice =
+    calendar?.source === practiceSource
+      ? calendar?.events.find((e) => practiceIdentity(e) === practice)
+      : undefined;
   const [imageBusy, setImageBusy] = useState(false);
   const [title, setTitle] = useState(post?.title ?? "");
   const [body, setBody] = useState(post?.body ?? "");
@@ -173,6 +198,103 @@ export function CommunicationForm({
       ))}
       <section className="panel stack">
         <p className="eyebrow">01 / THE MESSAGE</p>
+        {kind === "announcement" && (
+          <>
+            <label htmlFor="posting-role">Posting as</label>
+            <select
+              id="posting-role"
+              name="posting_role"
+              value={postingRole}
+              disabled={!!post}
+              onChange={(e) => setPostingRole(e.target.value)}
+            >
+              {(!editorMember.exec_roles?.length ||
+                (post && !post.author_exec_role)) && (
+                <option value="">
+                  {editorMember.display_name} · Team announcement
+                </option>
+              )}
+              {[
+                ...new Set([
+                  ...(editorMember.exec_roles ?? []),
+                  ...(post?.author_exec_role ? [post.author_exec_role] : []),
+                ]),
+              ].map((role) => (
+                <option key={role} value={role}>
+                  {role}
+                </option>
+              ))}
+            </select>
+            {post && (
+              <input type="hidden" name="posting_role" value={postingRole} />
+            )}
+            <label htmlFor="announcement-type">Announcement type</label>
+            <select
+              id="announcement-type"
+              value={announcementType}
+              onChange={(e) => setAnnouncementType(e.target.value)}
+              disabled={changed}
+            >
+              <option value="announcement">Announcement</option>
+              <option value="practice">Practice announcement</option>
+            </select>
+            {announcementType === "practice" && (
+              <>
+                <label htmlFor="practice-event">Practice</label>
+                <select
+                  id="practice-event"
+                  name="practice_id"
+                  required
+                  value={practice}
+                  disabled={changed}
+                  onChange={(e) => {
+                    setPractice(e.target.value);
+                    setPracticeSource(calendar?.source ?? "");
+                  }}
+                >
+                  <option value="">Choose an upcoming practice</option>
+                  {post?.practice_event_id &&
+                    !practices.some(
+                      (e) => practiceIdentity(e) === post.practice_event_id,
+                    ) && (
+                      <option value={post.practice_event_id}>
+                        {post.practice_snapshot?.title ?? "Linked practice"} ·
+                        Previously linked
+                      </option>
+                    )}
+                  {practices.map((e) => (
+                    <option key={e.id} value={practiceIdentity(e)}>
+                      {e.title} · {eventWhen(e)}
+                      {e.location ? ` · ${e.location}` : ""}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="hidden"
+                  name="calendar_source"
+                  value={practiceSource}
+                />
+                {!practices.length && (
+                  <p className="notice">
+                    No upcoming timed practices are available. Check the
+                    calendar connection and try again.
+                  </p>
+                )}
+                <p className="notice">
+                  This announcement shares the practice reminder, scheduled one
+                  hour before practice. It will not send a separate announcement
+                  reminder. Quiet hours and notification preferences apply.
+                </p>
+                {selectedPractice && (
+                  <p className="muted small">
+                    {eventWhen(selectedPractice)} ·{" "}
+                    {selectedPractice.location ?? "Location to be confirmed"}
+                  </p>
+                )}
+              </>
+            )}
+          </>
+        )}
         <label htmlFor="post-title">Title</label>
         <input
           id="post-title"
@@ -342,7 +464,7 @@ export function CommunicationForm({
         )}
       </section>
       <DraftConflict changed={changed} />
-      {kind === "announcement" && (
+      {kind === "announcement" && announcementType !== "practice" && (
         <AnnouncementReminderFields
           post={post}
           tasks={tasks}

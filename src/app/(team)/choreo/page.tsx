@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { Suspense } from "react";
 import { FolderOpen, Film } from "lucide-react";
 import { choreoData } from "@/features/choreo/queries";

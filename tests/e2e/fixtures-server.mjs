@@ -105,6 +105,9 @@ await db.exec(
     "utf8",
   ),
 );
+await db.exec(
+  readFileSync("supabase/migrations/0014_practice_announcements.sql", "utf8"),
+);
 for (const person of users.values()) {
   await db.query(
     `insert into auth.users values($1,$2,now(),'{"provider":"google"}')`,
@@ -373,6 +376,39 @@ createServer((req, res) => {
     }
     if (url.pathname === "/fixture/calendar") {
       await seedCalendar(url.searchParams.get("state") === "stale");
+      if (url.searchParams.get("state") === "today") {
+        const day = new Intl.DateTimeFormat("en-CA", {
+          timeZone: "America/Chicago",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }).format(new Date());
+        const events = Array.from({ length: 12 }, (_, i) => ({
+          id: `daily-${i}`,
+          title: `Daily event ${i + 1}`,
+          start: `${day}T${String(13 + Math.floor(i / 2)).padStart(2, "0")}:${i % 2 ? "30" : "00"}:00Z`,
+          end: `${day}T${String(14 + Math.floor(i / 2)).padStart(2, "0")}:00:00Z`,
+          allDay: false,
+          location: "Rec Center",
+          url: null,
+          recurringEventId: null,
+          originalStart: null,
+        }));
+        events.push({
+          id: "today-all-day",
+          title: "All-day team event",
+          start: day,
+          end: new Date(Date.parse(day) + 86400000).toISOString().slice(0, 10),
+          allDay: true,
+          location: null,
+          url: null,
+          recurringEventId: null,
+          originalStart: null,
+        });
+        await db.query("update calendar_snapshot set events=$1::jsonb", [
+          JSON.stringify(events),
+        ]);
+      }
       return json({ ready: true });
     }
     const token = req.headers.authorization?.replace(/^Bearer /, "");
@@ -398,6 +434,29 @@ createServer((req, res) => {
           push_register_subscription: ["p_endpoint", "p_p256dh", "p_auth"],
           push_unregister_subscription: ["p_endpoint"],
           active_member: [],
+          set_exec_roles: ["target_id", "roles", "expected_roles"],
+          save_announcement: [
+            "target_id",
+            "expected_version",
+            "post_kind",
+            "post_title",
+            "post_body",
+            "task_mode",
+            "audience",
+            "recipient_ids",
+            "source_id",
+            "due_date",
+            "expiration_date",
+            "image_object",
+            "image_alt",
+            "reminder_time",
+            "reminder_type",
+            "reminder_text",
+            "linked_task",
+            "posting_role",
+            "practice_id",
+            "calendar_source",
+          ],
           purge_expired_items: [],
           announcement_cleanup_jobs: [],
           finish_announcement_cleanup: ["p_paths"],
@@ -626,6 +685,7 @@ createServer((req, res) => {
             "created_by",
           ],
           members: [
+            "exec_roles",
             "id",
             "email",
             "display_name",
@@ -647,6 +707,12 @@ createServer((req, res) => {
           ],
           segment_members: ["segment_id", "member_id"],
           communication_posts: [
+            "author_name",
+            "author_exec_role",
+            "edited_at",
+            "practice_event_id",
+            "practice_source",
+            "practice_snapshot",
             "reminder_at",
             "reminder_mode",
             "reminder_message",

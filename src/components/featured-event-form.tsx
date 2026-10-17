@@ -1,6 +1,6 @@
 "use client";
 import { ExpirationField } from "./expiration-field";
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { useActionState, useState } from "react";
 import { SubmitButton } from "./forms";
 import { DraftConflict, useDraftRevision } from "./draft-revision";

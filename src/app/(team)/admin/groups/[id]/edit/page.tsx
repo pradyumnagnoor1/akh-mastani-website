@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { notFound } from "next/navigation";
 import { communicationEditorData } from "@/features/communication/queries";
 import { GroupForm } from "@/components/communication-forms";

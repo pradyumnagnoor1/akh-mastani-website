@@ -5,7 +5,11 @@ import { schedulePush } from "@/features/notifications/dispatch";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { authConfig, supabaseConfig } from "@/lib/config";
-import { identity, requireAdmin } from "./session";
+import {
+  identity,
+  requireAdmin,
+  requireMember as requireMemberForRoles,
+} from "./session";
 import { normalizeName } from "./policy";
 export type FormState = { error: string | null; success?: string };
 
@@ -113,4 +117,35 @@ export async function manageMember(
   schedulePush();
   revalidatePath("/", "layout");
   return { error: null, success: "Member updated." };
+}
+
+export async function manageExecRoles(
+  _state: FormState,
+  data: FormData,
+): Promise<FormState> {
+  const { supabase, member } = await requireMemberForRoles();
+  if (!member.is_owner)
+    return { error: "Only the owner can assign exec roles." };
+  try {
+    const expected = JSON.parse(String(data.get("expected_roles") ?? "[]"));
+    if (
+      !Array.isArray(expected) ||
+      !expected.every((r) => typeof r === "string")
+    )
+      return { error: "Refresh member roles before saving." };
+    const result = await supabase.rpc("set_exec_roles", {
+      target_id: String(data.get("id") ?? ""),
+      roles: data.getAll("roles").map(String),
+      expected_roles: expected,
+    });
+    if (result.error)
+      return {
+        error:
+          "Roles could not be saved. Refresh if the membership or roles changed.",
+      };
+  } catch {
+    return { error: "We could not confirm the save. Refresh before retrying." };
+  }
+  revalidatePath("/", "layout");
+  return { error: null, success: "Exec roles updated." };
 }

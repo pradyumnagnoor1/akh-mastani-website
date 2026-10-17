@@ -25,6 +25,7 @@ export function announcementExcerpt(body: string, limit = 150) {
   return `${space > limit * 0.6 ? cut.slice(0, space) : cut}…`;
 }
 export type DigestItem = {
+  announcement?: CommunicationPost;
   id: string;
   section: "Needs attention" | "Your to-dos" | "Announcements";
   title: string;
@@ -99,6 +100,7 @@ export function buildDigest(input: {
         section: "Announcements",
         title: post.title,
         detail: announcementExcerpt(post.body),
+        announcement: post,
         href: `/announcements/${post.id}`,
         priority: 6,
         order: String(-Date.parse(post.created_at)),

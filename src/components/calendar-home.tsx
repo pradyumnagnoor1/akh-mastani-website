@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { calendarData } from "@/features/calendar/queries";
 import { eventWhen, syncTime } from "@/features/calendar/types";
 export async function CalendarHome() {

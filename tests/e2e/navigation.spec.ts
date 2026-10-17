@@ -51,7 +51,7 @@ test("navigation: brand returns home and nested pages retain section selection",
     nav.getByRole("link", { name: "Home", exact: true }),
   ).toHaveAttribute("aria-current", "page");
   await expect(
-    page.getByRole("heading", { name: "Your to-dos" }),
+    page.getByRole("heading", { name: "Your to-dos", level: 2 }),
   ).toBeVisible();
   await expect(nav.locator('[aria-current="page"]')).toHaveCount(1);
   await page.screenshot({
@@ -269,4 +269,52 @@ test("navigation: taps show feedback while a destination response is delayed", a
     "data-pending",
     "false",
   );
+});
+
+test("navigation: create, cancel, filters and back links show pending feedback", async ({
+  page,
+  context,
+  request,
+}, info) => {
+  await login(context, request);
+  await page.goto("/announcements");
+  async function delayedClick(name: string, destination: RegExp) {
+    let release: (() => void) | undefined;
+    await page.route(destination, async (route) => {
+      if (route.request().headers()["rsc"] !== "1") return route.continue();
+      await new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      await route.continue();
+    });
+    await page.getByRole("link", { name, exact: true }).click();
+    try {
+      await expect(page.locator(".page-navigation-loading")).toBeVisible();
+      await expect(page.locator(".page-navigation-loading")).toContainText(
+        "Loading page…",
+      );
+      await page.screenshot({
+        path: info.outputPath(
+          `pending-${name.replaceAll(/[^a-z]/gi, "-")}.png`,
+        ),
+        animations: "disabled",
+      });
+    } finally {
+      release?.();
+    }
+    await expect(page.locator(".page-navigation-loading")).toHaveCount(0);
+    await page.unroute(destination);
+  }
+  await delayedClick("New announcement", /\/announcements\/new\?/);
+  await expect(page.getByLabel("Title", { exact: true })).toBeVisible();
+  // Refresh the list cache before testing a return navigation.
+  await page.reload();
+  await delayedClick("Cancel", /\/announcements\?/);
+  await expect(
+    page.getByRole("heading", { name: "Announcements", exact: true }),
+  ).toBeVisible();
+  await delayedClick("All team", /\/announcements\?view=all/);
+  await expect(page).toHaveURL(/view=all/);
+  await page.goto("/announcements/new");
+  await delayedClick("← Announcements", /\/announcements\?/);
 });

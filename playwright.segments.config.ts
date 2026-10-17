@@ -7,6 +7,7 @@ export default defineConfig({
     "communication.spec.ts",
     "payments.spec.ts",
     "calendar.spec.ts",
+    "practice.spec.ts",
     "operations.spec.ts",
     "calendar-connect.spec.ts",
     "pwa.spec.ts",

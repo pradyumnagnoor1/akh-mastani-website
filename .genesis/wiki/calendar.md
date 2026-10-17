@@ -12,3 +12,5 @@ User display refinement: Practice Calendar renders at most10 events total. Prior
 
 
 Migration0008 adds independent custom featured events, active-team reads/admin-only versioned mutations and audit. Calendar displays upcoming featured events above Google schedule; Home previews3. Optionaltime is explicitlyCentral; standalone creation does not write Google. Past featured events remain manageable; delete hidesdancerrecords and invalidatesqueuedpush. Google10-eventcap/cache unchanged. See docs/management.md.
+
+Migration0014/UI extension supersedes the ten-event calendar display: defaults to Today Chicago, day/date/previous/next/Today controls and Upcoming. All selected-day events are shown, including all-day, overnight, ended Google events and custom featured events. Featured events only carry a start time, so timed ones say Started rather than claiming an end. New date links remount the day selection; normal soft refresh retains local selection. Linked practice notes use the same authorized communication records. Source schedule remains read-only Google, with stale/unavailable labels. docs/practice-announcements.md.

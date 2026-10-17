@@ -21,6 +21,13 @@ export type CommunicationPost = {
   reminder_revision?: number;
   version: number;
   archived_at: string | null;
+  viewer_read?: boolean;
+  author_name?: string | null;
+  author_exec_role?: import("@/features/identity/policy").ExecRole | null;
+  edited_at?: string | null;
+  practice_event_id?: string | null;
+  practice_source?: string | null;
+  practice_snapshot?: import("@/features/calendar/types").CalendarEvent | null;
   created_at: string;
   created_by: string | null;
   completed_at: string | null;

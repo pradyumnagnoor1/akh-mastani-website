@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { requireAdmin } from "@/features/identity/session";
 import { paymentData } from "@/features/payments/queries";
 import { communicationData } from "@/features/communication/queries";

@@ -200,7 +200,7 @@ test("communication: saved group and shared completion show actor for everyone",
   ).toBeVisible();
   await page.goto("/home");
   await expect(
-    page.getByRole("link", { name: new RegExp(title) }),
+    page.getByRole("link", { name: new RegExp(title) }).first(),
   ).toBeVisible();
   await dancer.goto("http://127.0.0.1:3102/admin/groups");
   await expect(dancer).toHaveURL(/\/home$/);
@@ -292,4 +292,68 @@ test("communication: phone image compression, private display, removal and mount
   await expect(
     page.getByRole("heading", { name: title, exact: true }),
   ).toHaveCount(0);
+});
+
+test("communication: announcement URLs are clickable on details and list", async ({
+  page,
+  context,
+  request,
+}, info) => {
+  await login(context, request, "admin");
+  const title = `Linked announcement ${Date.now()}`;
+  await create(page, "announcement", title);
+  await page
+    .getByLabel("Details", { exact: true })
+    .fill(
+      "Visit https://example.com/practice?team=akh&day=1.\nAlso www.example.org/info (https://example.com/formation_(dance)).\n<script>alert('test')</script> javascript:alert(1)",
+    );
+  await page.getByRole("button", { name: "Publish announcement" }).click();
+  await expect(
+    page.getByRole("heading", { name: title, exact: true }),
+  ).toBeVisible();
+  const body = page.locator(".communication-body");
+  await expect(body.getByRole("link")).toHaveCount(3);
+  await expect(body.getByRole("link").first()).toHaveAttribute(
+    "href",
+    "https://example.com/practice?team=akh&day=1",
+  );
+  await expect(body.getByRole("link").nth(1)).toHaveAttribute(
+    "href",
+    "https://www.example.org/info",
+  );
+  await expect(body.getByRole("link").nth(2)).toHaveAttribute(
+    "href",
+    "https://example.com/formation_(dance)",
+  );
+  await expect(body.getByRole("link").first()).toHaveAttribute(
+    "rel",
+    "noopener noreferrer",
+  );
+  await expect(body.locator("script")).toHaveCount(0);
+  await context.route("https://example.com/**", (route) =>
+    route.fulfill({
+      contentType: "text/html",
+      body: "<h1>Practice link opened</h1>",
+    }),
+  );
+  const popupPromise = page.waitForEvent("popup");
+  await body.getByRole("link").first().click();
+  const popup = await popupPromise;
+  await expect(popup).toHaveURL("https://example.com/practice?team=akh&day=1");
+  await expect(
+    popup.getByRole("heading", { name: "Practice link opened" }),
+  ).toBeVisible();
+  await popup.close();
+  await page.screenshot({
+    path: info.outputPath("clickable-announcement.png"),
+    fullPage: true,
+  });
+  await page
+    .getByRole("link", { name: "← Announcements", exact: true })
+    .click();
+  await page.getByRole("link", { name: "All team", exact: true }).click();
+  const card = page
+    .locator(".communication-card")
+    .filter({ has: page.getByRole("link", { name: title, exact: true }) });
+  await expect(card.locator(".message-link").first()).toBeVisible();
 });

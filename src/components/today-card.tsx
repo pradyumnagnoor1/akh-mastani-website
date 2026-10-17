@@ -1,5 +1,7 @@
 "use client";
-import Link from "next/link";
+import { AnnouncementAttribution } from "./announcement-attribution";
+import { ReadBadge } from "./read-badge";
+import Link from "@/components/app-link";
 import { useState } from "react";
 import {
   ArrowUpRight,
@@ -114,6 +116,12 @@ export function TodayCard({
                     <span className="today-item-content">
                       <strong>{item.title}</strong>
                       <small>{item.detail}</small>
+                      {item.announcement && (
+                        <>
+                          <ReadBadge read={false} />
+                          <AnnouncementAttribution post={item.announcement} />
+                        </>
+                      )}
                       <span className="today-item-action">
                         {kind === "task"
                           ? "Complete to-do"

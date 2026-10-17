@@ -1,4 +1,5 @@
 "use client";
+import Link from "@/components/app-link";
 export default function ErrorPage({ reset }: { reset: () => void }) {
   return (
     <main id="main" className="center-page">
@@ -11,9 +12,9 @@ export default function ErrorPage({ reset }: { reset: () => void }) {
         <button className="button primary" onClick={reset}>
           Try again
         </button>
-        <a className="text-button" href="/login">
+        <Link className="text-button" href="/login">
           Return to sign-in
-        </a>
+        </Link>
       </section>
     </main>
   );

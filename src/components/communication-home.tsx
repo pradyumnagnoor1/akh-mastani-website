@@ -1,7 +1,9 @@
 /* eslint-disable react-hooks/purity -- Server components capture request time for expiration timers. */
+import { ReadBadge } from "./read-badge";
+import { AnnouncementAttribution } from "./announcement-attribution";
 import { Expires } from "./expires";
 import { AnnouncementImage } from "./announcement-image";
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { communicationData } from "@/features/communication/queries";
 export async function CommunicationHome() {
   const { posts, recipients, member } = await communicationData();
@@ -62,14 +64,15 @@ export async function CommunicationHome() {
                   href={`/announcements/${p.id}`}
                 >
                   <strong>{p.title}</strong>
-                  <span className="badge">
-                    {recipients.find(
-                      (r) => r.post_id === p.id && r.member_id === member.id,
-                    )?.completed_at
-                      ? "Read"
-                      : "New"}
-                  </span>
+                  <ReadBadge
+                    read={
+                      !!recipients.find(
+                        (r) => r.post_id === p.id && r.member_id === member.id,
+                      )?.completed_at
+                    }
+                  />
                 </Link>
+                <AnnouncementAttribution post={p} />
                 <AnnouncementImage
                   id={p.id}
                   path={p.image_path}

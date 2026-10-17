@@ -75,6 +75,8 @@ test("digest: personal announcement excerpt, acknowledgment refresh and reminder
   const detail = page.url();
   await page.goto("/home");
   const today = page.getByRole("region", { name: /Today ·/ });
+  const adminExpand = today.getByRole("button", { name: /View all/ });
+  if (await adminExpand.count()) await adminExpand.click();
   await expect(today.getByText(title, { exact: true })).toBeVisible();
   const entry = today.getByRole("link").filter({ hasText: title });
   await expect(entry).toContainText("Bring black shoes to practice.");
@@ -183,10 +185,10 @@ test("digest: all incomplete assignments appear, completed tasks disappear, and 
     today.getByText(`Digest task ${info.project.name} 5`, { exact: true }),
   ).toBeVisible();
   await expect(
-    today.getByText("To-do · no due date", { exact: true }),
+    today.getByText("To-do · no due date", { exact: true }).first(),
   ).toBeVisible();
   await expect(
-    today.getByText("To-do · due 2099-12-31", { exact: true }),
+    today.getByText("To-do · due 2099-12-31", { exact: true }).first(),
   ).toBeVisible();
   await expect(
     today.getByText(`Digest task ${info.project.name} 0`, { exact: true }),

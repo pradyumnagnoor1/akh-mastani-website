@@ -85,14 +85,14 @@ const config = {
     field: "Title",
     create: "Publish announcement",
     save: "Save changes",
-    rpc: "save_communication_reminder",
+    rpc: "save_announcement",
   },
   task: {
     path: "/todos/new",
     field: "Title",
     create: "Create to-do",
     save: "Save changes",
-    rpc: "save_communication_media",
+    rpc: "save_announcement",
   },
   segment: {
     path: "/segments/new",

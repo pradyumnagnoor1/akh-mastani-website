@@ -111,8 +111,8 @@ export function AnnouncementReminderFields({
             onChange={(e) => setMessage(e.target.value)}
           />
           <p className="muted small">
-            Shown inside the announcement. Lock screen reminders use generic
-            text.
+            Shown in the announcement and reminder preview. If blank, the
+            reminder uses your announcement message.
           </p>
         </>
       )}

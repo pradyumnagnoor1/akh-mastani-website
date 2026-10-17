@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { notFound } from "next/navigation";
 import { segmentData } from "@/features/segments/queries";
 import { communicationData } from "@/features/communication/queries";
@@ -15,7 +15,7 @@ export default async function MemberDetail({
   const { member, supabase, segments, assignments } = await segmentData();
   const { data: person, error } = await supabase
     .from("members")
-    .select("id,email,display_name,status,is_admin")
+    .select("id,email,display_name,status,is_admin,exec_roles")
     .eq("id", id)
     .maybeSingle();
   if (error) throw new Error("Unable to load dancer.");
@@ -43,6 +43,11 @@ export default async function MemberDetail({
       <div className="page-heading">
         <h1>{person.display_name ?? "Name pending"}</h1>
         <p className="muted">{person.email}</p>
+        {person.exec_roles?.map((role: string) => (
+          <span className="badge" key={role}>
+            {role}
+          </span>
+        ))}
         <span className="badge">
           Dancer{person.is_admin ? " · Admin access" : ""} · {person.status}
         </span>

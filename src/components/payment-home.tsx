@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { paymentData } from "@/features/payments/queries";
 import { formatMoney } from "@/features/payments/types";
 export async function PaymentHome() {

@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
   redirect: vi.fn(),
 }));
 vi.mock("@/features/identity/session", () => ({
-  requireAdmin: async () => ({ supabase: { rpc: mocks.rpc } }),
+  requireAnnouncementEditor: async () => ({ supabase: { rpc: mocks.rpc } }),
 }));
 vi.mock("@/features/announcement-images/cleanup", () => ({
   scheduleImageCleanup: mocks.cleanup,

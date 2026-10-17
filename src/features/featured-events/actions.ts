@@ -52,7 +52,7 @@ export async function saveFeaturedEvent(
   }
   schedulePush();
   revalidatePath("/", "layout");
-  redirect("/calendar");
+  redirect(`/calendar?date=${args.event_day}`);
 }
 export async function deleteFeaturedEvent(
   _state: FormState,

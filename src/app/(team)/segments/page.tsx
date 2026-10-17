@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { FileText, ArrowUpRight, Plus, Layers, Users } from "lucide-react";
 import { segmentData } from "@/features/segments/queries";
 export default async function Segments() {

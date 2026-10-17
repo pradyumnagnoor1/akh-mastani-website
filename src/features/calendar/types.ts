@@ -21,6 +21,7 @@ export type CalendarSnapshot = {
   window_end: string | null;
 };
 export type CalendarView = {
+  source?: string | null;
   configured: boolean;
   events: CalendarEvent[];
   lastSuccessAt: string | null;
@@ -41,6 +42,7 @@ export function viewFromSnapshot(
   const success = valid?.last_success_at ?? null;
   return {
     configured: source !== null,
+    source,
     events: success ? valid!.events : [],
     lastSuccessAt: success,
     stale: !success || now.getTime() - Date.parse(success) >= FRESHNESS_MS,

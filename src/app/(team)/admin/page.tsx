@@ -1,13 +1,13 @@
 import { AdminSummary } from "@/components/admin-summary";
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { requireAdmin } from "@/features/identity/session";
-import { MemberControls } from "@/components/forms";
+import { MemberControls, ExecRoleControls } from "@/components/forms";
 import type { Member } from "@/features/identity/policy";
 export default async function Admin() {
   const { supabase, member } = await requireAdmin();
   const { data, error } = await supabase
     .from("members")
-    .select("id,email,display_name,status,is_admin")
+    .select("id,email,display_name,status,is_admin,exec_roles")
     .order("created_at", { ascending: false });
   if (error) throw new Error("Unable to load membership requests.");
   const people = data as Member[];
@@ -81,7 +81,15 @@ export default async function Admin() {
                 {person.status}
               </span>
               {person.is_admin && <span className="badge">Admin access</span>}
+              {person.exec_roles?.map((role) => (
+                <span className="badge" key={role}>
+                  {role}
+                </span>
+              ))}
             </div>
+            {member.is_owner && person.status === "active" && (
+              <ExecRoleControls member={person} />
+            )}
             {person.display_name ? (
               <MemberControls member={person} self={person.id === member.id} />
             ) : (

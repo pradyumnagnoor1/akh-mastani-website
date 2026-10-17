@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { notFound } from "next/navigation";
 import { FileText, Download, ArrowUpRight, Pencil, Users } from "lucide-react";
 import { segmentData } from "@/features/segments/queries";

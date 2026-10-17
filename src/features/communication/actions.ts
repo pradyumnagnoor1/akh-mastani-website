@@ -4,7 +4,11 @@ import { scheduleImageCleanup } from "@/features/announcement-images/cleanup";
 import { schedulePush } from "@/features/notifications/dispatch";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAdmin, requireMember } from "@/features/identity/session";
+import {
+  requireAdmin,
+  requireMember,
+  requireAnnouncementEditor,
+} from "@/features/identity/session";
 import { validatePost, validVersion } from "./policy";
 import type { FormState } from "./types";
 import { validateAnnouncementReminder } from "../notifications/reminder-policy";
@@ -18,6 +22,12 @@ function revision(form: FormData) {
 function failure(error: { message: string; code?: string }): FormState {
   if (
     /^(Choose an announcement reminder type|Choose a future reminder within one year|Use a reminder message of up to 200 characters|Reminder must be before announcement expiration|Choose a live linked task|Choose a reminder time|Only task reminders may link a task)$/.test(
+      error.message,
+    )
+  )
+    return { error: error.message };
+  if (
+    /^(Practice unavailable|Choose an upcoming practice|Choose one of your assigned exec roles|Choose a posting role|Original posting role|Announcement management access)/.test(
       error.message,
     )
   )
@@ -53,7 +63,7 @@ export async function saveCommunication(
   _state: FormState,
   form: FormData,
 ): Promise<FormState> {
-  const { supabase } = await requireAdmin();
+  const { supabase } = await requireAnnouncementEditor();
   let args;
   let input;
   let expiration;
@@ -71,30 +81,38 @@ export async function saveCommunication(
       sourceId: value(form, "source_id"),
       dueOn: value(form, "due_on"),
     });
-    if (input.kind === "announcement" && form.has("reminder_enabled"))
+    if (
+      input.kind === "announcement" &&
+      !value(form, "practice_id") &&
+      form.has("reminder_enabled")
+    )
       reminder = validateAnnouncementReminder(form);
   } catch (error) {
     return { error: (error as Error).message };
   }
   try {
-    const { error } = await supabase.rpc(
-      reminder ? "save_communication_reminder" : "save_communication_media",
-      {
-        ...args,
-        post_kind: input.kind,
-        post_title: input.title,
-        post_body: input.body,
-        task_mode: input.mode,
-        audience: input.audience,
-        recipient_ids: input.members,
-        source_id: input.sourceId,
-        due_date: input.dueOn,
-        expiration_date: expiration,
-        image_object: value(form, "image_path") || null,
-        image_alt: value(form, "image_description"),
-        ...reminder,
-      },
-    );
+    const { error } = await supabase.rpc("save_announcement", {
+      ...args,
+      post_kind: input.kind,
+      post_title: input.title,
+      post_body: input.body,
+      task_mode: input.mode,
+      audience: input.audience,
+      recipient_ids: input.members,
+      source_id: input.sourceId,
+      due_date: input.dueOn,
+      expiration_date: expiration,
+      image_object: value(form, "image_path") || null,
+      image_alt: value(form, "image_description"),
+      reminder_time: null,
+      reminder_type: null,
+      reminder_text: "",
+      linked_task: null,
+      ...reminder,
+      posting_role: value(form, "posting_role") || null,
+      practice_id: value(form, "practice_id") || null,
+      calendar_source: value(form, "calendar_source") || null,
+    });
     if (error) return failure(error);
   } catch {
     return failure({ message: "Network error" });
@@ -131,7 +149,7 @@ export async function manageCommunication(
   _state: FormState,
   form: FormData,
 ): Promise<FormState> {
-  const { supabase } = await requireAdmin();
+  const { supabase } = await requireAnnouncementEditor();
   let args;
   const operation = value(form, "operation"),
     recipientId = value(form, "recipient_id") || null;

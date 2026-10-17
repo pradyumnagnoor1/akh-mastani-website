@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/app-link";
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/features/identity/session";
 import { segmentData } from "@/features/segments/queries";
@@ -16,7 +16,7 @@ export default async function EditSegment({
   if (!segment) notFound();
   const { data, error } = await supabase
     .from("members")
-    .select("id,email,display_name,status,is_admin")
+    .select("id,email,display_name,status,is_admin,exec_roles")
     .eq("status", "active")
     .order("display_name");
   if (error) throw new Error("Unable to load dancers.");
