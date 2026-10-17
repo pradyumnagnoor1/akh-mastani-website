@@ -111,6 +111,9 @@ await db.exec(
 await db.exec(
   readFileSync("supabase/migrations/0015_custom_practices.sql", "utf8"),
 );
+await db.exec(
+  readFileSync("supabase/migrations/0016_exec_role_eligibility.sql", "utf8"),
+);
 for (const person of users.values()) {
   await db.query(
     `insert into auth.users values($1,$2,now(),'{"provider":"google"}')`,
@@ -250,6 +253,14 @@ createServer((req, res) => {
     function json(data, status = 200, headers = {}) {
       res.writeHead(status, { "Content-Type": "application/json", ...headers });
       res.end(JSON.stringify(data));
+    }
+    if (url.pathname === "/fixture/member-admin" && req.method === "POST") {
+      await db.exec("reset role");
+      await db.query("update members set is_admin=$1 where id=$2", [
+        url.searchParams.get("enabled") === "true",
+        dancer,
+      ]);
+      return json({ ready: true });
     }
     if (url.pathname === "/health") return json({ ready: true });
     if (url.pathname === "/fixture/reset-digest-tests") {

@@ -163,11 +163,18 @@ export function ExecRoleControls({ member }: { member: Member }) {
   const original = JSON.stringify(member.exec_roles ?? []);
   const [expected, setExpected] = useState(original);
   const [selected, setSelected] = useState(member.exec_roles ?? []);
-  const [state, action] = useActionState(
+  const [editing, setEditing] = useState(!member.exec_roles?.length);
+  const [state, action, pending] = useActionState(
     async (previous: FormState, data: FormData) => {
       const result = await manageExecRoles(previous, data);
-      if (result.success)
-        setExpected(JSON.stringify(data.getAll("roles").map(String).sort()));
+      if (result.success) {
+        const savedRoles = EXEC_ROLES.filter((role) =>
+          data.getAll("roles").includes(role),
+        ).sort();
+        setExpected(JSON.stringify(savedRoles));
+        setSelected(savedRoles);
+        setEditing(false);
+      }
       return result;
     },
     { error: null } as FormState,
@@ -181,27 +188,61 @@ export function ExecRoleControls({ member }: { member: Member }) {
     >
       <input type="hidden" name="id" value={member.id} />
       <input type="hidden" name="expected_roles" value={expected} />
-      <fieldset className="exec-role-picker" disabled={original !== expected}>
-        <legend>Exec roles for {member.display_name}</legend>
-        {EXEC_ROLES.map((role) => (
-          <label key={role}>
-            <input
-              type="checkbox"
-              name="roles"
-              value={role}
-              checked={selected.includes(role)}
-              onChange={(e) =>
-                setSelected(
-                  e.target.checked
-                    ? [...selected, role]
-                    : selected.filter((r) => r !== role),
-                )
-              }
-            />
-            {role}
-          </label>
-        ))}
-      </fieldset>
+      {editing ? (
+        <>
+          <fieldset
+            className="exec-role-picker"
+            disabled={pending || original !== expected}
+          >
+            <legend>Exec roles for {member.display_name}</legend>
+            {EXEC_ROLES.map((role) => (
+              <label key={role}>
+                <input
+                  type="checkbox"
+                  name="roles"
+                  value={role}
+                  checked={selected.includes(role)}
+                  onChange={(e) =>
+                    setSelected(
+                      e.target.checked
+                        ? [...selected, role]
+                        : selected.filter((r) => r !== role),
+                    )
+                  }
+                />
+                {role}
+              </label>
+            ))}
+          </fieldset>
+          <div className="actions">
+            <SubmitButton disabled={original !== expected}>
+              Save exec roles
+            </SubmitButton>
+            {JSON.parse(expected).length > 0 && (
+              <button
+                type="button"
+                disabled={pending}
+                className="button secondary small"
+                onClick={() => {
+                  setSelected(JSON.parse(expected));
+                  setEditing(false);
+                }}
+              >
+                Cancel
+              </button>
+            )}
+          </div>
+        </>
+      ) : (
+        <button
+          type="button"
+          className="button secondary small"
+          disabled={original !== expected}
+          onClick={() => setEditing(true)}
+        >
+          Change exec role
+        </button>
+      )}
       {state.error && (
         <p className="notice error" role="alert">
           {state.error}
@@ -211,9 +252,6 @@ export function ExecRoleControls({ member }: { member: Member }) {
       {original !== expected && (
         <p className="notice">Roles changed. Refresh before editing again.</p>
       )}
-      <SubmitButton disabled={original !== expected}>
-        Save exec roles
-      </SubmitButton>
     </form>
   );
 }

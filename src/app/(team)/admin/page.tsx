@@ -87,9 +87,11 @@ export default async function Admin() {
                 </span>
               ))}
             </div>
-            {member.is_owner && person.status === "active" && (
-              <ExecRoleControls member={person} />
-            )}
+            {member.is_owner &&
+              person.is_admin &&
+              person.status === "active" && (
+                <ExecRoleControls member={person} />
+              )}
             {person.display_name ? (
               <MemberControls member={person} self={person.id === member.id} />
             ) : (

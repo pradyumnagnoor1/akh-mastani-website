@@ -52,6 +52,7 @@ beforeAll(async () => {
     "0013_announcement_push_preview",
     "0014_practice_announcements",
     "0015_custom_practices",
+    "0016_exec_role_eligibility",
   ])
     await db.exec(readFileSync(`supabase/migrations/${name}.sql`, "utf8"));
 });
@@ -75,8 +76,16 @@ beforeEach(async () => {
 });
 
 async function roles(id: string, values: string[]) {
+  await role("postgres");
+  await db.query("update members set is_admin=true where id=$1", [id]);
   await role();
-  await q("set_exec_roles($1,$2::text[],'{}'::text[])", [id, values]);
+  await q(
+    "set_exec_roles($1,$2::text[],(select exec_roles from members where id=$1))",
+    [id, values],
+  );
+  await role("postgres");
+  await db.query("update members set is_admin=false where id=$1", [id]);
+  await role();
 }
 async function seedPractice(
   start = new Date(Date.now() + 3600000).toISOString(),
@@ -135,10 +144,10 @@ it("owner alone assigns roles; captain gains full DB management and loses it on 
   await roles(a, ["Captain"]);
   await expect(
     q("set_exec_roles($1,array['Social'],'{}')", [a]),
-  ).rejects.toThrow(/changed/);
+  ).rejects.toThrow(/admin/);
   expect(
     await q(
-      "(select action from member_audit where member_id=$1 order by id desc limit 1)",
+      "(select action from member_audit where member_id=$1 and action='exec_roles_changed' order by id desc limit 1)",
       [a],
     ),
   ).toBe("exec_roles_changed");
@@ -166,11 +175,7 @@ it("all exec groups get full management while role spoofing is blocked and legac
     "Production",
     "Social",
   ]) {
-    await role();
-    await q(
-      "set_exec_roles($1,$2::text[],(select exec_roles from members where id=$1))",
-      [a, [group]],
-    );
+    await roles(a, [group]);
     await role("authenticated", a);
     expect(await q("admin_member()")).toBe(true);
     await q("set_member_status($1,'inactive')", [b]);
@@ -683,4 +688,37 @@ it("deleting a custom practice scrubs mixed reminder payloads and preserves the 
   expect(JSON.stringify(payload)).toContain(`/todos/${other}`);
   expect(payload.body).toContain("1 to-do");
   expect(JSON.stringify(payload)).not.toMatch(/PEAP|extra shoes|custom:/);
+});
+
+it("only existing active admins can receive exec roles and stale saves cannot overwrite", async () => {
+  await role();
+  await expect(
+    q("set_exec_roles($1,array['Captain'],'{}')", [a]),
+  ).rejects.toThrow(/existing active admin/);
+  await role("postgres");
+  await db.query("update members set is_admin=true where id=$1", [a]);
+  await role();
+  await q("set_exec_roles($1,array['Captain'],'{}')", [a]);
+  await expect(
+    q("set_exec_roles($1,array['Social'],'{}')", [a]),
+  ).rejects.toThrow(/changed/);
+  expect(await q("(select exec_roles from members where id=$1)", [a])).toEqual([
+    "Captain",
+  ]);
+  await role("postgres");
+  await db.query("update members set is_admin=false where id=$1", [a]);
+  await role();
+  await expect(
+    q("set_exec_roles($1,array['Social'],array['Captain'])", [a]),
+  ).rejects.toThrow(/existing active admin/);
+  await q("set_exec_roles($1,'{}',array['Captain'])", [a]);
+  await role("postgres");
+  await db.query(
+    "update members set is_admin=true,status='inactive' where id=$1",
+    [a],
+  );
+  await role();
+  await expect(
+    q("set_exec_roles($1,array['Social'],'{}')", [a]),
+  ).rejects.toThrow(/existing active admin/);
 });

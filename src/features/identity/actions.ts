@@ -141,7 +141,7 @@ export async function manageExecRoles(
     if (result.error)
       return {
         error:
-          "Roles could not be saved. Refresh if the membership or roles changed.",
+          "Only existing active admins can receive exec roles. Refresh if their access or roles changed.",
       };
   } catch {
     return { error: "We could not confirm the save. Refresh before retrying." };
