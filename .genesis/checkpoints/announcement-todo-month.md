@@ -13,3 +13,7 @@
 - Mobile linked-task detail inspected; link is visibly underlined violet and checkbox reuses existing accessible control sizing. Final style replay passed2/2 desktop/mobile; updated linked-task screenshot inspected. No recipient/status/admin changes or live synthetic posts planned.
 - Delegated Q&A (assistant answers, not human evidence): separate posts preserve independent acknowledgment/completion; one transaction and captured-recipient snapshot avoid orphan/private drift; deletion detaches with revision fencing, and paired publication only suppresses a real duplicate.
 - Rollout: preflight confirmed linked_todo_id absent. Apply0018 then matching production frontend; existing signature/legacy clients remain compatible. Existing authenticated/physical push live acceptance remains separate.
+
+## Production release
+-0018 applied to shared Supabase after absent-column preflight; verified link column/RPC grant and0linked announcements. No live posts/tasks/notifications created.
+-1190864 pushed to main. Production build READY dpl_DjuWPQNDxJHiP5Vkw7N357n5vUGp / akh-mastani-3yxka18nv-pradyumn-agnoors-projects.vercel.app; canonical https://akh-mastani.vercel.app aliased. Public health200/statusok and login200/Google sign-in pass. Local browser flows establish functional evidence; authenticated live CRUD/physical push acceptance remains separate.
