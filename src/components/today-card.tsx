@@ -37,10 +37,7 @@ export function TodayCard({
   return (
     <section className="panel today-card" aria-labelledby="today-heading">
       <div className="section-toolbar">
-        <div>
-          <h2 id="today-heading">Today · {date}</h2>
-        </div>
-        <span className="badge">For you</span>
+        <h2 id="today-heading">Today · {date}</h2>
       </div>
       {!digest.schedule.length && digest.next && (
         <p className="eyebrow">NEXT UP</p>
@@ -53,7 +50,14 @@ export function TodayCard({
               <span>
                 <strong>{event.title}</strong>
                 <small>
-                  {event.day !== digest.today ? `${event.day} · ` : ""}
+                  {event.day !== digest.today
+                    ? `${new Intl.DateTimeFormat("en-US", {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                        timeZone: "UTC",
+                      }).format(new Date(`${event.day}T12:00:00Z`))} · `
+                    : ""}
                   {event.detail}
                 </small>
               </span>

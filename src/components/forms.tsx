@@ -163,7 +163,7 @@ export function ExecRoleControls({ member }: { member: Member }) {
   const original = JSON.stringify(member.exec_roles ?? []);
   const [expected, setExpected] = useState(original);
   const [selected, setSelected] = useState(member.exec_roles ?? []);
-  const [editing, setEditing] = useState(!member.exec_roles?.length);
+  const [editing, setEditing] = useState(false);
   const [state, action, pending] = useActionState(
     async (previous: FormState, data: FormData) => {
       const result = await manageExecRoles(previous, data);
@@ -218,19 +218,17 @@ export function ExecRoleControls({ member }: { member: Member }) {
             <SubmitButton disabled={original !== expected}>
               Save exec roles
             </SubmitButton>
-            {JSON.parse(expected).length > 0 && (
-              <button
-                type="button"
-                disabled={pending}
-                className="button secondary small"
-                onClick={() => {
-                  setSelected(JSON.parse(expected));
-                  setEditing(false);
-                }}
-              >
-                Cancel
-              </button>
-            )}
+            <button
+              type="button"
+              disabled={pending}
+              className="button secondary small"
+              onClick={() => {
+                setSelected(JSON.parse(expected));
+                setEditing(false);
+              }}
+            >
+              Cancel
+            </button>
           </div>
         </>
       ) : (

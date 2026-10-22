@@ -1,4 +1,5 @@
 "use client";
+import { Check } from "lucide-react";
 import { CustomPracticeFields } from "./custom-practice-fields";
 import { savedAudience } from "@/features/communication/saved-groups";
 import { SavedGroupOptions } from "./saved-group-options";
@@ -609,6 +610,7 @@ export function CommunicationAction({
       <SubmitButton
         className={`button ${operation === "complete" ? "primary" : "secondary"}`}
       >
+        {operation === "complete" && <Check size={18} aria-hidden="true" />}
         {label}
       </SubmitButton>
       <Feedback state={state} />

@@ -91,7 +91,7 @@ export function AppShell({
             aria-current={isCurrent(path, href) ? "page" : undefined}
             onNavigate={close}
           >
-            <Icon size={19} />
+            <Icon size={19} aria-hidden="true" />
             {label}
             <NavigationHint />
             {isCurrent(path, href) && <span className="nav-dot" />}
@@ -123,6 +123,7 @@ export function AppShell({
       <div className="account-copy">
         <strong>{member.display_name}</strong>
         <small>{member.is_admin ? "Dancer · Admin access" : "Dancer"}</small>
+        <small>{member.email}</small>
       </div>
       <form action={signOut}>
         <button className="icon-button" aria-label="Sign out">

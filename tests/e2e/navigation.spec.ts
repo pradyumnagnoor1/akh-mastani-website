@@ -50,9 +50,7 @@ test("navigation: brand returns home and nested pages retain section selection",
   await expect(
     nav.getByRole("link", { name: "Home", exact: true }),
   ).toHaveAttribute("aria-current", "page");
-  await expect(
-    page.getByRole("heading", { name: "Your to-dos", level: 2 }),
-  ).toBeVisible();
+  await expect(page.getByRole("region", { name: /Today ·/ })).toBeVisible();
   await expect(nav.locator('[aria-current="page"]')).toHaveCount(1);
   await page.screenshot({
     path: info.outputPath("home-redesign.png"),

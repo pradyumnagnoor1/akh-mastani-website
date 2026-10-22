@@ -35,45 +35,63 @@ export async function FeaturedEvents({
         )}
         {compact && (
           <Link href="/calendar" className="text-button">
-            View calendar →
+            Calendar →
           </Link>
         )}
       </div>
       {!visible.length && <p className="muted">No upcoming featured events.</p>}
-      {visible.map((event) => (
-        <Expires key={event.id} at={event.expires_at} serverNow={Date.now()}>
-          <article className={compact ? "stack" : "panel stack"}>
-            <p className="eyebrow">{featuredWhen(event)}</p>
-            <h3>{event.title}</h3>
-            {event.location && <p className="muted">{event.location}</p>}
-            {!compact && event.description && (
-              <p className="preserve-lines">{event.description}</p>
-            )}
-            {!compact && event.event_link && (
-              <a
-                className="text-button"
-                href={event.event_link}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Event details{" "}
-                <span className="sr-only">(opens in a new tab)</span>→
-              </a>
-            )}
-            {!compact && member.is_admin && (
-              <div className="actions">
-                <Link
-                  href={`/calendar/featured/${event.id}/edit`}
-                  className="button secondary"
+      {compact ? (
+        <div className="event-strip">
+          {visible.map((event) => (
+            <Expires
+              key={event.id}
+              at={event.expires_at}
+              serverNow={Date.now()}
+            >
+              <article className="event-tile">
+                <span className="event-when">{featuredWhen(event)}</span>
+                <h3>{event.title}</h3>
+                {event.location && <p className="muted">{event.location}</p>}
+              </article>
+            </Expires>
+          ))}
+        </div>
+      ) : (
+        visible.map((event) => (
+          <Expires key={event.id} at={event.expires_at} serverNow={Date.now()}>
+            <article className="panel stack">
+              <p className="eyebrow">{featuredWhen(event)}</p>
+              <h3>{event.title}</h3>
+              {event.location && <p className="muted">{event.location}</p>}
+              {event.description && (
+                <p className="preserve-lines">{event.description}</p>
+              )}
+              {event.event_link && (
+                <a
+                  className="text-button"
+                  href={event.event_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
-                  Edit event
-                </Link>
-                <DeleteFeaturedEvent event={event} />
-              </div>
-            )}
-          </article>
-        </Expires>
-      ))}
+                  Event details{" "}
+                  <span className="sr-only">(opens in a new tab)</span>→
+                </a>
+              )}
+              {member.is_admin && (
+                <div className="actions">
+                  <Link
+                    href={`/calendar/featured/${event.id}/edit`}
+                    className="button secondary"
+                  >
+                    Edit event
+                  </Link>
+                  <DeleteFeaturedEvent event={event} />
+                </div>
+              )}
+            </article>
+          </Expires>
+        ))
+      )}
       {!compact &&
         member.is_admin &&
         events.some((e) => !e.deleted_at && e.event_date < today) && (

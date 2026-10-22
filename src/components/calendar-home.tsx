@@ -20,7 +20,7 @@ export async function CalendarHome() {
       <div className="section-toolbar">
         <h2>Next practices</h2>
         <Link href="/calendar" className="text-button">
-          View calendar →
+          Calendar →
         </Link>
       </div>
       {!calendar.configured && !events.length ? (
@@ -38,10 +38,10 @@ export async function CalendarHome() {
             <div className="my-segment-row" key={event.id}>
               <div>
                 <strong>{event.title}</strong>
-                <p className="small muted">
-                  {eventWhen(event)}
-                  {event.location ? ` · ${event.location}` : ""}
-                </p>
+                <p className="small muted">{eventWhen(event)}</p>
+                {event.location && (
+                  <p className="small muted">{event.location}</p>
+                )}
               </div>
             </div>
           ))}
@@ -51,8 +51,8 @@ export async function CalendarHome() {
             </p>
           )}
           {calendar.lastSuccessAt && (
-            <p className="small muted">
-              Last synced {syncTime(calendar.lastSuccessAt)} · Central time
+            <p className="panel-footnote">
+              Synced {syncTime(calendar.lastSuccessAt)} · Central time
             </p>
           )}
         </>

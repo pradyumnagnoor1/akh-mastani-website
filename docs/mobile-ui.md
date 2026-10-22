@@ -8,7 +8,7 @@ The native modal contains keyboard focus. Escape, the close button and backdrop 
 
 Body/form text is 16px. Primary controls and mobile tabs have at least 44px touch targets. Page padding reserves space below the bottom bar and uses safe-area insets where the browser supplies them. Tabs hide while a text field, textarea or select is focused, leaving room for editing; they return after blur. Refresh feedback appears above the bar. Draft/refresh protection remains in the existing shared refresh controller.
 
-Home starts with personal to-dos/announcements, featured events and practices, followed by payments and additional admin summaries. Membership details include the roster count/link instead of a separate count card. All permission and data workflows are unchanged.
+Home is one feed: the Today card (next practice, open to-dos, unread announcements and payments due), then next practices and your balance, featured events as a swipeable strip, your segments as chips, the admin overview for admins and notification settings last. To-dos and announcements are no longer repeated in separate Home panels; membership details (name, role, email) live in the account area of the sidebar and the mobile menu. All permission and data workflows are unchanged.
 
 ## Deployment and checking
 
@@ -21,3 +21,15 @@ Run `npm run check`, `npm run format:check`, `npm run test:e2e:team` and `npm ru
 A shared loading boundary inside the team layout lets destination pages load while the header and navigation stay available. Navigation links use Next.js-owned pending feedback until the route changes; tapping links/buttons also gives an immediate pressed state. Existing default prefetch prepares route loading shells in production. Server checks and dynamic fetching remain in place, so content and save operations can still take network time. This changes feedback and perceived responsiveness; it is not evidence of lower production server latency. No upgrade, new environment variable or migration is required. Redeploy code, reopen the installed app, and verify on the physical iPhone/network.
 
 All internal page links now use the shared `AppLink`, including page buttons, Back, Cancel, edit links, filters, breadcrumbs and error recovery. While Next.js waits for navigation, a fixed, screen-reader-announced “Loading page…” notice remains visible even when the tapped control is far down the page. Next owns completion/cancellation; cached instant transitions need no artificial delay. The existing route loading page remains in place while destination content streams. External links, file downloads and exports retain their normal behavior.
+
+## UI revamp (2026-10-22)
+
+`src/app/globals.css` is one ordered design system: tokens, base, primitives, app frame, shared patterns, feature pages, responsive rules and motion. Tokens cover surfaces, text, accent, semantic statuses (success, warning, info, error), radii and a 4/8/12/16/20/24/32 spacing scale. Cards share one flat surface; `.page-content` applies one vertical rhythm.
+
+- Status chips: payments use `status-unpaid` (amber), `status-reported` (blue) and `status-verified` (green); Unread is red, Read/Done green, To do violet.
+- View filters (`.view-tabs`) render as a segmented control.
+- Announcement and to-do cards lead with status/due chips and the title, then attribution, a two-line preview and one action row (Mark done/Mark as read with a check icon, plus Open). Completion-type chips show only for shared items or to writers.
+- Editors pin their action row (`.segment-editor > .actions`) above the bottom tabs; it drops to the screen edge while a field has focus.
+- Admin groups links under Manage (a single grouped list on phones), members under Members & requests, and the export under Data. Exec-role editing starts collapsed behind Change exec role. The membership-request notice appears only when requests are pending.
+- The navigation loading notice is a compact pill below the header.
+- Desktop content is capped at 960px.

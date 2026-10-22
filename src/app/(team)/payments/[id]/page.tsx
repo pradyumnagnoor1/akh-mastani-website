@@ -37,19 +37,24 @@ export default async function Page({
   }
   return (
     <>
-      <Link className="back-link" href="/payments">
-        ← Payments
-      </Link>
       <div className="page-heading">
-        <p className="eyebrow">PAYMENT / {name}</p>
+        <Link className="back-link" href="/payments">
+          ← Payments
+        </Link>
+        <p className="eyebrow">Payment · {name}</p>
         <h1>{charge.reason}</h1>
-        <p className="badge">{paymentStatus[charge.status]}</p>
+        <span className={`badge status-${charge.status}`}>
+          {paymentStatus[charge.status]}
+        </span>
       </div>
-      <section className="panel stack">
-        <h2>{formatMoney(charge.amount_cents)}</h2>
+      <section className="panel stack payment-balance">
+        <h2 className="metric">{formatMoney(charge.amount_cents)}</h2>
         <p className="muted">
-          {charge.due_on ? `Due ${charge.due_on}` : "No due date"}
+          {charge.due_on
+            ? `Due ${new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(`${charge.due_on}T12:00:00Z`))}`
+            : "No due date"}
         </p>
+        <hr />
         <h3>Payment instructions</h3>
         <p className="preserve-lines">{charge.instructions}</p>
         {charge.report_note && (
@@ -114,7 +119,7 @@ export default async function Page({
       <section className="panel stack">
         <h2>Payment activity</h2>
         {history.map((event) => (
-          <div key={event.id}>
+          <div key={event.id} className="activity-row">
             <strong>
               {{
                 issued: "Charge issued",
@@ -127,11 +132,15 @@ export default async function Page({
               }[event.action] ?? event.action}
             </strong>
             <p className="muted small">
-              {new Date(event.created_at)
-                .toISOString()
-                .slice(0, 16)
-                .replace("T", " ")}{" "}
-              UTC
+              {new Intl.DateTimeFormat("en-US", {
+                timeZone: "America/Chicago",
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+                timeZoneName: "short",
+              }).format(new Date(event.created_at))}
             </p>
             {event.action === "update" && (
               <p className="muted small">

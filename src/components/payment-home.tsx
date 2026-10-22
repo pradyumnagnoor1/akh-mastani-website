@@ -14,19 +14,19 @@ export async function PaymentHome() {
       <div className="section-toolbar">
         <h2>Your payments</h2>
         <Link href="/payments" className="text-button">
-          View payments →
+          Payments →
         </Link>
       </div>
       <strong className="metric">
         {formatMoney(outstanding.reduce((sum, c) => sum + c.amount_cents, 0))}
       </strong>
-      <p className="muted">
+      <p className="muted small">
         {outstanding.length
           ? `${outstanding.length} outstanding ${outstanding.length === 1 ? "charge" : "charges"}${pending.length ? ` · ${pending.length} awaiting verification` : ""}`
           : "No outstanding payments."}
       </p>
       {pending.length > 0 && (
-        <p className="small muted">
+        <p className="panel-footnote">
           Reported payments stay here until an admin verifies them.
         </p>
       )}

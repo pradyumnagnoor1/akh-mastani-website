@@ -7,6 +7,13 @@ import {
   paymentStatus,
   type Charge,
 } from "@/features/payments/types";
+const formatDay = (day: string) =>
+  new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${day}T12:00:00Z`));
 export default async function Page({
   searchParams,
 }: {
@@ -49,12 +56,14 @@ export default async function Page({
                 <p className="muted">{names.get(c.member_id) ?? "Dancer"}</p>
               )}
               <p className="muted small">
-                {c.due_on ? `Due ${c.due_on}` : "No due date"}
+                {c.due_on ? `Due ${formatDay(c.due_on)}` : "No due date"}
               </p>
             </div>
             <div>
               <strong>{formatMoney(c.amount_cents)}</strong>
-              <p className="badge">{paymentStatus[c.status]}</p>
+              <span className={`badge status-${c.status}`}>
+                {paymentStatus[c.status]}
+              </span>
             </div>
           </Link>
         ))}
@@ -97,28 +106,28 @@ export default async function Page({
           </Link>
         </nav>
       )}
-      <section className="panel">
+      <section className="panel payment-balance">
         <p className="eyebrow">
-          {tab === "mine" ? "YOUR" : "SELECTED"} OUTSTANDING BALANCE
+          {tab === "mine" ? "Your" : "Selected"} outstanding balance
         </p>
-        <h2>
+        <h2 className="metric">
           {formatMoney(
             items
               .filter(outstanding)
               .reduce((sum, c) => sum + c.amount_cents, 0),
           )}
         </h2>
-        <p className="muted">
+        <p className="muted small">
           Reported payments remain outstanding until verified. This site does
           not transfer money.
         </p>
       </section>
-      <section className="stack">
+      <section className="payment-section">
         <h2>{tab === "reported" ? "Awaiting verification" : "Outstanding"}</h2>
         {rows(items.filter(outstanding))}
       </section>
       {tab !== "reported" && (
-        <section className="stack">
+        <section className="payment-section">
           <h2>Payment history</h2>
           {rows(items.filter((c) => !outstanding(c)))}
         </section>

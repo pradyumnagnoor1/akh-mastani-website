@@ -526,13 +526,10 @@ test("practice: to-do actions show explicit saved exec identity on detail, lists
       /Exec roleHospitality/,
     );
     await page.goto("/home");
-    const home = page
-      .locator(".home-grid section")
-      .filter({ has: page.getByRole("heading", { name: /Your to-dos/ }) });
-    const row = home
-      .locator(".announcement-attribution")
-      .filter({ hasText: "Hospitality" });
-    await expect(row).toBeVisible();
+    const expand = page
+      .getByRole("region", { name: /Today ·/ })
+      .getByRole("button", { name: /View all/ });
+    if (await expand.count()) await expand.click();
     const today = page.locator(".today-item").filter({ hasText: title });
     if (await today.count())
       await expect(today.locator(".exec-role-badge")).toContainText(

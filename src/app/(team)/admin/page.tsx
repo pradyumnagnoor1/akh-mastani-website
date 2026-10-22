@@ -20,54 +20,47 @@ export default async function Admin() {
         <p className="muted">Manage membership and team information.</p>
       </div>
       <AdminSummary />
-      <section className="panel my-segments">
-        <h2>Team records</h2>
-        <p className="muted">
-          Download a private copy of roster, assignments, tasks and payment
-          history. Formation files and account backups are managed separately.
-        </p>
-        <a href="/api/admin/export" className="button secondary">
-          Download team records (JSON)
-        </a>
-      </section>
-      <Link href="/segments" className="admin-shortcut">
-        Manage set design{" "}
-        <span>Segments, formation PDFs & dancer assignments →</span>
-      </Link>
-      <Link href="/announcements?view=all" className="admin-shortcut">
-        Manage announcements{" "}
-        <span>Publish messages and review acknowledgment →</span>
-      </Link>
-      <Link href="/todos?view=all" className="admin-shortcut">
-        Manage to-dos <span>Assign action items and review progress →</span>
-      </Link>
-      <Link href="/admin/groups" className="admin-shortcut">
-        Manage groups <span>Reusable dancer groups for targeted items →</span>
-      </Link>
-      <Link href="/payments?view=reported" className="admin-shortcut">
-        Review payments{" "}
-        <span>Verify reported payments and manage charges →</span>
-      </Link>
-      <Link href="/admin/calendar" className="admin-shortcut">
-        Connect Google Calendar{" "}
-        <span>
-          Connect, reconnect or disconnect the shared practice calendar →
-        </span>
-      </Link>
-      <Link href="/choreo" className="admin-shortcut">
-        Choreo <span>Team dance videos in Google Drive →</span>
-      </Link>
-      <div className="notice">
-        <strong>
-          {pending.length} membership{" "}
-          {pending.length === 1 ? "request" : "requests"} awaiting review
-        </strong>
-        <p>Confirm each person belongs to the team before approving access.</p>
+      {pending.length > 0 && (
+        <div className="notice">
+          <strong>
+            {pending.length} membership{" "}
+            {pending.length === 1 ? "request" : "requests"} awaiting review
+          </strong>
+          <p>
+            Confirm each person belongs to the team before approving access.
+          </p>
+        </div>
+      )}
+      <h2 className="section-label">Manage</h2>
+      <div className="admin-link-list">
+        <Link href="/announcements?view=all" className="admin-shortcut">
+          Announcements <span>Publish and review acknowledgment</span>
+        </Link>
+        <Link href="/todos?view=all" className="admin-shortcut">
+          To-dos <span>Assign action items and track progress</span>
+        </Link>
+        <Link href="/payments?view=reported" className="admin-shortcut">
+          Payments <span>Verify reports and manage charges</span>
+        </Link>
+        <Link href="/segments" className="admin-shortcut">
+          Set design <span>Segments, formation PDFs and lineups</span>
+        </Link>
+        <Link href="/admin/groups" className="admin-shortcut">
+          Groups <span>Reusable dancer groups for targeting</span>
+        </Link>
+        <Link href="/admin/calendar" className="admin-shortcut">
+          Google Calendar{" "}
+          <span>Connect or reconnect the practice calendar</span>
+        </Link>
+        <Link href="/choreo" className="admin-shortcut">
+          Choreo <span>Team dance videos in Google Drive</span>
+        </Link>
       </div>
       <section className="panel">
         <div className="section-toolbar">
-          <h2>Members & requests</h2>
-          <span className="badge">{people.length} members</span>
+          <h2>
+            Members & requests <span className="count">{people.length}</span>
+          </h2>
         </div>
         {people.map((person) => (
           <article key={person.id} className="admin-member">
@@ -100,6 +93,17 @@ export default async function Admin() {
             )}
           </article>
         ))}
+      </section>
+      <h2 className="section-label">Data</h2>
+      <section className="panel stack">
+        <h3>Team records</h3>
+        <p className="muted small">
+          Download a private copy of roster, assignments, tasks and payment
+          history. Formation files and account backups are managed separately.
+        </p>
+        <a href="/api/admin/export" className="button secondary">
+          Download team records (JSON)
+        </a>
       </section>
     </>
   );

@@ -24,6 +24,13 @@ import type {
   Recipient,
 } from "@/features/communication/types";
 import { CommunicationAction, CommunicationForm } from "./communication-forms";
+const formatDay = (day: string) =>
+  new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${day}T12:00:00Z`));
 const baseFor = (kind: PostKind) =>
   kind === "task" ? "/todos" : "/announcements";
 const headingFor = (kind: PostKind) =>
@@ -104,21 +111,13 @@ export async function CommunicationList({
           const done = completed(post, rows, member.id);
           return (
             <Expires key={post.id} at={post.expires_at} serverNow={Date.now()}>
-              <article className="panel communication-card">
+              <article
+                className={`panel communication-card${tab === "mine" && done ? " is-done" : ""}`}
+              >
                 <div className="communication-meta">
-                  <span className="badge">
-                    {post.completion_mode === "shared"
-                      ? "Shared completion"
-                      : kind === "announcement"
-                        ? "Individual acknowledgment"
-                        : "Individual completion"}
-                  </span>
-                  {post.due_on && (
-                    <span className="muted small">Due {post.due_on}</span>
-                  )}
                   {tab === "mine" && (
                     <span
-                      className={`badge ${done ? "success" : kind === "announcement" ? "unread" : ""}`}
+                      className={`badge ${done ? "success" : kind === "announcement" ? "unread" : "accent-badge"}`}
                     >
                       {done
                         ? kind === "task"
@@ -129,18 +128,26 @@ export async function CommunicationList({
                           : "Unread"}
                     </span>
                   )}
+                  {post.due_on && (
+                    <span className="badge">Due {formatDay(post.due_on)}</span>
+                  )}
+                  {kind === "announcement" && post.practice_event_id && (
+                    <span className="badge">Practice announcement</span>
+                  )}
+                  {(post.completion_mode === "shared" || writer) && (
+                    <span className="badge">
+                      {post.completion_mode === "shared"
+                        ? "Shared completion"
+                        : kind === "announcement"
+                          ? "Individual acknowledgment"
+                          : "Individual completion"}
+                    </span>
+                  )}
                 </div>
-                <CommunicationAttribution post={post} />
-                {kind === "announcement" && (
-                  <>
-                    {post.practice_event_id && (
-                      <span className="badge">Practice announcement</span>
-                    )}
-                  </>
-                )}
                 <h2>
                   <Link href={`${base}/${post.id}`}>{post.title}</Link>
                 </h2>
+                <CommunicationAttribution post={post} />
                 <CommunicationLink post={post} posts={posts} compact />
                 <p className="muted communication-excerpt">
                   <MessageText text={post.body} />
@@ -167,7 +174,11 @@ export async function CommunicationList({
                     className="text-button accent"
                     href={`${base}/${post.id}`}
                   >
-                    View {kind === "task" ? "to-do" : "announcement"} →
+                    Open
+                    <span className="sr-only">
+                      {kind === "task" ? " to-do" : " announcement"}
+                    </span>
+                    <span aria-hidden="true">→</span>
                   </Link>
                 </div>
               </article>
@@ -275,10 +286,12 @@ export async function CommunicationDetail({
                 ? "Each dancer acknowledges individually"
                 : "Each dancer completes individually"}
           </span>
-          {post.due_on && <span className="muted">Due {post.due_on}</span>}
+          {post.due_on && (
+            <span className="badge">Due {formatDay(post.due_on)}</span>
+          )}
         </div>
       </div>
-      <section className="panel">
+      <section className="panel communication-detail-panel">
         <p className="communication-body">
           <MessageText text={post.body} />
         </p>
