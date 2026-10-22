@@ -22,16 +22,13 @@ Apply `supabase/migrations/0014_practice_announcements.sql` once after 0013 and 
 
 After deployment, verify with the owner, an exec and a dancer: owner-only role assignment, every exec’s page access, publication and recipient visibility, red/green acknowledgement, moved recurring practice linkage, one shared reminder with current text, no leaked restricted notes, and phone notification taps. This feature does not change deleted payment retention or payment verification requirements.
 
-
 ## Visual hierarchy
 
 Shared page titles use a larger, heavier Hanken heading and violet underline. Section/card titles, row titles, important values, event times and locations have consistent size, weight and contrast, while metadata keeps the muted treatment. The existing dark/violet theme and responsive layouts remain.
 
-
 ## Exec identity on published actions
 
 Announcement and to-do authors show their name, posting/creation timestamp and a violet **Exec role** badge with the saved role. The same badge distinguishes exec identity from audience/status tags on Home, Today, Calendar, Roster and Admin. Both composers offer **Posting as** for assigned roles; edits preserve original attribution even after the author's current roles change. Historical records with no saved role do not invent one from today's membership. Notification previews continue to omit exec role tags.
-
 
 ## Current-month Upcoming and linked to-dos
 

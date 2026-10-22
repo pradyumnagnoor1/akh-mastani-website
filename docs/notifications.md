@@ -17,6 +17,14 @@ All-day calendar events do not send practice reminders. Since the calendar is a 
 
 After migration0013, announcement change notifications show the **current announcement title** and up to240characters of normalized body text. Alreadyqueued alerts use this preview when sent. Empty bodies fall back to an open-announcement prompt. Other updates say **AKH Mastani**. Announcement content can appear on the Lock Screen when device previews are enabled, as explicitly requested by the owner. Task details, fines, amounts and payment reasons remain off the Lock Screen. Smart nudge bundles retain generic counts. Featured-event creation and changes send generic calendar updates. Tapping opens the relevant protected item. Completed task updates, acknowledgment/completion activity, no-op saves and self-reported payments do not generate alerts. Initial membership approval cannot push because pending members cannot subscribe yet; they check their access by signing in.
 
+## Reminder and edit labels (migration 0019)
+
+Migration `0019_notification_preview_labels.sql` adds **Reminder:** to all smart and legacy reminder titles, and **Edited announcement:** to alerts caused by an announcement edit. The edit label comes from the audit event that created the job, so a scheduled reminder about an edited post still says Reminder. A queued original publication retains its publication classification while displaying current authorized content. Actual edits to practice-linked announcements keep their own labeled alert even when a practice reminder is pending.
+
+Smart previews lead with the remaining action: “Read & acknowledge this announcement.”, “Complete 2 pending to-dos.” or “Acknowledge 2 announcements · Complete 3 to-dos.” Configured author instructions follow the action when space allows. Preparation reminders do not demand acknowledgment. Linked-task reminders count their task once, and a single linked-task nudge opens that authorized to-do. Read/completed/expired/removed items are rechecked before delivery; opening a notification alone does not mark an announcement read. Payment/task details remain generic. Phone settings and available preview space can truncate text.
+
+Daily automatic followups have a separate initially disabled rollout control. Their schedule, activation/pause SQL and verification boundaries are in [digest-nudges.md](digest-nudges.md#automatic-outstanding-action-followups-migration-0019). Applying 0019 immediately updates pending notification previews through the existing delivery RPC; it does not replay sent jobs and needs no frontend/environment/scheduler change.
+
 ## Activate in production
 
 1. Apply `supabase/migrations/0007_push_notifications.sql` after migrations0001–0006 in your Supabase SQL Editor. This adds device subscriptions, private notification jobs, RPCs and triggers. It does not change existing payment/task state rules. Apply the migration before deploying the new frontend.

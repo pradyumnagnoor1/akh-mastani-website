@@ -18,7 +18,8 @@ the detail page; it does not automatically complete a task or mark a message rea
 Admins can optionally add one absolute-time announcement reminder, a short
 message, and an acknowledgment/preparation/linked-task stop condition. The
 message appears inside the announcement; scheduled smart-nudge lock-screen payloads use
-generic counts. A linked-task reminder reaches only dancers assigned both items.
+action prompts and counts after migration 0019, with authorized author instructions
+following when space permits. A linked-task reminder reaches only dancers assigned both items.
 Deleting its task removes that reminder configuration and related queued nudges.
 Reminder edits use the same optimistic revision as the announcement. Skipped or
 repeated daylight-saving times are rejected rather than silently guessed.
@@ -27,8 +28,8 @@ repeated daylight-saving times are rejected rather than silently guessed.
 
 Task nudges become eligible at 6 PM the day before, 9 AM on the due day, and 9 AM
 on the following day. Payment nudges use the due day and one following-day
-follow-up. Nothing repeats daily after that. There is no deadline nudge for an
-item without a deadline. Reports awaiting verification, verification, waiver,
+follow-up. These original scheduled stages do not repeat daily. Migration 0019 adds separately
+controlled daily followups for older overdue and undated tasks, described below. Reports awaiting verification, verification, waiver,
 completion, expiration and removed recipients suppress obsolete nudges.
 
 Quiet hours are 10 PM–9 AM Texas time. Day-based stages expire at 10 PM that day.
@@ -143,3 +144,49 @@ The local database tests execute PostgreSQL functions in PGlite. Its single
 connection serializes overlapping calls; independent review checks the advisory
 lock, unique keys and transactional quota update, but local tests do not establish
 multi-connection hosted contention or real push-provider delivery.
+
+## Automatic outstanding-action followups (migration 0019)
+
+Apply `supabase/migrations/0019_notification_preview_labels.sql` once after 0018. It changes reminder/edit previews immediately through the existing RPC and creates `nudge_fallback_control`, disabled initially. It preserves `nudge_control`, the existing scheduler, subscriptions and notification settings. No new environment variables or frontend deployment are required.
+
+When separately enabled, fallback candidates are considered daily from **6 PM until 10 PM America/Chicago**, then bundled by the existing five-minute scheduler:
+
+| Item                         | Eligibility                                                            |
+| ---------------------------- | ---------------------------------------------------------------------- |
+| Unread ordinary announcement | At least 24 hours old and no more than 7 days old                      |
+| Undated incomplete task      | At least 24 hours old                                                  |
+| Overdue incomplete task      | At least 24 hours old, starting after the original day-after-due stage |
+| Future-deadline task         | Original deadline stages only                                          |
+| Practice-linked announcement | Existing occurrence-linked practice reminder only                      |
+
+Mark as read stops acknowledgment followups. Individual completion stops only that dancer's task followup; shared completion stops all assignees. Expiration, deletion, removed recipients, inactive membership and disabled smart/fallback rollout suppress obsolete delivery. Newly added recipients use the item's age; ordinary edits do not reset it or create an extra daily fallback.
+
+An eligible configured author reminder owns its effective Chicago day, including a future reminder that day. A linked-task author reminder owns the corresponding task action too. Already-sent or pending scheduled reminders prevent another daily followup for that item. A missed author window without a pending/sent job does not block the evening fallback; an impossible reminder after source/linked-task expiration does not block it either. Preparation, acknowledgment and linked-task stop conditions remain distinct.
+
+Fallbacks reuse existing private occurrences, per-member locks, unique daily keys and the **three-bundle daily cap**. Multiple devices/retries share the reservation. Skipped days are not replayed, and cap-suppressed stages do not carry over; still-eligible items can enter tomorrow's opportunity. The seven-day announcement limit prevents a large historical unread backlog. Old incomplete tasks can join the next daily bundle after activation.
+
+Only the database owner can read/change the separate control. To pilot without changing existing team smart reminders:
+
+```sql
+update public.nudge_fallback_control
+set enabled = true, pilot_members = array['REPLACE-WITH-VERIFIED-MEMBER-UUID'::uuid]
+where id;
+```
+
+After targeted acceptance, activate for all existing smart-nudge members:
+
+```sql
+update public.nudge_fallback_control set enabled = true, pilot_members = null where id;
+```
+
+To pause only automatic followups, including queued fallback actions:
+
+```sql
+update public.nudge_fallback_control set enabled = false where id;
+```
+
+Configured author/deadline/practice reminders continue using their existing control. Mixed queued bundles rebuild with only remaining valid actions. Do not drop ledgers, reverse applied migrations or replay sent jobs to roll back copy changes; use a reviewed forward migration for payload fixes.
+
+Verification: full-migration-chain local tests cover action previews, originating edit classification, practice merging/privacy, read/individual/shared completion, linked-task action deduplication/destinations, configured reminder collisions, expiry, quiet hours/DST, daily caps, multiple devices, rollout pause and cleanup. Hosted scheduler/provider acceptance and physical-phone rendering require separate evidence. No synthetic team-wide notification test is required.
+
+Production activation on2026-10-22: migration0019 applied and function hashes verified; daily fallback enabled with no pilot restriction after the owner confirmed receipt of all three recipient-only test notifications. Existing smart control remains enabled. All393local tests/typecheck/lint/build and independent31-test review pass. The first6PMfallback window and exact phone label/tap results have not been independently observed.
