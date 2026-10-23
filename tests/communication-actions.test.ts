@@ -5,6 +5,10 @@ const mocks = vi.hoisted(() => ({
   push: vi.fn(),
   revalidate: vi.fn(),
   redirect: vi.fn(),
+  calendar: vi.fn(),
+}));
+vi.mock("@/features/calendar/queries", () => ({
+  calendarData: mocks.calendar,
 }));
 vi.mock("@/features/identity/session", () => ({
   requireAnnouncementEditor: async () => ({ supabase: { rpc: mocks.rpc } }),
@@ -37,7 +41,53 @@ function draft() {
     form.set(key, value);
   return form;
 }
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  mocks.calendar.mockResolvedValue({ calendar: {} });
+});
+
+it("refreshes an aged Google schedule before saving the selected practice", async () => {
+  const form = draft();
+  form.set("practice_id", "weekly@2026-11-01T00:00:00Z");
+  form.set("calendar_source", "original-source");
+  let fresh = false;
+  mocks.calendar.mockImplementation(async () => {
+    fresh = true;
+  });
+  mocks.rpc.mockImplementation(async (_name, args) => {
+    expect(fresh).toBe(true);
+    expect(args).toMatchObject({
+      practice_id: form.get("practice_id"),
+      calendar_source: "original-source",
+    });
+    return { error: null };
+  });
+  await saveCommunication({ error: null }, form);
+  expect(mocks.calendar).toHaveBeenCalledTimes(1);
+  expect(mocks.redirect).toHaveBeenCalled();
+});
+
+it("preserves the draft without publishing if calendar refresh throws", async () => {
+  const form = draft();
+  form.set("practice_id", "practice");
+  form.set("calendar_source", "source");
+  mocks.calendar.mockRejectedValue(new Error("private provider error"));
+  expect((await saveCommunication({ error: null }, form)).error).toContain(
+    "Your message has been kept",
+  );
+  expect(mocks.rpc).not.toHaveBeenCalled();
+  expect(mocks.push).not.toHaveBeenCalled();
+});
+
+it("does not require Google for custom practices or ordinary announcements", async () => {
+  mocks.rpc.mockResolvedValue({ error: null });
+  await saveCommunication({ error: null }, draft());
+  const form = draft();
+  form.set("practice_id", "custom:existing");
+  form.set("calendar_source", "custom");
+  await saveCommunication({ error: null }, form);
+  expect(mocks.calendar).not.toHaveBeenCalled();
+});
 it("gives image-specific recovery after a rejected attachment without reporting success or dispatching", async () => {
   mocks.rpc.mockResolvedValue({
     error: { code: "P0001", message: "Image unavailable. Choose it again" },

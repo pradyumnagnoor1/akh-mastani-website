@@ -1,4 +1,5 @@
 import { beforeEach, expect, it, vi } from "vitest";
+vi.mock("@/features/calendar/queries", () => ({ calendarData: vi.fn() }));
 vi.mock("server-only", () => ({}));
 const m = vi.hoisted(() => ({
   rpc: vi.fn(),

@@ -231,6 +231,24 @@ it("all exec groups get full management while role spoofing is blocked and legac
     ]),
   ).toBe(0);
 });
+it("rejects an aged form selection until its trusted calendar snapshot is refreshed", async () => {
+  const practice = await seedPractice();
+  await db.exec(
+    "update calendar_snapshot set last_success_at=now()-interval '16 minutes'",
+  );
+  await expect(announcement(post, practice)).rejects.toThrow(
+    "Practice unavailable",
+  );
+  await role("postgres");
+  await db.exec("update calendar_snapshot set last_success_at=now()");
+  await announcement(post, practice);
+  expect(
+    await q("(select practice_source from communication_posts where id=$1)", [
+      post,
+    ]),
+  ).toBe(practice.source);
+});
+
 it("linked notes preserve occurrence identity on reschedule, reject fake links, and share calendar reminders", async () => {
   const practice = await seedPractice();
   await announcement(post, practice);

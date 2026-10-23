@@ -1,5 +1,6 @@
 "use server";
 import { validateCustomPractice } from "../custom-practices/policy";
+import { calendarData } from "@/features/calendar/queries";
 import { validateExpiration } from "@/features/expiration/policy";
 import { scheduleImageCleanup } from "@/features/announcement-images/cleanup";
 import { schedulePush } from "@/features/notifications/dispatch";
@@ -112,6 +113,24 @@ export async function saveCommunication(
       reminder = validateAnnouncementReminder(form);
   } catch (error) {
     return { error: (error as Error).message };
+  }
+  // Drafts pause page refresh and can outlive the SQL schedule's freshness window.
+  // Refresh the trusted cache before validating a Google link; SQL still checks
+  // the submitted source/occurrence, including cancellation and reconnects.
+  if (
+    input.kind === "announcement" &&
+    value(form, "practice_id") &&
+    value(form, "practice_id") !== "__custom__" &&
+    value(form, "calendar_source") !== "custom"
+  ) {
+    try {
+      await calendarData();
+    } catch {
+      return {
+        error:
+          "We could not refresh the practice calendar. Try publishing again. Your message has been kept.",
+      };
+    }
   }
   try {
     const postData = {
