@@ -8,6 +8,7 @@ const finance = "00000000-0000-4000-8000-000000000002";
 const captain = "00000000-0000-4000-8000-000000000003";
 const exec = "00000000-0000-4000-8000-000000000004";
 const dancer = "00000000-0000-4000-8000-000000000005";
+const anotherExec = "00000000-0000-4000-8000-000000000006";
 const season = "10000000-0000-4000-8000-000000000001";
 const expense = "20000000-0000-4000-8000-000000000001";
 const categories = [
@@ -55,6 +56,9 @@ beforeAll(async () => {
   await db.exec(
     readFileSync("supabase/migrations/0021_private_budget.sql", "utf8"),
   );
+  await db.exec(
+    readFileSync("supabase/migrations/0022_own_expense_edits.sql", "utf8"),
+  );
 });
 afterAll(async () => {
   await db?.close();
@@ -68,6 +72,7 @@ beforeEach(async () => {
     [finance, ["Logistics & Finance"]],
     [captain, ["Captain"]],
     [exec, ["Production"]],
+    [anotherExec, ["Production"]],
     [dancer, []],
   ] as [string, string[]][]) {
     await db.query(
@@ -95,7 +100,7 @@ beforeEach(async () => {
   await user(exec);
 });
 
-it("lets other execs submit but reveals no budget, funds, expense, receipt or history rows", async () => {
+it("shows an exec only their own submission, never funds, allocations, receipts or history", async () => {
   expect(
     (await db.query("select budget_submission_season() as id")).rows,
   ).toEqual([{ id: season }]);
@@ -122,13 +127,19 @@ it("lets other execs submit but reveals no budget, funds, expense, receipt or hi
     "budget_funds",
     "budget_seasons",
     "budget_allocations",
-    "budget_expenses",
     "budget_events",
     "budget_receipts",
   ])
     expect((await db.query(`select * from ${table}`)).rows, table).toHaveLength(
       0,
     );
+  expect(
+    (await db.query("select id,status from budget_expenses")).rows,
+  ).toEqual([{ id: expense, status: "pending" }]);
+  await user(anotherExec);
+  expect((await db.query("select * from budget_expenses")).rows).toHaveLength(
+    0,
+  );
   await user(finance);
   expect((await db.query("select * from budget_expenses")).rows).toHaveLength(
     1,
@@ -138,19 +149,27 @@ it("lets other execs submit but reveals no budget, funds, expense, receipt or hi
   );
 });
 
-it("prevents exec edits, payment, refund, deletion, review and implementation bypass", async () => {
+it("allows own pending corrections but prevents other, approved and privileged changes", async () => {
   await mutate(submission());
-  for (const operation of [
-    "submit",
-    "payment",
-    "refund",
-    "delete",
-    "approve",
-    "changes",
-  ])
+  await mutate(
+    submission({ version: 1, title: "Corrected hotel", total_cents: 9000 }),
+  );
+  expect(
+    (await db.query("select title,total_cents,version from budget_expenses"))
+      .rows,
+  ).toEqual([{ title: "Corrected hotel", total_cents: 9000, version: 2 }]);
+  await user(anotherExec);
+  await expect(mutate(submission({ version: 2 }))).rejects.toThrow(
+    /Only your pending expenses/,
+  );
+  await user(exec);
+  await expect(mutate(submission({ version: 1 }))).rejects.toThrow(
+    /Only your pending expenses/,
+  );
+  for (const operation of ["payment", "refund", "delete", "approve", "changes"])
     await expect(
-      mutate({ ...submission(), operation, version: 1 }),
-    ).rejects.toThrow(/only add new expenses/);
+      mutate({ ...submission(), operation, version: 2 }),
+    ).rejects.toThrow(/only submit expenses/);
   await expect(
     db.query("select budget_mutate_impl($1::jsonb)", [
       JSON.stringify(
@@ -162,10 +181,43 @@ it("prevents exec edits, payment, refund, deletion, review and implementation by
     db.exec("update budget_funds set balance_cents=1"),
   ).rejects.toThrow();
   await user(captain);
-  await mutate({ operation: "approve", id: expense, version: 1 });
+  await mutate({ operation: "approve", id: expense, version: 2 });
   expect((await db.query("select status from budget_expenses")).rows).toEqual([
     { status: "approved" },
   ]);
+  await user(exec);
+  await expect(mutate(submission({ version: 3 }))).rejects.toThrow(
+    /Only your pending expenses/,
+  );
+  await user(owner);
+  await expect(
+    mutate(submission({ version: 3, total_cents: 8000 })),
+  ).rejects.toThrow(/correction review/);
+});
+
+it("shows reviewer feedback and allows the creator to resubmit changes", async () => {
+  await mutate(submission());
+  await user(captain);
+  await mutate({
+    operation: "changes",
+    id: expense,
+    version: 1,
+    note: "Please correct the hotel total",
+  });
+  await user(exec);
+  expect(
+    (await db.query("select status,review_note from budget_expenses")).rows,
+  ).toEqual([
+    { status: "changes", review_note: "Please correct the hotel total" },
+  ]);
+  await mutate(submission({ version: 2, total_cents: 8000 }));
+  expect(
+    (
+      await db.query(
+        "select status,review_note,total_cents from budget_expenses",
+      )
+    ).rows,
+  ).toEqual([{ status: "pending", review_note: null, total_cents: 8000 }]);
 });
 
 it("does not let execs submit to an old season or use Good Bull for unrelated categories", async () => {

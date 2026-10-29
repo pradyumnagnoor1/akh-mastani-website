@@ -135,6 +135,45 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
   await item.getByRole("button", { name: "Review expense" }).click();
   await captain
     .getByRole("dialog")
+    .getByRole("combobox")
+    .selectOption("changes");
+  await captain
+    .getByRole("dialog")
+    .getByLabel("Explain the requested changes")
+    .fill("Add the booking note");
+  await captain
+    .getByRole("dialog")
+    .getByRole("button", { name: "Request changes", exact: true })
+    .click();
+  await expect(captain.getByRole("dialog")).not.toBeVisible();
+  await execPage.reload();
+  const ownExpense = execPage
+    .locator(".budget-own-item")
+    .filter({ hasText: `Hotel ${info.project.name}` });
+  await expect(ownExpense).toContainText("Add the booking note");
+  await ownExpense.getByRole("button", { name: "Edit" }).click();
+  await expect(
+    execPage.getByRole("heading", { name: "Edit expense" }),
+  ).toBeVisible();
+  await execPage
+    .locator(".budget-submit-card form .budget-optional summary")
+    .click();
+  await execPage
+    .locator(".budget-submit-card form")
+    .getByLabel("Notes")
+    .fill("Booking confirmed");
+  await execPage
+    .getByRole("button", { name: "Save changes for review" })
+    .click();
+  await expect(
+    execPage.getByRole("heading", { name: "Changes sent for review" }),
+  ).toBeVisible();
+  await captain.reload();
+  await captain.getByRole("button", { name: "View queue" }).click();
+  await item.locator("summary").first().click();
+  await item.getByRole("button", { name: "Review expense" }).click();
+  await captain
+    .getByRole("dialog")
     .getByRole("button", { name: "Approve expense", exact: true })
     .click();
   await expect(captain.getByRole("dialog")).not.toBeVisible();

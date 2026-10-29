@@ -32,6 +32,37 @@
 .budget-submit-success p {
   margin: 0;
 }
+.budget-own-list {
+  display: grid;
+  margin-top: 16px;
+}
+.budget-own-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 0;
+  border-top: 1px solid #494369;
+}
+.budget-own-item p {
+  margin: 5px 0 0;
+}
+.budget-own-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.budget-review-feedback {
+  color: #e7d1a4;
+}
+@media (max-width: 600px) {
+  .budget-own-item {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+}
 .budget-workspace .page-heading {
   margin: 0;
 }

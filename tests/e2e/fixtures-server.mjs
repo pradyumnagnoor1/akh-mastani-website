@@ -138,6 +138,9 @@ await db.exec(readFileSync("supabase/migrations/0020_budget.sql", "utf8"));
 await db.exec(
   readFileSync("supabase/migrations/0021_private_budget.sql", "utf8"),
 );
+await db.exec(
+  readFileSync("supabase/migrations/0022_own_expense_edits.sql", "utf8"),
+);
 for (const person of users.values()) {
   await db.query(
     `insert into auth.users values($1,$2,now(),'{"provider":"google"}')`,

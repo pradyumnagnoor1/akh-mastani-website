@@ -10,9 +10,8 @@ export async function mutateBudget(
   _state: BudgetState,
   form: FormData,
 ): Promise<BudgetState> {
-  const isNewExpense =
-    value(form, "operation") === "submit" && value(form, "version") === "0";
-  const { supabase, role } = isNewExpense
+  const isExpenseSubmission = value(form, "operation") === "submit";
+  const { supabase, role } = isExpenseSubmission
     ? await requireExpenseSubmitter()
     : await requireBudget();
   try {
@@ -109,7 +108,7 @@ export async function mutateBudget(
     };
   }
   revalidatePath("/budget");
-  if (isNewExpense) revalidatePath("/expenses/new");
+  if (isExpenseSubmission) revalidatePath("/expenses/new");
   return {
     success:
       role === "exec"
