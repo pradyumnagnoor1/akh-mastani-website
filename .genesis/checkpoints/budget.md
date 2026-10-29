@@ -31,4 +31,9 @@
 ## Live migration report · 2026-10-29
 - User reported applying `0020_budget.sql`. Read-only REST verification against the existing live Supabase project returned the three expected Budget funds and Budget seasons table (no seasons entered yet).
 - Exactly one `budget_owners` grant exists and matches the active admin member with verified owner email. No live balances, allocations, expenses, or app deployment were changed by this verification.
-- Matching application code deployment and signed-in browser acceptance remain pending.
+- Matching application code deployment and signed-in browser acceptance were the remaining release steps at this checkpoint.
+
+## Production release · 2026-10-29
+- User explicitly authorized deployment to the live site after applying migration 0020.
+- Budget commit `221a1e7` fast-forwarded to `main` and pushed to GitHub. Vercel reported successful production deployment at https://akh-mastani.vercel.app; canonical `/api/health` returned 200.
+- Anonymous `/budget` response contains a redirect to `/login?error=session`; no Budget content rendered to that unauthenticated request. Live signed-in Finance/Captain/dancer acceptance and real account balance entry remain unverified.
