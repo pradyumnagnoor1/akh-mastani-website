@@ -1,0 +1,23 @@
+# Budget
+
+Budget has three connected views: Funds, Allocated Budget, and Expenses. Active exec members can view and submit. A Captain or Logistics & Finance member can review another person's expense. Finance and the verified owner can set limits and reconcile fund balances. The owner can also review, but never an expense they created or submitted. Direct table writes are denied; the database enforces permission and transitions in `0020_budget.sql`.
+
+## Money and approvals
+
+Set a season spending limit and allocations for the nine categories before recording expenses. The original limit remains alongside each revised limit. Revisions require a reason and preserve prior values in the event history. Category allocations cannot exceed the season limit. New funds do not raise a spending limit.
+
+Funds are Venmo, SOFC Good Bull, and Main SOFC. Good Bull can fund only Hotel or Travel expenses. Main SOFC includes football and consolidated Groupfund money. Fund balance is the latest recorded actual balance, not the spending limit. A finance/owner member may update it to match the real account balance and enter a reason; this is called reconciliation. The update is blocked while that fund has an unreviewed payment or refund report, so a pending refund must be reviewed first.
+
+Every expense appears immediately in Expenses and in its selected fund's expandable ledger. Pending and approved unpaid portions reserve money. Approval deducts only the newly verified paid portion from the fund. A later payment or refund also needs another person's approval. If a payment or refund is already reflected in the account's recorded balance, mark it as included when reporting it; approval still records spending but leaves the balance unchanged. The review queue is at the top of Budget and accessible from Funds. Reviewers can approve or request changes with an explanation. Stale revisions and repeat approvals fail. Money may appear over budget or below zero; the page shows it honestly.
+
+The category visual separates verified paid, approved commitments, and pending review. Selecting a category filters the visual and expense list. Refunds reduce net paid for budget calculations after approval. Receipt files are limited to PDFs/JPEGs/PNGs under 2 MB, stored privately and downloaded only by active budget viewers. Removing an unpaid expense without a payment report deletes its associated records. Cancelling an expense with a payment report removes it from active totals and retains the payment and cancellation history in the private database audit, hidden from app pages and exports. It reverses the expense's account-balance changes since the last reconciliation; changes already absorbed in a later recorded actual balance are not applied twice. The member Payments feature is separate and is never altered by a Budget cancellation.
+
+## Previous sheet
+
+Finance or the owner can import the previous AKH CSV layout into a chosen season. The page shows every parsed row for review, including category, fund, total cost and already paid amount. The import is atomic and limited to 100 expenses at a time. Each row enters the approval queue. The import assumes older paid amounts are already represented in the fund balances by default; uncheck that if they are not. The sheet does not provide a season spending limit, so set that separately. No data is imported automatically. Export CSV contains visible expense records only.
+
+## Release and verification
+
+Apply migration `0020_budget.sql` before deploying the matching app code. The migration grants owner Budget access only to the existing active, verified Google account `pradyumnagnoor@tamu.edu` with the completed `Pradyumn Agnoor` profile and manually granted admin permission. It does not use display names to authorize the other execs; their existing `exec_roles` grant their access. Check that the role list still matches the intended six people before release. No fund balances or spending limits are seeded from last year's sheet.
+
+Local checks: `npm run check`, `npx vitest run tests/budget*.test.ts`, and `npx playwright test --config=playwright.budget.config.ts`. Browser tests use synthetic local identities and do not prove live TAMU sign-in or production database permissions. After applying the migration, verify the owner and one Captain/Finance account, and confirm an ordinary dancer is denied. Do not use a production account balance as a synthetic test value.

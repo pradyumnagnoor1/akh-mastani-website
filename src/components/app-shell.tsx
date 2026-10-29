@@ -37,6 +37,7 @@ const navigation = [
   { label: "Set Design", href: "/segments", icon: Layers },
   { label: "Choreo", href: "/choreo", icon: Film },
   { label: "Payments", href: "/payments", icon: Wallet },
+  { label: "Budget", href: "/budget", icon: Wallet },
   { label: "Roster", href: "/roster", icon: Users },
 ];
 const mobileNavigation = [
@@ -83,20 +84,26 @@ export function AppShell({
     <>
       <p className="nav-label">TEAM SPACE</p>
       <nav aria-label="Main navigation">
-        {navigation.map(({ label, href, icon: Icon }) => (
-          <Link
-            key={href}
-            href={href}
-            className={`nav-item ${isCurrent(path, href) ? "selected" : ""}`}
-            aria-current={isCurrent(path, href) ? "page" : undefined}
-            onNavigate={close}
-          >
-            <Icon size={19} aria-hidden="true" />
-            {label}
-            <NavigationHint />
-            {isCurrent(path, href) && <span className="nav-dot" />}
-          </Link>
-        ))}
+        {navigation
+          .filter(
+            (item) =>
+              item.href !== "/budget" ||
+              (member.budget_role && member.budget_role !== "none"),
+          )
+          .map(({ label, href, icon: Icon }) => (
+            <Link
+              key={href}
+              href={href}
+              className={`nav-item ${isCurrent(path, href) ? "selected" : ""}`}
+              aria-current={isCurrent(path, href) ? "page" : undefined}
+              onNavigate={close}
+            >
+              <Icon size={19} aria-hidden="true" />
+              {label}
+              <NavigationHint />
+              {isCurrent(path, href) && <span className="nav-dot" />}
+            </Link>
+          ))}
         {member.is_admin && (
           <>
             <p className="nav-label admin-label">MANAGEMENT</p>

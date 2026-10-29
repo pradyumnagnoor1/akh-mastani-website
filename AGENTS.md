@@ -21,7 +21,8 @@ If a `.genesis/` spine has been initialized, follow its read order and resume fr
 
 - All members are dancers. Admin access is an additional permission, manually assigned by the user. The user is the only initial admin; obtain their verified account identity during auth setup.
 - Google sign-in requires the exact TAMU email domain and the agreed membership approval policy. Link records using permanent member IDs; ask for the display name once.
-- Pages: Home, Announcements, To-Dos, Practice Calendar, Set Design, Payments, Roster, Choreo, Admin. No Attendance yet; no Benching, Dues, or Reimbursements.
+- Pages: Home, Announcements, To-Dos, Practice Calendar, Set Design, Payments, Budget, Roster, Choreo, Admin. No Attendance yet; no Benching, Dues, or Reimbursements.
+- Budget has Funds, Allocated Budget, and Expenses. All active execs may view and submit; Captains or Logistics & Finance approve another person's expense; Logistics & Finance and the verified owner manage limits/balances. Venmo, restricted SOFC Good Bull (Hotel/Travel), and Main SOFC are the three sources. The verified owner has full Budget access but cannot approve their own expense.
 - Segments contain a name, formation PDF, and member assignments; roster segments derive from those assignments.
 - Payment reports require admin verification before clearing outstanding balances; preserve history for existing records. Explicit admin deletion permanently removes non-payment items and their related history, assignments and notification jobs across all pages; no archive or restore views. Deleted payments and their history are retained privately in the database, hidden from all app pages and exports.
 - Choreo dynamically lists Google Drive team dance videos; Google retains video hosting and access permissions.

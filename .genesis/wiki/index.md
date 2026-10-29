@@ -1,4 +1,5 @@
 # Project knowledge
+- [Budget](../../docs/budget.md)
 - [Daily digest and smart nudges](../../docs/digest-nudges.md)
 - [Choreo videos](../../docs/choreo.md)
 - [Mobile interface](../../docs/mobile-ui.md)

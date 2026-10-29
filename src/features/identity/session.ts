@@ -27,11 +27,18 @@ export const identity = cache(async () => {
   if (result.error)
     throw new Error("Unable to load membership. Please try again.");
   const raw = result.data as Member | null;
+  // Budget permission is independent of the app's legacy broad admin permission.
+  // Missing migration hides the feature without breaking existing team pages.
+  const budget =
+    raw?.status === "active" ? await supabase.rpc("budget_role") : null;
   const member = raw
     ? {
         ...raw,
         is_owner: raw.is_admin,
         is_admin: raw.is_admin || !!raw.exec_roles?.length,
+        budget_role: budget?.error
+          ? ("none" as const)
+          : ((budget?.data ?? "none") as Member["budget_role"]),
       }
     : null;
   return { supabase, user, member };

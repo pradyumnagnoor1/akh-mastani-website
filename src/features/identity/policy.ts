@@ -29,6 +29,7 @@ export type Member = {
   is_admin: boolean;
   is_owner?: boolean;
   exec_roles?: ExecRole[];
+  budget_role?: import("@/features/budget/types").BudgetRole;
 };
 
 export function isTamuEmail(email: string | undefined | null): boolean {

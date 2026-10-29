@@ -54,6 +54,20 @@ const users = new Map([
     },
   ],
 ]);
+if (process.env.BUDGET_FIXTURE === "1") {
+  users.set("00000000-0000-4000-8000-000000000003", {
+    id: "00000000-0000-4000-8000-000000000003",
+    email: "captain@tamu.edu",
+    display_name: "Captain Reviewer",
+    is_admin: true,
+  });
+  users.set("00000000-0000-4000-8000-000000000004", {
+    id: "00000000-0000-4000-8000-000000000004",
+    email: "exec@tamu.edu",
+    display_name: "Production Exec",
+    is_admin: true,
+  });
+}
 await db.exec(`create role service_role nologin;create role anon nologin;create role authenticated nologin;create schema auth;
 create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,raw_app_meta_data jsonb);
 create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
@@ -120,6 +134,7 @@ await db.exec(
 await db.exec(
   readFileSync("supabase/migrations/0018_announcement_todos.sql", "utf8"),
 );
+await db.exec(readFileSync("supabase/migrations/0020_budget.sql", "utf8"));
 for (const person of users.values()) {
   await db.query(
     `insert into auth.users values($1,$2,now(),'{"provider":"google"}')`,
@@ -128,6 +143,12 @@ for (const person of users.values()) {
   await db.query(
     `insert into public.members(id,email,display_name,status,is_admin) values($1,$2,$3,'active',$4)`,
     [person.id, person.email, person.display_name, person.is_admin],
+  );
+}
+await db.query("insert into budget_owners values($1)", [admin]);
+if (process.env.BUDGET_FIXTURE === "1") {
+  await db.exec(
+    "update members set exec_roles=ARRAY['Captain'] where email='captain@tamu.edu'; update members set exec_roles=ARRAY['Production'] where email='exec@tamu.edu'",
   );
 }
 await db.query(
@@ -390,7 +411,13 @@ createServer((req, res) => {
     // Browser test fixtures ask this isolated process for synthetic cookies, never the app.
     if (url.pathname === "/fixture/session") {
       const value = sessions.get(
-        url.searchParams.get("role") === "admin" ? admin : dancer,
+        url.searchParams.get("role") === "admin"
+          ? admin
+          : url.searchParams.get("role") === "captain"
+            ? "00000000-0000-4000-8000-000000000003"
+            : url.searchParams.get("role") === "exec"
+              ? "00000000-0000-4000-8000-000000000004"
+              : dancer,
       );
       return json(value);
     }
@@ -500,6 +527,8 @@ createServer((req, res) => {
         const name = url.pathname.split("/").pop();
         const args = JSON.parse(body.toString() || "{}");
         const functions = {
+          budget_role: [],
+          budget_mutate: ["payload"],
           push_device_registered: ["p_id"],
           push_unregister_device: ["p_id"],
           push_register_subscription: ["p_endpoint", "p_p256dh", "p_auth"],
@@ -720,6 +749,69 @@ createServer((req, res) => {
       if (url.pathname.startsWith("/rest/v1/")) {
         const table = url.pathname.split("/").pop();
         const allowed = {
+          budget_funds: [
+            "id",
+            "name",
+            "balance_cents",
+            "version",
+            "updated_at",
+            "updated_by",
+          ],
+          budget_seasons: [
+            "id",
+            "name",
+            "limit_cents",
+            "original_cents",
+            "version",
+            "created_at",
+          ],
+          budget_allocations: [
+            "id",
+            "season_id",
+            "category",
+            "limit_cents",
+            "original_cents",
+            "version",
+          ],
+          budget_expenses: [
+            "id",
+            "season_id",
+            "category",
+            "fund_id",
+            "title",
+            "total_cents",
+            "paid_cents",
+            "reported_cents",
+            "refunded_cents",
+            "included_in_balance",
+            "status",
+            "notes",
+            "due_on",
+            "submitted_by",
+            "submitted_name",
+            "created_by",
+            "created_at",
+            "reviewed_by",
+            "reviewed_name",
+            "reviewed_at",
+            "review_note",
+            "version",
+          ],
+          budget_events: [
+            "id",
+            "expense_id",
+            "fund_id",
+            "season_id",
+            "actor_id",
+            "actor_name",
+            "action",
+            "note",
+            "delta_cents",
+            "balance_after",
+            "details",
+            "created_at",
+          ],
+          budget_receipts: ["expense_id", "filename", "mime", "content"],
           custom_practices: [
             "id",
             "title",
