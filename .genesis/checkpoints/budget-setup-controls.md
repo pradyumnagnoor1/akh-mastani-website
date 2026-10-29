@@ -18,3 +18,6 @@
 - Known expenses can be removed from Allocated Budget. Planned-only removal uses `budget_remove_planned` with a version check and audit event; linked expenses route through the existing reasoned cancellation flow. Fund ledger labels active linked items as known expenses.
 - Existing unpaid expense cancellation remains permanently destructive by prior product policy; reported/paid cancellation retains private payment history. Budget deletion itself does not cancel expenses and is blocked while active expenses exist.
 - 0024 was already live. Follow-up migration 0025 adds the remove-planned RPC and permits signed fund snapshots; SQL Editor returned Success. No rows returned. Unit/SQL suite: 442 tests; typecheck, lint, production build, and desktop/mobile Budget flows pass.
+
+## Release · 2026-10-29
+- Main merge 3b5f99d deployed successfully by Vercel. Canonical `/api/health` returned HTTP 200. Signed-in owner Budget showed compact approval button, account balance visual and no import button; all-categories circle and Hotel category bar/back navigation worked. No production financial data was created or changed during verification.
