@@ -53,6 +53,14 @@ it("refreshes an aged Google schedule before saving the selected practice", asyn
   let fresh = false;
   mocks.calendar.mockImplementation(async () => {
     fresh = true;
+    return {
+      calendar: {
+        source: "source",
+        configured: true,
+        stale: false,
+        error: null,
+      },
+    };
   });
   mocks.rpc.mockImplementation(async (_name, args) => {
     expect(fresh).toBe(true);
@@ -129,4 +137,108 @@ it("routes an announcement and new to-do through one transactional save", async 
     }),
   );
   expect(mocks.rpc).toHaveBeenCalledTimes(1);
+});
+
+it("explains expired Google authorization when SQL cannot validate the cached practice", async () => {
+  const form = draft();
+  form.set("practice_id", "weekly@2026-11-01T00:00:00Z");
+  form.set("calendar_source", "source");
+  mocks.calendar.mockResolvedValue({
+    calendar: { configured: true, stale: true, error: "authorization" },
+  });
+  mocks.rpc.mockResolvedValue({
+    error: {
+      message:
+        "Practice unavailable. Refresh the calendar and choose a practice",
+    },
+  });
+  const result = await saveCommunication({ error: null }, form);
+  expect(result.error).toContain(
+    "Google Calendar authorization has expired or been revoked",
+  );
+  expect(result.error).toContain("Your message has been kept");
+  expect(result.calendarReconnect).toBe(true);
+  expect(mocks.redirect).not.toHaveBeenCalled();
+  expect(mocks.push).not.toHaveBeenCalled();
+});
+
+it("keeps deletion/source-change validation errors when the calendar is healthy", async () => {
+  const form = draft();
+  form.set("practice_id", "removed");
+  form.set("calendar_source", "source");
+  mocks.calendar.mockResolvedValue({
+    calendar: { source: "source", configured: true, stale: false, error: null },
+  });
+  mocks.rpc.mockResolvedValue({
+    error: {
+      message:
+        "Practice unavailable. Refresh the calendar and choose a practice",
+    },
+  });
+  const result = await saveCommunication({ error: null }, form);
+  expect(result.error).toBe(
+    "Practice unavailable. Refresh the calendar and choose a practice",
+  );
+  expect(result.calendarReconnect).toBeUndefined();
+});
+
+it.each([
+  [{ configured: false, stale: true }, "not connected", true],
+  [
+    { configured: true, stale: true, refreshing: true },
+    "is refreshing",
+    undefined,
+  ],
+  [
+    { configured: true, stale: true, error: "timeout" },
+    "Try publishing again shortly",
+    undefined,
+  ],
+])(
+  "explains calendar recovery state %j",
+  async (calendar, message, reconnect) => {
+    const form = draft();
+    form.set("practice_id", "practice");
+    form.set("calendar_source", "source");
+    mocks.calendar.mockResolvedValue({
+      calendar: { source: "source", ...calendar },
+    });
+    mocks.rpc.mockResolvedValue({
+      error: {
+        message:
+          "Practice unavailable. Refresh the calendar and choose a practice",
+      },
+    });
+    const result = await saveCommunication({ error: null }, form);
+    expect(result.error).toContain(message);
+    expect(result.calendarReconnect).toBe(reconnect);
+    expect(mocks.push).not.toHaveBeenCalled();
+  },
+);
+
+it("returns updated choices after reconnect without silently relinking the submitted practice", async () => {
+  const form = draft();
+  form.set("practice_id", "practice");
+  form.set("calendar_source", "old-source");
+  const calendar = {
+    source: "new-source",
+    configured: true,
+    stale: false,
+    events: [],
+  };
+  mocks.calendar.mockResolvedValue({ calendar });
+  mocks.rpc.mockResolvedValue({
+    error: {
+      message:
+        "Practice unavailable. Refresh the calendar and choose a practice",
+    },
+  });
+  const result = await saveCommunication({ error: null }, form);
+  expect(result.error).toContain("Choose your practice again");
+  expect(result.practiceCalendar).toEqual(calendar);
+  expect(mocks.rpc).toHaveBeenCalledWith(
+    "save_announcement",
+    expect.objectContaining({ calendar_source: "old-source" }),
+  );
+  expect(mocks.push).not.toHaveBeenCalled();
 });

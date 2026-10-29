@@ -6,6 +6,17 @@ if (process.env.CHOREO_FIXTURE_MODE === "1") {
       typeof input === "string" || input instanceof URL ? input : input.url,
     );
     if (
+      url.origin === "https://oauth2.googleapis.com" &&
+      url.pathname === "/token"
+    ) {
+      return Promise.resolve(
+        new Response(JSON.stringify({ error: "invalid_grant" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    }
+    if (
       url.origin === "https://www.googleapis.com" &&
       url.pathname.startsWith("/drive/v3/")
     ) {

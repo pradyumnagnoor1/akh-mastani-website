@@ -46,4 +46,9 @@ export type CommunicationGroup = {
   archived_at: string | null;
 };
 export type GroupMember = { group_id: string; member_id: string };
-export type FormState = { error: string | null; success?: string };
+export type FormState = {
+  error: string | null;
+  success?: string;
+  calendarReconnect?: boolean;
+  practiceCalendar?: import("@/features/calendar/types").CalendarView;
+};

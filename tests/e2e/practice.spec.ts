@@ -673,3 +673,77 @@ test("practice: announcement creates a linked to-do with independent read and co
     .getByRole("button", { name: "Delete announcement", exact: true })
     .click();
 });
+
+test("practice: expired Google authorization preserves the draft and recovers after calendar restoration", async ({
+  page,
+  context,
+  request,
+}, info) => {
+  await request.get("http://127.0.0.1:3201/fixture/calendar?state=fresh");
+  await login(context, request);
+  await page.goto("/announcements/new");
+  await page
+    .getByLabel("Announcement type", { exact: true })
+    .selectOption("practice");
+  const practice = await page
+    .getByRole("option", { name: /^Team practice ·/ })
+    .getAttribute("value");
+  await page.getByLabel("Practice", { exact: true }).selectOption(practice!);
+  const title = `Authorization recovery ${info.project.name}`;
+  await page.getByLabel("Title", { exact: true }).fill(title);
+  await page
+    .getByLabel("Details", { exact: true })
+    .fill("Keep these practice instructions.");
+  await request.get(
+    "http://127.0.0.1:3201/fixture/calendar-authorization?state=expired",
+  );
+  await page
+    .getByRole("button", { name: "Publish announcement", exact: true })
+    .click();
+  await expect(page.locator("form").getByRole("alert")).toContainText(
+    "Google Calendar authorization has expired or been revoked",
+  );
+  await expect(page.locator("form").getByRole("alert")).toContainText(
+    "Your message has been kept",
+  );
+  await expect(page.getByLabel("Title", { exact: true })).toHaveValue(title);
+  await expect(page.getByLabel("Details", { exact: true })).toHaveValue(
+    "Keep these practice instructions.",
+  );
+  await expect(
+    page.getByRole("link", { name: "Reconnect Google Calendar", exact: true }),
+  ).toHaveAttribute("href", "/admin/calendar");
+  await page.screenshot({
+    path: info.outputPath("authorization-recovery.png"),
+    fullPage: true,
+  });
+  // Model a reconnected source and a newly fetched snapshot of the same occurrence.
+  await request.get(
+    "http://127.0.0.1:3201/fixture/calendar-authorization?state=recovered",
+  );
+  await page
+    .getByRole("button", { name: "Publish announcement", exact: true })
+    .click();
+  await expect(page.locator("form").getByRole("alert")).toContainText(
+    "The calendar connection changed",
+  );
+  await expect(page.getByLabel("Practice", { exact: true })).toHaveValue("");
+  await expect(page.getByLabel("Title", { exact: true })).toHaveValue(title);
+  await page.getByLabel("Practice", { exact: true }).selectOption(practice!);
+  // A separate validation failure must not restore the obsolete calendar props.
+  await page.getByLabel("Title", { exact: true }).fill("   ");
+  await page
+    .getByRole("button", { name: "Publish announcement", exact: true })
+    .click();
+  await expect(page.locator("form").getByRole("alert")).toContainText("title");
+  await expect(page.getByLabel("Practice", { exact: true })).toHaveValue(
+    practice!,
+  );
+  await page.getByLabel("Title", { exact: true }).fill(title);
+  await page
+    .getByRole("button", { name: "Publish announcement", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: title, exact: true }),
+  ).toBeVisible();
+});

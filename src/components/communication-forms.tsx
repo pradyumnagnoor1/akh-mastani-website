@@ -135,9 +135,17 @@ export function CommunicationForm({
   calendar?: CalendarView;
 }) {
   const { id, version, changed } = useDraftRevision(initialId, post?.version);
-  const [state, action] = useActionState(saveCommunication, {
-    error: null,
-  } as FormState);
+  const [state, action] = useActionState(
+    async (previous: FormState, form: FormData) => {
+      const next = await saveCommunication({ error: null }, form);
+      return {
+        ...next,
+        practiceCalendar: next.practiceCalendar ?? previous.practiceCalendar,
+      };
+    },
+    { error: null } as FormState,
+  );
+  const practiceCalendar = state.practiceCalendar ?? calendar;
   const [announcementType, setAnnouncementType] = useState(
     post?.practice_event_id ? "practice" : "announcement",
   );
@@ -151,14 +159,19 @@ export function CommunicationForm({
   const [openedAt] = useState(() => Date.now());
   const [customPracticeId] = useState(customPracticeDraftId);
   const practices =
-    calendar?.events.filter(
+    practiceCalendar?.events.filter(
       (e) => !e.allDay && Date.parse(e.start) > openedAt,
     ) ?? [];
-  const selectedPractice = calendar?.events.find(
+  const selectedPractice = practiceCalendar?.events.find(
     (e) =>
       practiceIdentity(e) === practice &&
-      (e.source ?? calendar?.source) === practiceSource,
+      (e.source ?? practiceCalendar?.source) === practiceSource,
   );
+  const practiceSourceChanged =
+    practice !== "__custom__" &&
+    practiceSource !== "custom" &&
+    !!practiceCalendar?.source &&
+    practiceSource !== practiceCalendar.source;
   const custom = practice === "__custom__";
   const [createTodo, setCreateTodo] = useState(false);
   const [todoId] = useState(todoDraftId);
@@ -254,15 +267,15 @@ export function CommunicationForm({
                   id="practice-event"
                   name="practice_id"
                   required
-                  value={practice}
+                  value={practiceSourceChanged ? "" : practice}
                   disabled={changed}
                   onChange={(e) => {
                     setPractice(e.target.value);
                     setPracticeSource(
-                      calendar?.events.find(
+                      practiceCalendar?.events.find(
                         (item) => practiceIdentity(item) === e.target.value,
                       )?.source ??
-                        calendar?.source ??
+                        practiceCalendar?.source ??
                         "",
                     );
                   }}
@@ -553,6 +566,11 @@ export function CommunicationForm({
         />
       )}
       <Feedback state={state} />
+      {state.calendarReconnect && editorMember.is_admin && (
+        <a href="/admin/calendar" target="_blank" rel="noopener noreferrer">
+          Reconnect Google Calendar
+        </a>
+      )}
       <div className="actions">
         <SubmitButton
           disabled={changed || imageBusy || (!post && !recipients.length)}

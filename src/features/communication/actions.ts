@@ -1,6 +1,7 @@
 "use server";
 import { validateCustomPractice } from "../custom-practices/policy";
 import { calendarData } from "@/features/calendar/queries";
+import type { CalendarView } from "@/features/calendar/types";
 import { validateExpiration } from "@/features/expiration/policy";
 import { scheduleImageCleanup } from "@/features/announcement-images/cleanup";
 import { schedulePush } from "@/features/notifications/dispatch";
@@ -72,6 +73,7 @@ export async function saveCommunication(
   let reminder;
   let custom;
   let todo;
+  let practiceCalendar: CalendarView | undefined;
   try {
     args = revision(form);
     expiration = validateExpiration(value(form, "expiration_date"));
@@ -124,7 +126,7 @@ export async function saveCommunication(
     value(form, "calendar_source") !== "custom"
   ) {
     try {
-      await calendarData();
+      practiceCalendar = (await calendarData()).calendar;
     } catch {
       return {
         error:
@@ -164,7 +166,40 @@ export async function saveCommunication(
           : "save_announcement",
       todo ? { post_data: postData, ...todo } : postData,
     );
-    if (error) return failure(error);
+    if (error) {
+      // A refresh can return cached data after a provider failure. Keep SQL as
+      // the authority, but explain why its selected-practice check failed.
+      if (
+        error.message.startsWith("Practice unavailable") &&
+        practiceCalendar
+      ) {
+        if (
+          practiceCalendar.error === "authorization" ||
+          !practiceCalendar.configured
+        )
+          return {
+            error: practiceCalendar.configured
+              ? "Google Calendar authorization has expired or been revoked. An admin needs to reconnect Google Calendar from Admin. Your message has been kept."
+              : "The team Google Calendar is not connected. An admin needs to connect Google Calendar from Admin. Your message has been kept.",
+            calendarReconnect: true,
+            practiceCalendar,
+          };
+        if (practiceCalendar.source !== value(form, "calendar_source"))
+          return {
+            error:
+              "The calendar connection changed. Choose your practice again from the updated list. Your message has been kept.",
+            practiceCalendar,
+          };
+        if (practiceCalendar.stale)
+          return {
+            practiceCalendar,
+            error: practiceCalendar.refreshing
+              ? "The practice calendar is refreshing. Wait a moment, then publish again. Your message has been kept."
+              : "We could not refresh the practice calendar. Try publishing again shortly. Your message has been kept.",
+          };
+      }
+      return failure(error);
+    }
   } catch {
     return failure({ message: "Network error" });
   }

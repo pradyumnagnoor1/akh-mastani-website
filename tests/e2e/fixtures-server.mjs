@@ -394,6 +394,24 @@ createServer((req, res) => {
       );
       return json(value);
     }
+    if (url.pathname === "/fixture/calendar-authorization") {
+      await db.exec("reset role");
+      if (url.searchParams.get("state") === "recovered") {
+        // Reconnection changes the source version; retain fixture events as the
+        // newly fetched schedule after the old snapshot has been replaced.
+        await db.exec(
+          "update calendar_connection set version=version+1 where id",
+        );
+        await db.exec(
+          "update calendar_snapshot set source_fingerprint=(select encode(sha256(convert_to('connected:'||c.version::text||':'||c.client_id||':'||c.calendar_id,'UTF8')),'hex') from calendar_connection c where c.id),last_success_at=now(),last_error=null,next_attempt_at=now()+interval '5 minutes',lease_until=null,lease_token=null",
+        );
+      } else {
+        await db.exec(
+          "update calendar_snapshot set last_success_at=now()-interval '16 minutes',last_error=null,next_attempt_at=null,lease_until=null,lease_token=null",
+        );
+      }
+      return json({ ready: true });
+    }
     if (url.pathname === "/fixture/calendar") {
       await seedCalendar(url.searchParams.get("state") === "stale");
       if (url.searchParams.get("state") === "months") {
