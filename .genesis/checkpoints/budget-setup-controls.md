@@ -10,4 +10,11 @@
 - Database 0024 adds current-balance snapshots to the setup transaction and archives only budgets with no active expenses; latest active season RPC skips archived budgets. Fund balances and history are independent of a deleted budget.
 - Five-step questionnaire, planned-expense remove/cancel flow, overall chart switch, category bars and fund-card wording implemented.
 - G1/G2/G3: project skills loaded, requested behavior implemented, no dependency/environment changes.
-- G4/G5: pending full check and independent review.
+- G4/G5: full check and independent review completed; reviewer found signed-balance and season-switch edge cases, both fixed.
+
+## UI refinement · 2026-10-29
+- User refined Funds to a segmented account-balance summary and three ledgers, removed old-sheet import button, and shrank the approval prompt to a badge button.
+- Allocated Budget now uses a circle only for all categories; category selection hides the grid/revision controls and shows the category bar, associated expenses and known costs, with an explicit return button.
+- Known expenses can be removed from Allocated Budget. Planned-only removal uses `budget_remove_planned` with a version check and audit event; linked expenses route through the existing reasoned cancellation flow. Fund ledger labels active linked items as known expenses.
+- Existing unpaid expense cancellation remains permanently destructive by prior product policy; reported/paid cancellation retains private payment history. Budget deletion itself does not cancel expenses and is blocked while active expenses exist.
+- 0024 was already live. Follow-up migration 0025 adds the remove-planned RPC and permits signed fund snapshots; SQL Editor returned Success. No rows returned. Unit/SQL suite: 442 tests; typecheck, lint, production build, and desktop/mobile Budget flows pass.

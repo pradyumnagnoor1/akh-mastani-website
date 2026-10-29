@@ -147,6 +147,12 @@ await db.exec(
 await db.exec(
   readFileSync("supabase/migrations/0024_budget_setup_controls.sql", "utf8"),
 );
+await db.exec(
+  readFileSync(
+    "supabase/migrations/0025_budget_known_expense_removal.sql",
+    "utf8",
+  ),
+);
 for (const person of users.values()) {
   await db.query(
     `insert into auth.users values($1,$2,now(),'{"provider":"google"}')`,
@@ -545,6 +551,7 @@ createServer((req, res) => {
           budget_mutate: ["payload"],
           budget_save_setup: ["payload"],
           budget_delete_season: ["payload"],
+          budget_remove_planned: ["payload"],
           push_device_registered: ["p_id"],
           push_unregister_device: ["p_id"],
           push_register_subscription: ["p_endpoint", "p_p256dh", "p_auth"],

@@ -96,25 +96,101 @@
   background: #292641;
   color: #e1deff;
 }
-.budget-review-banner {
-  display: flex;
+.budget-approval-button {
+  position: relative;
+  display: inline-flex;
   align-items: center;
-  gap: 16px;
-  padding: 20px 24px;
-  background: #211e36;
+  justify-self: start;
+  gap: 10px;
+  min-height: 44px;
+  padding: 9px 16px;
+  background: #252238;
+  color: #ece9f5;
   border: 1px solid #494369;
-  border-radius: 18px;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
 }
-.budget-review-banner > div {
-  flex: 1;
+.budget-approval-button.has-pending {
+  background: #42341d;
+  border-color: #d1a64b;
+  color: #fff1cd;
 }
-.budget-review-banner h2 {
-  font-size: 1.15rem;
+.budget-approval-count {
+  display: grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  border-radius: 12px;
+  background: #e5b75c;
+  color: #27200e;
+  font-size: 0.8rem;
+}
+.budget-funds-visual {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+}
+.budget-funds-visual > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+.budget-funds-visual strong {
+  font-size: 1.5rem;
+}
+.budget-funds-visual p {
   margin: 0;
 }
-.budget-review-banner p {
-  color: #c8c3df;
-  margin: 4px 0 0;
+.budget-funds-stack {
+  display: flex;
+  overflow: hidden;
+  height: 20px;
+  border-radius: 100px;
+  background: #373442;
+}
+.budget-funds-stack span {
+  height: 100%;
+  min-width: 0;
+}
+.budget-funds-stack-venmo {
+  background: #9b8cff;
+}
+.budget-funds-stack-goodbull {
+  background: #64c5b3;
+}
+.budget-funds-stack-sofc {
+  background: #e1b666;
+}
+.budget-funds-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 24px;
+}
+.budget-funds-key span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.83rem;
+}
+.budget-funds-key i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.budget-funds-key b {
+  font-variant-numeric: tabular-nums;
+}
+.budget-back-to-all {
+  margin-bottom: 14px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #c3b8ff;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
 }
 .budget-funds {
   display: grid;
@@ -645,6 +721,14 @@
 .budget-planned-overview-list p {
   margin: 4px 0 0;
 }
+.budget-known-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.budget-known-actions .button {
+  min-height: 38px;
+}
 @media (max-width: 560px) {
   .budget-planned-top {
     grid-template-columns: 1fr;
@@ -832,13 +916,6 @@
 @media (max-width: 760px) {
   .budget-workspace {
     gap: 18px;
-  }
-  .budget-review-banner {
-    padding: 16px;
-    flex-wrap: wrap;
-  }
-  .budget-review-banner > button {
-    width: 100%;
   }
   .budget-tabs {
     overflow-x: auto;

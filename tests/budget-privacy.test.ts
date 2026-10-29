@@ -33,6 +33,10 @@ const saveSetup = (payload: Record<string, unknown>) =>
   db.query("select budget_save_setup($1::jsonb)", [JSON.stringify(payload)]);
 const deleteSeason = (payload: Record<string, unknown>) =>
   db.query("select budget_delete_season($1::jsonb)", [JSON.stringify(payload)]);
+const removePlanned = (payload: Record<string, unknown>) =>
+  db.query("select budget_remove_planned($1::jsonb)", [
+    JSON.stringify(payload),
+  ]);
 const submission = (overrides: Record<string, unknown> = {}) => ({
   operation: "submit",
   id: expense,
@@ -68,6 +72,12 @@ beforeAll(async () => {
   );
   await db.exec(
     readFileSync("supabase/migrations/0024_budget_setup_controls.sql", "utf8"),
+  );
+  await db.exec(
+    readFileSync(
+      "supabase/migrations/0025_budget_known_expense_removal.sql",
+      "utf8",
+    ),
   );
 });
 afterAll(async () => {
@@ -564,4 +574,61 @@ it("records initial fund balances atomically and hides a deleted unused budget",
   await expect(mutate(submission({ season_id: second }))).rejects.toThrow(
     /deleted/,
   );
+});
+
+it("removes a planned-only cost from allocated budget while keeping its allocation and an audit event", async () => {
+  await user(owner);
+  const planId = "30000000-0000-4000-8000-000000000009";
+  await mutate({
+    operation: "season",
+    id: season,
+    version: 1,
+    name: "Current",
+    note: "Add known fee",
+    limit_cents: 900000,
+    allocations: categories.map((category) => ({
+      category,
+      limit_cents: 100000,
+    })),
+    planned_expenses: [
+      {
+        id: planId,
+        category: "Mix",
+        name: "Mix fee",
+        amount_cents: 2000,
+        request_deduction: false,
+        fund_id: null,
+        included_in_balance: false,
+      },
+    ],
+  });
+  await user(exec);
+  await expect(removePlanned({ id: planId, version: 2 })).rejects.toThrow(
+    /Finance or owner/,
+  );
+  await user(owner);
+  await removePlanned({ id: planId, version: 2 });
+  expect(
+    (
+      await db.query("select id from budget_planned_expenses where id=$1", [
+        planId,
+      ])
+    ).rows,
+  ).toHaveLength(0);
+  expect(
+    (
+      await db.query(
+        "select limit_cents from budget_allocations where season_id=$1 and category='Mix'",
+        [season],
+      )
+    ).rows,
+  ).toEqual([{ limit_cents: 100000 }]);
+  expect(
+    (
+      await db.query(
+        "select action from budget_events where season_id=$1 and action='planned_removed'",
+        [season],
+      )
+    ).rows,
+  ).toEqual([{ action: "planned_removed" }]);
 });

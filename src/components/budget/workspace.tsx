@@ -30,6 +30,7 @@ import {
   type BudgetState,
   type Expense,
   type Fund,
+  type PlannedExpense,
   type Season,
 } from "@/features/budget/types";
 import { DraftConflict, useDraftRevision } from "@/components/draft-revision";
@@ -38,6 +39,7 @@ type Modal =
   | { kind: "expense"; id: string; expense?: Expense }
   | { kind: "season"; id: string; season?: Season }
   | { kind: "season-delete"; id: string; season: Season }
+  | { kind: "planned-delete"; id: string; plan: PlannedExpense; season: Season }
   | { kind: "balance"; id: string; fund: Fund }
   | { kind: "import"; id: string }
   | {
@@ -179,6 +181,60 @@ function BudgetCircle({
         </div>
       </div>
     </div>
+  );
+}
+function TeamFundsVisual({ funds }: { funds: Fund[] }) {
+  const recorded = funds.filter((fund) => !!fund.updated_at);
+  const total = recorded.reduce((sum, fund) => sum + fund.balance_cents, 0);
+  const positiveTotal = recorded.reduce(
+    (sum, fund) => sum + Math.max(0, fund.balance_cents),
+    0,
+  );
+  return (
+    <section
+      className="panel budget-funds-visual"
+      aria-label="Team funds overview"
+    >
+      <div>
+        <span className="eyebrow">RECORDED TEAM FUNDS</span>
+        <strong>
+          {recorded.length ? money(total) : "Balances not entered"}
+        </strong>
+        <p className="small muted">
+          Current recorded balances across {recorded.length} of three accounts.
+        </p>
+      </div>
+      <div
+        className="budget-funds-stack"
+        role="img"
+        aria-label={
+          recorded.length
+            ? recorded
+                .map((fund) => `${fund.name}: ${money(fund.balance_cents)}`)
+                .join(", ")
+            : "No recorded fund balances"
+        }
+      >
+        {recorded.map((fund) => (
+          <span
+            key={fund.id}
+            className={`budget-funds-stack-${fund.id}`}
+            style={{
+              width: `${positiveTotal ? (Math.max(0, fund.balance_cents) / positiveTotal) * 100 : 0}%`,
+            }}
+          />
+        ))}
+      </div>
+      <div className="budget-funds-key">
+        {funds.map((fund) => (
+          <span key={fund.id}>
+            <i className={`budget-funds-stack-${fund.id}`} />
+            {fund.name}{" "}
+            <b>{fund.updated_at ? money(fund.balance_cents) : "Not entered"}</b>
+          </span>
+        ))}
+      </div>
+    </section>
   );
 }
 function SaveForm({
@@ -471,7 +527,6 @@ export function BudgetWorkspace({
     )[0]?.id ?? "",
   );
   const [category, setCategory] = useState("all");
-  const [allChart, setAllChart] = useState<"bar" | "circle">("bar");
   const [status, setStatus] = useState("all");
   const [modal, setModal] = useState<Modal | null>(null);
   const [message, setMessage] = useState("");
@@ -531,7 +586,7 @@ export function BudgetWorkspace({
     );
     close();
   }
-  function expenseRows(items: Expense[]) {
+  function expenseRows(items: Expense[], inFundLedger = false) {
     return items.length ? (
       <div className="budget-expenses">
         {[...items]
@@ -553,6 +608,10 @@ export function BudgetWorkspace({
                     <span className="muted small">
                       {e.category} ·{" "}
                       {data.funds.find((f) => f.id === e.fund_id)?.name}
+                      {inFundLedger &&
+                      data.plannedExpenses.some((plan) => plan.id === e.id)
+                        ? " · Known expense"
+                        : ""}
                     </span>
                   </div>
                   <div className="budget-expense-end">
@@ -729,31 +788,22 @@ export function BudgetWorkspace({
         </p>
       )}
       {reviewer && (
-        <section className="budget-review-banner" aria-label="Needs approval">
-          <ShieldCheck size={24} />
-          <div>
-            <h2>
-              Needs approval <span className="badge">{pendingCount}</span>
-            </h2>
-            <p>
-              {reviewable.length
-                ? `${reviewable.length} expense${reviewable.length === 1 ? "" : "s"} ready for your review.`
-                : pendingCount
-                  ? "Your submissions need another Captain or Finance member’s approval."
-                  : "You’re caught up. New submissions will appear here."}
-            </p>
-          </div>
-          <button
-            className="button"
-            onClick={() => {
-              setTab("expenses");
-              setStatus("pending");
-              setCategory("all");
-            }}
-          >
-            View queue <ArrowUpRight size={16} />
-          </button>
-        </section>
+        <button
+          className={`budget-approval-button ${pendingCount ? "has-pending" : ""}`}
+          aria-label={`Needs approval: ${pendingCount} pending expenses${reviewable.length ? `, ${reviewable.length} ready for your review` : ""}`}
+          onClick={() => {
+            setTab("expenses");
+            setStatus("pending");
+            setCategory("all");
+          }}
+        >
+          <ShieldCheck size={18} />
+          <span>Needs approval</span>
+          {pendingCount > 0 && (
+            <b className="budget-approval-count">{pendingCount}</b>
+          )}
+          <ArrowUpRight size={15} />
+        </button>
       )}
       <nav className="view-tabs budget-tabs" aria-label="Budget sections">
         {(
@@ -810,21 +860,12 @@ export function BudgetWorkspace({
               </p>
             </div>
             <div className="budget-row-actions">
-              {manager && season && (
-                <button
-                  className="button"
-                  onClick={() =>
-                    open({ kind: "import", id: crypto.randomUUID() })
-                  }
-                >
-                  Import old sheet
-                </button>
-              )}
               <a className="button" href="/budget/export">
                 Export CSV
               </a>
             </div>
           </div>
+          <TeamFundsVisual funds={data.funds} />
           <div className="budget-funds">
             {data.funds.map((f) => {
               const expenses = data.expenses.filter((e) => e.fund_id === f.id);
@@ -905,7 +946,7 @@ export function BudgetWorkspace({
                       </button>
                     )}
                     <h4>Expenses assigned to this account</h4>
-                    {expenseRows(expenses)}
+                    {expenseRows(expenses, true)}
                     <h4>Balance history</h4>
                     {data.events
                       .filter(
@@ -949,7 +990,10 @@ export function BudgetWorkspace({
               Season
               <select
                 value={season.id}
-                onChange={(e) => setSeasonId(e.target.value)}
+                onChange={(e) => {
+                  setSeasonId(e.target.value);
+                  setCategory("all");
+                }}
               >
                 {data.seasons.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -990,9 +1034,17 @@ export function BudgetWorkspace({
           {tab === "allocated" ? (
             <>
               <section className="panel">
+                {category !== "all" && (
+                  <button
+                    className="budget-back-to-all"
+                    onClick={() => setCategory("all")}
+                  >
+                    ← All categories
+                  </button>
+                )}
                 <div className="budget-section-heading">
                   <h2>{category === "all" ? season.name : category}</h2>
-                  {manager && (
+                  {manager && category === "all" && (
                     <div className="budget-row-actions">
                       <button
                         className="button"
@@ -1013,31 +1065,7 @@ export function BudgetWorkspace({
                     </div>
                   )}
                 </div>
-                {category === "all" && (
-                  <div
-                    className="budget-chart-switch"
-                    role="group"
-                    aria-label="All categories chart style"
-                  >
-                    <button
-                      type="button"
-                      className={allChart === "bar" ? "active" : ""}
-                      aria-pressed={allChart === "bar"}
-                      onClick={() => setAllChart("bar")}
-                    >
-                      Bar graph
-                    </button>
-                    <button
-                      type="button"
-                      className={allChart === "circle" ? "active" : ""}
-                      aria-pressed={allChart === "circle"}
-                      onClick={() => setAllChart("circle")}
-                    >
-                      Circle graph
-                    </button>
-                  </div>
-                )}
-                {category === "all" && allChart === "circle" ? (
+                {category === "all" ? (
                   <BudgetCircle
                     limit={season.limit_cents}
                     expenses={selected}
@@ -1045,41 +1073,48 @@ export function BudgetWorkspace({
                 ) : (
                   <BudgetBar
                     limit={
-                      category === "all"
-                        ? season.limit_cents
-                        : (data.allocations.find(
-                            (a) =>
-                              a.season_id === season.id &&
-                              a.category === category,
-                          )?.limit_cents ?? null)
+                      data.allocations.find(
+                        (a) =>
+                          a.season_id === season.id && a.category === category,
+                      )?.limit_cents ?? null
                     }
                     expenses={selected}
                   />
                 )}
-                <p className="small muted">
-                  Original season budget: {money(season.original_cents)}.
-                  Pending expenses count toward commitments.
-                </p>
+                {category === "all" && (
+                  <p className="small muted">
+                    Original season budget: {money(season.original_cents)}.
+                    Pending expenses count toward commitments.
+                  </p>
+                )}
               </section>
-              <div className="budget-category-grid">
-                {data.allocations
-                  .filter((a) => a.season_id === season.id)
-                  .map((a) => (
-                    <button
-                      className={`panel budget-category ${category === a.category ? "selected" : ""}`}
-                      key={a.id}
-                      onClick={() => setCategory(a.category)}
-                    >
-                      <h3>{a.category}</h3>
-                      <BudgetBar
-                        limit={a.limit_cents}
-                        expenses={seasonExpenses.filter(
-                          (e) => e.category === a.category,
-                        )}
-                      />
-                    </button>
-                  ))}
-              </div>
+              {category === "all" && (
+                <div className="budget-category-grid">
+                  {data.allocations
+                    .filter((a) => a.season_id === season.id)
+                    .map((a) => (
+                      <button
+                        className={`panel budget-category ${category === a.category ? "selected" : ""}`}
+                        key={a.id}
+                        onClick={() => setCategory(a.category)}
+                      >
+                        <h3>{a.category}</h3>
+                        <BudgetBar
+                          limit={a.limit_cents}
+                          expenses={seasonExpenses.filter(
+                            (e) => e.category === a.category,
+                          )}
+                        />
+                      </button>
+                    ))}
+                </div>
+              )}
+              {category !== "all" && (
+                <section className="panel budget-category-expenses">
+                  <h2>{category} expenses</h2>
+                  {expenseRows(selected)}
+                </section>
+              )}
               <section className="panel budget-planned-overview">
                 <div className="budget-section-heading">
                   <h2>Known expenses</h2>
@@ -1116,7 +1151,30 @@ export function BudgetWorkspace({
                                   : " · Planned only"}
                               </p>
                             </div>
-                            <b>{money(item.amount_cents)}</b>
+                            <div className="budget-known-actions">
+                              <b>{money(item.amount_cents)}</b>
+                              {manager && (
+                                <button
+                                  className="button secondary"
+                                  onClick={() =>
+                                    linked
+                                      ? open({
+                                          kind: "delete",
+                                          id: linked.id,
+                                          expense: linked,
+                                        })
+                                      : open({
+                                          kind: "planned-delete",
+                                          id: item.id,
+                                          plan: item,
+                                          season,
+                                        })
+                                  }
+                                >
+                                  Remove
+                                </button>
+                              )}
+                            </div>
                           </div>
                         );
                       })}
@@ -1127,7 +1185,7 @@ export function BudgetWorkspace({
                   </p>
                 )}
               </section>
-              {manager && (
+              {manager && category === "all" && (
                 <button
                   className="button"
                   onClick={() =>
@@ -1137,20 +1195,23 @@ export function BudgetWorkspace({
                   Create another season
                 </button>
               )}
-              <details className="panel">
-                <summary>Budget revision history</summary>
-                {data.events
-                  .filter(
-                    (e) =>
-                      e.action === "budget_saved" && e.season_id === season.id,
-                  )
-                  .map((e) => (
-                    <p key={e.id}>
-                      {date(e.created_at)} · {e.actor_name} ·{" "}
-                      {e.note || "Initial allocation"}
-                    </p>
-                  ))}
-              </details>
+              {category === "all" && (
+                <details className="panel">
+                  <summary>Budget revision history</summary>
+                  {data.events
+                    .filter(
+                      (e) =>
+                        e.action === "budget_saved" &&
+                        e.season_id === season.id,
+                    )
+                    .map((e) => (
+                      <p key={e.id}>
+                        {date(e.created_at)} · {e.actor_name} ·{" "}
+                        {e.note || "Initial allocation"}
+                      </p>
+                    ))}
+                </details>
+              )}
             </>
           ) : (
             <>
@@ -1188,19 +1249,21 @@ export function BudgetWorkspace({
                 ? "Import previous sheet"
                 : modal?.kind === "season-delete"
                   ? "Delete budget"
-                  : modal?.kind === "season"
-                    ? modal.season
-                      ? "Edit budget"
-                      : "Set up budget"
-                    : modal?.kind === "balance"
-                      ? "Update balance"
-                      : modal?.kind === "payment"
-                        ? "Record payment"
-                        : modal?.kind === "refund"
-                          ? "Record refund"
-                          : modal?.kind === "delete"
-                            ? "Cancel expense"
-                            : "Review expense"}
+                  : modal?.kind === "planned-delete"
+                    ? "Remove known expense"
+                    : modal?.kind === "season"
+                      ? modal.season
+                        ? "Edit budget"
+                        : "Set up budget"
+                      : modal?.kind === "balance"
+                        ? "Update balance"
+                        : modal?.kind === "payment"
+                          ? "Record payment"
+                          : modal?.kind === "refund"
+                            ? "Record refund"
+                            : modal?.kind === "delete"
+                              ? "Cancel expense"
+                              : "Review expense"}
           </h2>
           <button
             type="button"
@@ -1268,6 +1331,21 @@ export function BudgetWorkspace({
               Reason for deleting this budget
               <textarea name="note" required maxLength={2000} />
             </label>
+          </SaveForm>
+        )}
+        {currentModal?.kind === "planned-delete" && (
+          <SaveForm
+            key={currentModal.id}
+            id={currentModal.id}
+            version={currentModal.season.version}
+            operation="remove_planned"
+            onSaved={saved}
+            label="Remove known expense"
+          >
+            <p>
+              Remove “{currentModal.plan.name}” from known expenses? Its
+              category allocation stays the same.
+            </p>
           </SaveForm>
         )}
         {currentModal?.kind === "balance" && (
