@@ -13,3 +13,8 @@
 - Independent fresh-context review: APPROVE; no privacy or migration-safety findings. Genesis quiz questions recorded for user follow-up.
 - Live Supabase SQL Editor applied the exact migration0021 transaction on 2026-10-29; UI reported `Success. No rows returned`. No live financial records were entered or changed.
 - Matching app release and live signed-in role acceptance remain pending at this checkpoint.
+
+## Production release · 2026-10-29
+- Commit `790c9a4` fast-forwarded to `main` and pushed after live migration0021 succeeded. Vercel reported production deployment success and canonical `/api/health` returned 200.
+- Using the existing signed-in owner browser session, `/budget` rendered under the Management heading and `/expenses/new` rendered the separate Add Expense page. It correctly shows setup pending because no season budget exists yet; no live financial record was created.
+- Signed-in Captain/Finance/other-exec role acceptance remains unverified on their real accounts; SQL privacy tests and desktop/mobile browser fixtures passed locally.
