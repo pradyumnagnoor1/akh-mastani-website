@@ -141,6 +141,9 @@ await db.exec(
 await db.exec(
   readFileSync("supabase/migrations/0022_own_expense_edits.sql", "utf8"),
 );
+await db.exec(
+  readFileSync("supabase/migrations/0023_budget_questionnaire.sql", "utf8"),
+);
 for (const person of users.values()) {
   await db.query(
     `insert into auth.users values($1,$2,now(),'{"provider":"google"}')`,
@@ -535,6 +538,7 @@ createServer((req, res) => {
         const functions = {
           budget_role: [],
           budget_submission_season: [],
+          budget_submission_categories: [],
           budget_mutate: ["payload"],
           push_device_registered: ["p_id"],
           push_unregister_device: ["p_id"],
@@ -779,6 +783,16 @@ createServer((req, res) => {
             "limit_cents",
             "original_cents",
             "version",
+          ],
+          budget_planned_expenses: [
+            "id",
+            "season_id",
+            "category",
+            "name",
+            "amount_cents",
+            "request_deduction",
+            "fund_id",
+            "included_in_balance",
           ],
           budget_expenses: [
             "id",

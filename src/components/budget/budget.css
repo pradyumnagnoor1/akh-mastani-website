@@ -378,6 +378,216 @@
   background: #0009;
   backdrop-filter: blur(5px);
 }
+.budget-dialog-setup {
+  width: min(700px, calc(100% - 24px));
+}
+.budget-setup-steps {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.budget-setup-steps span {
+  flex: 1;
+  padding: 10px 8px;
+  border-bottom: 3px solid #454052;
+  color: #b1b1c2;
+  font-size: 0.85rem;
+  text-align: center;
+}
+.budget-setup-steps span.active {
+  border-color: #aa9cff;
+  color: #f5f5fa;
+  font-weight: 700;
+}
+.budget-setup-steps span.complete {
+  border-color: #64c5b3;
+  color: #d4f4ed;
+}
+.budget-setup-screen {
+  display: grid;
+  gap: 18px;
+}
+.budget-setup-screen h3 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+.budget-setup-screen p {
+  margin: -6px 0 0;
+}
+.budget-setup-categories {
+  display: grid;
+  gap: 0;
+  border-top: 1px solid #494354;
+}
+.budget-setup-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 190px) 40px;
+  align-items: end;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #383444;
+}
+.budget-setup-category-name {
+  align-self: center;
+  font-weight: 600;
+}
+.budget-setup-row label {
+  font-size: 0.83rem;
+  color: #d6d2e1;
+}
+.budget-setup-row .budget-money-field {
+  display: flex;
+  align-items: center;
+  border: 1px solid #555063;
+  border-radius: 10px;
+  padding: 0 10px;
+  background: #22212c;
+}
+.budget-money-field input {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.budget-money-field > span {
+  color: #d6d2e1;
+}
+.budget-setup-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid #665aa0;
+  border-radius: 14px;
+  background: #28243d;
+}
+.budget-setup-total strong {
+  font-size: 1.5rem;
+  color: #e4dcff;
+  font-variant-numeric: tabular-nums;
+}
+.budget-setup-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 22px;
+}
+.budget-setup-actions .button {
+  flex: 1;
+  min-height: 50px;
+}
+.budget-setup-review {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid #494354;
+  border-radius: 14px;
+}
+.budget-setup-review > strong {
+  font-size: 1.15rem;
+  padding-bottom: 8px;
+}
+.budget-setup-review > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+}
+.budget-setup-review b {
+  font-variant-numeric: tabular-nums;
+}
+.budget-planned-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.budget-planned-suggestions .button {
+  min-height: 44px;
+}
+.budget-plan-empty {
+  padding: 18px;
+  border: 1px dashed #625a73;
+  border-radius: 12px;
+}
+.budget-planned-list {
+  display: grid;
+  gap: 14px;
+}
+.budget-planned-row {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #494354;
+  border-radius: 14px;
+  background: #211f2b;
+}
+.budget-planned-row fieldset {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.budget-planned-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(130px, 0.8fr);
+  gap: 10px;
+}
+.budget-planned-row .budget-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.budget-planned-row .budget-checkbox input {
+  width: 18px;
+  height: 18px;
+}
+.budget-planned-deduction {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #2b2840;
+}
+.budget-planned-deduction p {
+  margin: 0;
+}
+.budget-planned-row > .button {
+  justify-self: start;
+}
+.budget-planned-overview-list {
+  display: grid;
+  margin-top: 18px;
+}
+.budget-planned-overview-list > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid #494354;
+}
+.budget-planned-overview-list p {
+  margin: 4px 0 0;
+}
+@media (max-width: 560px) {
+  .budget-planned-top {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 560px) {
+  .budget-setup-row {
+    grid-template-columns: minmax(0, 1fr) minmax(120px, 145px) 36px;
+    gap: 8px;
+  }
+  .budget-setup-row label {
+    font-size: 0.75rem;
+  }
+  .budget-setup-total strong {
+    font-size: 1.25rem;
+  }
+}
 .budget-dialog-header {
   display: flex;
   justify-content: space-between;

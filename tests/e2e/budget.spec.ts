@@ -50,20 +50,45 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
     await page.getByRole("button", { name: "Create another season" }).click();
   }
   const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Season name", { exact: true }).fill(name);
-  await dialog
-    .getByLabel("Season spending limit (USD)", { exact: true })
-    .fill("10000");
+  await dialog.getByLabel("Budget name", { exact: true }).fill(name);
+  await dialog.getByRole("button", { name: "Continue" }).click();
   await dialog
     .getByLabel("Hotel allocation (USD)", { exact: true })
     .fill("3000");
   await dialog
     .getByLabel("Travel allocation (USD)", { exact: true })
     .fill("2000");
+  await dialog.getByLabel("Competition allocation (USD)").fill("400");
+  await dialog.getByLabel("Mix allocation (USD)").fill("200");
+  await dialog.getByRole("button", { name: "Add custom category" }).click();
+  await dialog.getByLabel("Custom category name").fill("Team meals");
+  await dialog.getByLabel("Team meals allocation (USD)").fill("300");
+  await expect(dialog.getByRole("status")).toContainText("$5,900.00");
+  await dialog.getByRole("button", { name: "Continue" }).click();
+  await dialog.getByRole("button", { name: /Competition fee/ }).click();
+  const comp = dialog.locator(".budget-planned-row").first();
+  await comp.getByLabel("Planned amount for Competition fee").fill("300");
+  await comp.getByLabel("Request a fund deduction for this expense").check();
+  await comp.getByLabel("Deduct Competition fee from").selectOption("venmo");
+  await dialog.getByRole("button", { name: /Mix fee/ }).click();
+  const mix = dialog.locator(".budget-planned-row").last();
+  await mix.getByLabel("Planned amount for Mix fee").fill("100");
+  await dialog.getByRole("button", { name: "Continue" }).click();
+  await expect(dialog.getByText("Total budget", { exact: true })).toBeVisible();
   await dialog
-    .getByRole("button", { name: "Save budget", exact: true })
+    .getByRole("button", { name: "Create budget", exact: true })
     .click();
   await expect(dialog).not.toBeVisible();
+  await page.getByRole("button", { name: "Allocated Budget" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Known expenses" }),
+  ).toBeVisible();
+  await expect(page.locator(".budget-planned-overview")).toContainText(
+    "Competition fee",
+  );
+  await expect(page.locator(".budget-planned-overview")).toContainText(
+    "Fund deduction awaiting review",
+  );
   await page.getByRole("button", { name: "Funds", exact: true }).click();
   const goodbull = page.locator(".budget-fund").filter({
     has: page.getByRole("heading", { name: "SOFC Good Bull", exact: true }),
@@ -92,6 +117,9 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
   ).toBeVisible();
   await expect(execPage.getByText("Team funds")).toHaveCount(0);
   await expect(execPage.getByText("Allocated Budget")).toHaveCount(0);
+  await expect(
+    execPage.getByRole("option", { name: "Team meals" }),
+  ).toHaveCount(1);
   const form = execPage.locator(".budget-submit-card form");
   await form
     .getByLabel("What’s the expense?", { exact: true })

@@ -2,7 +2,13 @@
 import { revalidatePath } from "next/cache";
 import { requireBudget, requireExpenseSubmitter } from "./queries";
 import { cents } from "./policy";
-import { CATEGORIES, type BudgetState } from "./types";
+import { type BudgetState } from "./types";
+import {
+  parseBudgetSetup,
+  parsePlannedExpenses,
+  type AllocationEntry,
+  type PlannedEntry,
+} from "./setup";
 import { validateImportRows, type ImportRow } from "./import";
 import { validVersion } from "@/features/communication/policy";
 const value = (form: FormData, key: string) => String(form.get(key) ?? "");
@@ -25,16 +31,22 @@ export async function mutateBudget(
       version,
       note: value(form, "note"),
     };
-    if (operation === "season")
+    if (operation === "season") {
+      const setup = parseBudgetSetup(
+        value(form, "name"),
+        JSON.parse(value(form, "allocations")) as AllocationEntry[],
+      );
+      const planned = parsePlannedExpenses(
+        JSON.parse(value(form, "planned_expenses")) as PlannedEntry[],
+        setup.allocations,
+      );
       Object.assign(payload, {
-        name: value(form, "name"),
-        limit_cents: cents(value(form, "limit")),
-        allocations: CATEGORIES.map((category) => ({
-          category,
-          limit_cents: cents(value(form, category) || "0"),
-        })),
+        name: setup.name,
+        limit_cents: setup.totalCents,
+        allocations: setup.allocations,
+        planned_expenses: planned,
       });
-    else if (operation === "balance")
+    } else if (operation === "balance")
       Object.assign(payload, {
         fund_id: value(form, "fund_id"),
         amount_cents: cents(value(form, "amount"), true),
@@ -127,7 +139,16 @@ export async function importBudget(
     const seasonId = value(form, "season_id");
     validVersion(seasonId, 0);
     const rows = JSON.parse(value(form, "rows")) as ImportRow[];
-    validateImportRows(rows);
+    const { data: allowed, error: categoriesError } = await supabase
+      .from("budget_allocations")
+      .select("category")
+      .eq("season_id", seasonId);
+    if (categoriesError || !allowed)
+      throw new Error("Unable to verify the season categories.");
+    validateImportRows(
+      rows,
+      allowed.map((item) => item.category),
+    );
     const included = form.get("included") === "on";
     const items = rows.map((r) => ({
       id: r.id,

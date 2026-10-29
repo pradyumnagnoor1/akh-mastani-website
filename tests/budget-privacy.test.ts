@@ -59,13 +59,16 @@ beforeAll(async () => {
   await db.exec(
     readFileSync("supabase/migrations/0022_own_expense_edits.sql", "utf8"),
   );
+  await db.exec(
+    readFileSync("supabase/migrations/0023_budget_questionnaire.sql", "utf8"),
+  );
 });
 afterAll(async () => {
   await db?.close();
 });
 beforeEach(async () => {
   await db.exec(
-    "reset role;truncate budget_events,budget_receipts,budget_expenses,budget_allocations,budget_seasons,budget_owners;truncate auth.users cascade;insert into budget_funds(id,name,balance_cents) values ('venmo','Venmo',100000),('goodbull','SOFC Good Bull',100000),('sofc','Main SOFC',100000);",
+    "reset role;truncate budget_events,budget_receipts,budget_expenses,budget_planned_expenses,budget_allocations,budget_seasons,budget_owners;truncate auth.users cascade;insert into budget_funds(id,name,balance_cents) values ('venmo','Venmo',100000),('goodbull','SOFC Good Bull',100000),('sofc','Main SOFC',100000);",
   );
   for (const [id, roles] of [
     [owner, []],
@@ -108,6 +111,7 @@ it("shows an exec only their own submission, never funds, allocations, receipts 
     "budget_funds",
     "budget_seasons",
     "budget_allocations",
+    "budget_planned_expenses",
     "budget_expenses",
     "budget_events",
     "budget_receipts",
@@ -127,6 +131,7 @@ it("shows an exec only their own submission, never funds, allocations, receipts 
     "budget_funds",
     "budget_seasons",
     "budget_allocations",
+    "budget_planned_expenses",
     "budget_events",
     "budget_receipts",
   ])
@@ -243,4 +248,237 @@ it("shows full records to Finance, Captains and owner", async () => {
       1,
     );
   }
+});
+
+it("derives budget total from standard and custom allocations without revealing amounts to execs", async () => {
+  await user(owner);
+  const anotherSeason = "10000000-0000-4000-8000-000000000002";
+  const allocationList = [
+    ...categories.map((category) => ({ category, limit_cents: 10000 })),
+    { category: "Team meals", limit_cents: 25000 },
+  ];
+  await expect(
+    mutate({
+      operation: "season",
+      id: anotherSeason,
+      version: 0,
+      name: "2027–2028 season",
+      limit_cents: 90000,
+      allocations: allocationList,
+    }),
+  ).rejects.toThrow(/total must equal/);
+  await mutate({
+    operation: "season",
+    id: anotherSeason,
+    version: 0,
+    name: "2027–2028 season",
+    limit_cents: 115000,
+    allocations: allocationList,
+  });
+  await expect(
+    mutate({
+      operation: "season",
+      id: anotherSeason,
+      version: 1,
+      name: "Changed case",
+      limit_cents: 115000,
+      note: "Try changing category case",
+      allocations: allocationList.map((item) =>
+        item.category === "Team meals"
+          ? { ...item, category: "Team Meals" }
+          : item,
+      ),
+    }),
+  ).rejects.toThrow(/Existing categories must remain/);
+  await expect(
+    mutate({
+      operation: "season",
+      id: "10000000-0000-4000-8000-000000000003",
+      version: 0,
+      name: "Changed case",
+      limit_cents: 115000,
+      allocations: allocationList.map((item) =>
+        item.category === "Production"
+          ? { ...item, category: "production" }
+          : item,
+      ),
+    }),
+  ).rejects.toThrow(/standard categories/);
+  expect(
+    (
+      await db.query("select limit_cents from budget_seasons where id=$1", [
+        anotherSeason,
+      ])
+    ).rows,
+  ).toEqual([{ limit_cents: 115000 }]);
+  await user(exec);
+  expect(
+    (
+      await db.query<{ categories: string[] }>(
+        "select budget_submission_categories() as categories",
+      )
+    ).rows[0].categories,
+  ).toContain("Team meals");
+  expect(
+    (await db.query("select * from budget_allocations")).rows,
+  ).toHaveLength(0);
+  await mutate(
+    submission({
+      id: "20000000-0000-4000-8000-000000000002",
+      season_id: anotherSeason,
+      category: "Team meals",
+      fund_id: "venmo",
+    }),
+  );
+  await expect(
+    mutate(
+      submission({
+        id: "20000000-0000-4000-8000-000000000003",
+        season_id: anotherSeason,
+        category: "Team meals",
+        fund_id: "goodbull",
+      }),
+    ),
+  ).rejects.toThrow(/Good Bull/);
+});
+
+it("keeps planned costs within allocations and queues requested fund deductions for independent approval", async () => {
+  await user(owner);
+  const plannedId = "30000000-0000-4000-8000-000000000001";
+  const baseAllocations = categories.map((category) => ({
+    category,
+    limit_cents: 10000,
+  }));
+  const planned = [
+    {
+      id: plannedId,
+      name: "Competition fee",
+      category: "Competition",
+      amount_cents: 5000,
+      request_deduction: true,
+      fund_id: "venmo",
+      included_in_balance: false,
+    },
+  ];
+  await expect(
+    mutate({
+      operation: "season",
+      id: season,
+      version: 1,
+      name: "Current",
+      note: "Fee plan",
+      limit_cents: 90000,
+      allocations: baseAllocations,
+      planned_expenses: [{ ...planned[0], amount_cents: 11000 }],
+    }),
+  ).rejects.toThrow(/exceed their category/);
+  await expect(
+    mutate({
+      operation: "season",
+      id: season,
+      version: 1,
+      name: "Current",
+      note: "Fee plan",
+      limit_cents: 90000,
+      allocations: baseAllocations,
+      planned_expenses: [
+        { ...planned[0], category: "Mix", fund_id: "goodbull" },
+      ],
+    }),
+  ).rejects.toThrow(/Invalid planned expense/);
+  await mutate({
+    operation: "season",
+    id: season,
+    version: 1,
+    name: "Current",
+    note: "Fee plan",
+    limit_cents: 90000,
+    allocations: baseAllocations,
+    planned_expenses: planned,
+  });
+  expect(
+    (
+      await db.query(
+        "select status,reported_cents from budget_expenses where id=$1",
+        [plannedId],
+      )
+    ).rows,
+  ).toEqual([{ status: "pending", reported_cents: 5000 }]);
+  expect(
+    (await db.query("select balance_cents from budget_funds where id='venmo'"))
+      .rows,
+  ).toEqual([{ balance_cents: 100000 }]);
+  await user(exec);
+  expect(
+    (await db.query("select * from budget_planned_expenses")).rows,
+  ).toHaveLength(0);
+  await expect(
+    mutate({ operation: "approve", id: plannedId, version: 1 }),
+  ).rejects.toThrow(/only submit expenses/);
+  await user(captain);
+  await mutate({ operation: "approve", id: plannedId, version: 1 });
+  expect(
+    (await db.query("select balance_cents from budget_funds where id='venmo'"))
+      .rows,
+  ).toEqual([{ balance_cents: 95000 }]);
+  await user(owner);
+  await expect(
+    mutate({
+      operation: "season",
+      id: season,
+      version: 2,
+      name: "Current",
+      note: "Change fee",
+      limit_cents: 90000,
+      allocations: baseAllocations,
+      planned_expenses: [{ ...planned[0], amount_cents: 4000 }],
+    }),
+  ).rejects.toThrow(/must remain unchanged/);
+  await mutate({
+    operation: "season",
+    id: season,
+    version: 2,
+    name: "Current",
+    note: "Keep plan",
+    limit_cents: 90000,
+    allocations: baseAllocations,
+    planned_expenses: planned,
+  });
+  expect(
+    (await db.query("select * from budget_expenses where id=$1", [plannedId]))
+      .rows,
+  ).toHaveLength(1);
+  await mutate({
+    operation: "delete",
+    id: plannedId,
+    version: 2,
+    note: "Fee was canceled",
+  });
+  expect(
+    (await db.query("select * from budget_planned_expenses")).rows,
+  ).toHaveLength(0);
+  expect(
+    (await db.query("select balance_cents from budget_funds where id='venmo'"))
+      .rows,
+  ).toEqual([{ balance_cents: 100000 }]);
+  await db.exec("reset role");
+  expect(
+    (
+      await db.query<{ deleted_at: Date | null }>(
+        "select deleted_at from budget_expenses where id=$1",
+        [plannedId],
+      )
+    ).rows[0].deleted_at,
+  ).not.toBeNull();
+  await user(owner);
+  await mutate({
+    operation: "season",
+    id: season,
+    version: 3,
+    name: "Current",
+    note: "Remove canceled fee",
+    limit_cents: 90000,
+    allocations: baseAllocations,
+    planned_expenses: [],
+  });
 });

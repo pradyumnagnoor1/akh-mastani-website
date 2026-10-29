@@ -28,6 +28,7 @@ export const budgetData = cache(async () => {
     "budget_funds",
     "budget_seasons",
     "budget_allocations",
+    "budget_planned_expenses",
     "budget_expenses",
     "budget_events",
     "budget_receipts",
@@ -43,13 +44,22 @@ export const budgetData = cache(async () => {
       ),
     ),
   );
-  const [funds, seasons, allocations, expenses, events, receipts] = result;
+  const [
+    funds,
+    seasons,
+    allocations,
+    plannedExpenses,
+    expenses,
+    events,
+    receipts,
+  ] = result;
   return {
     ...context,
     data: {
       funds,
       seasons,
       allocations,
+      plannedExpenses,
       expenses,
       events,
       receipts,

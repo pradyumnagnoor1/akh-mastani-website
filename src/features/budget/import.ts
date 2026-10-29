@@ -66,7 +66,10 @@ export function oldSheetRows(text: string): ImportRow[] {
       notes: r[6]?.trim() ?? "",
     }));
 }
-export function validateImportRows(rows: ImportRow[]) {
+export function validateImportRows(
+  rows: ImportRow[],
+  allowedCategories: readonly string[] = CATEGORIES,
+) {
   if (!rows.length || rows.length > 100)
     throw new Error("Choose 1–100 expense rows.");
   for (const [i, r] of rows.entries()) {
@@ -75,7 +78,7 @@ export function validateImportRows(rows: ImportRow[]) {
     if (
       !r.title ||
       r.title.length > 160 ||
-      !CATEGORIES.includes(r.category as (typeof CATEGORIES)[number]) ||
+      !allowedCategories.includes(r.category) ||
       !["venmo", "goodbull", "sofc"].includes(r.fund_id) ||
       !eligibleFund(r.fund_id, r.category) ||
       total <= 0 ||

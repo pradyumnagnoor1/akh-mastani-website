@@ -34,6 +34,16 @@ export type Allocation = {
   original_cents: number;
   version: number;
 };
+export type PlannedExpense = {
+  id: string;
+  season_id: string;
+  category: string;
+  name: string;
+  amount_cents: number;
+  request_deduction: boolean;
+  fund_id: string | null;
+  included_in_balance: boolean;
+};
 export type Expense = {
   id: string;
   season_id: string;
@@ -79,6 +89,7 @@ export type BudgetData = {
   funds: Fund[];
   seasons: Season[];
   allocations: Allocation[];
+  plannedExpenses: PlannedExpense[];
   expenses: Expense[];
   events: BudgetEvent[];
   receipts: { expense_id: string; filename: string }[];

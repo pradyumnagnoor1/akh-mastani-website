@@ -3,11 +3,7 @@ import { useActionState, useState } from "react";
 import { ReceiptText, ShieldCheck } from "lucide-react";
 import { mutateBudget } from "@/features/budget/actions";
 import { eligibleFund } from "@/features/budget/policy";
-import {
-  CATEGORIES,
-  type BudgetState,
-  type Expense,
-} from "@/features/budget/types";
+import { type BudgetState, type Expense } from "@/features/budget/types";
 
 const FUNDS = [
   { id: "venmo", name: "Venmo" },
@@ -19,10 +15,12 @@ export function ExpenseSubmission({
   seasonId,
   draftId,
   expenses,
+  categories,
 }: {
   seasonId: string | null;
   draftId: string;
   expenses: Expense[];
+  categories: string[];
 }) {
   const [id, setId] = useState(draftId);
   const [editing, setEditing] = useState<Expense | null>(null);
@@ -47,6 +45,7 @@ export function ExpenseSubmission({
           id={editing?.id ?? id}
           seasonId={editing?.season_id ?? seasonId!}
           expense={editing}
+          categories={categories}
           onAnother={fresh}
         />
       ) : (
@@ -118,11 +117,13 @@ function SubmitForm({
   id,
   seasonId,
   expense,
+  categories,
   onAnother,
 }: {
   id: string;
   seasonId: string;
   expense: Expense | null;
+  categories: string[];
   onAnother: () => void;
 }) {
   const [state, action, pending] = useActionState(
@@ -224,7 +225,7 @@ function SubmitForm({
               required
             >
               <option value="">Choose a category</option>
-              {CATEGORIES.map((item) => (
+              {categories.map((item) => (
                 <option key={item}>{item}</option>
               ))}
             </select>

@@ -25,7 +25,6 @@ import {
   totals,
 } from "@/features/budget/policy";
 import {
-  CATEGORIES,
   type BudgetData,
   type BudgetRole,
   type BudgetState,
@@ -34,6 +33,7 @@ import {
   type Season,
 } from "@/features/budget/types";
 import { DraftConflict, useDraftRevision } from "@/components/draft-revision";
+import { SeasonQuestionnaire } from "./season-questionnaire";
 type Modal =
   | { kind: "expense"; id: string; expense?: Expense }
   | { kind: "season"; id: string; season?: Season }
@@ -271,9 +271,11 @@ function ExpenseForm({
           required
         >
           <option value="">Choose a category</option>
-          {CATEGORIES.map((c) => (
-            <option key={c}>{c}</option>
-          ))}
+          {data.allocations
+            .filter((a) => a.season_id === season.id)
+            .map((a) => (
+              <option key={a.id}>{a.category}</option>
+            ))}
         </select>
       </label>
       <fieldset className="budget-payment-choice">
@@ -894,9 +896,11 @@ export function BudgetWorkspace({
                 onChange={(e) => setCategory(e.target.value)}
               >
                 <option value="all">All categories</option>
-                {CATEGORIES.map((c) => (
-                  <option key={c}>{c}</option>
-                ))}
+                {data.allocations
+                  .filter((a) => a.season_id === season.id)
+                  .map((a) => (
+                    <option key={a.id}>{a.category}</option>
+                  ))}
               </select>
             </label>
             {tab === "expenses" && (
@@ -966,6 +970,53 @@ export function BudgetWorkspace({
                     </button>
                   ))}
               </div>
+              <section className="panel budget-planned-overview">
+                <div className="budget-section-heading">
+                  <h2>Known expenses</h2>
+                </div>
+                <p className="muted">
+                  These planned costs are already included in category
+                  allocations. They do not count as an additional budget or fund
+                  deduction.
+                </p>
+                {data.plannedExpenses.filter(
+                  (item) =>
+                    item.season_id === season.id &&
+                    (category === "all" || item.category === category),
+                ).length ? (
+                  <div className="budget-planned-overview-list">
+                    {data.plannedExpenses
+                      .filter(
+                        (item) =>
+                          item.season_id === season.id &&
+                          (category === "all" || item.category === category),
+                      )
+                      .map((item) => {
+                        const linked = data.expenses.find(
+                          (expense) => expense.id === item.id,
+                        );
+                        return (
+                          <div key={item.id}>
+                            <div>
+                              <strong>{item.name}</strong>
+                              <p className="small muted">
+                                {item.category}
+                                {item.request_deduction
+                                  ? ` · ${linked?.status === "approved" ? "Fund deduction approved" : linked ? "Fund deduction awaiting review" : "Fund deduction requested"}`
+                                  : " · Planned only"}
+                              </p>
+                            </div>
+                            <b>{money(item.amount_cents)}</b>
+                          </div>
+                        );
+                      })}
+                  </div>
+                ) : (
+                  <p className="small muted">
+                    No known expenses listed for this selection.
+                  </p>
+                )}
+              </section>
               {manager && (
                 <button
                   className="button"
@@ -1007,7 +1058,7 @@ export function BudgetWorkspace({
       )}
       <dialog
         ref={dialog}
-        className="budget-dialog"
+        className={`budget-dialog ${currentModal?.kind === "season" ? "budget-dialog-setup" : ""}`}
         aria-labelledby="budget-dialog-title"
         onCancel={(e) => {
           e.preventDefault();
@@ -1026,7 +1077,9 @@ export function BudgetWorkspace({
               : modal?.kind === "import"
                 ? "Import previous sheet"
                 : modal?.kind === "season"
-                  ? "Season budget"
+                  ? modal.season
+                    ? "Edit budget"
+                    : "Set up budget"
                   : modal?.kind === "balance"
                     ? "Update balance"
                     : modal?.kind === "payment"
@@ -1062,73 +1115,23 @@ export function BudgetWorkspace({
           />
         )}
         {currentModal?.kind === "import" && season && (
-          <ImportForm season={season} onSaved={saved} />
+          <ImportForm
+            season={season}
+            categories={data.allocations
+              .filter((a) => a.season_id === season.id)
+              .map((a) => a.category)}
+            onSaved={saved}
+          />
         )}
         {currentModal?.kind === "season" && (
-          <SaveForm
+          <SeasonQuestionnaire
             key={currentModal.id}
             id={currentModal.id}
-            version={currentModal.season?.version ?? 0}
-            operation="season"
+            season={currentModal.season}
+            allocations={data.allocations}
+            plannedExpenses={data.plannedExpenses}
             onSaved={saved}
-            label="Save budget"
-          >
-            <label>
-              Season name
-              <input
-                name="name"
-                required
-                maxLength={80}
-                defaultValue={currentModal.season?.name}
-                placeholder="2026–2027"
-              />
-            </label>
-            <label>
-              Season spending limit (USD)
-              <input
-                name="limit"
-                required
-                inputMode="decimal"
-                defaultValue={
-                  currentModal.season
-                    ? currentModal.season.limit_cents / 100
-                    : ""
-                }
-              />
-            </label>
-            <h3>Category allocations</h3>
-            <p className="small muted">
-              Allocations must fit within the season limit. Leave money
-              unallocated as a reserve.
-            </p>
-            <div className="budget-allocation-fields">
-              {CATEGORIES.map((c) => (
-                <label key={c}>
-                  {c}
-                  <input
-                    name={c}
-                    aria-label={`${c} allocation (USD)`}
-                    required
-                    inputMode="decimal"
-                    defaultValue={
-                      (data.allocations.find(
-                        (a) =>
-                          a.season_id === currentModal.id && a.category === c,
-                      )?.limit_cents ?? 0) / 100
-                    }
-                  />
-                </label>
-              ))}
-            </div>
-            <label>
-              Reason for change
-              <input
-                name="note"
-                required={!!currentModal.season}
-                maxLength={2000}
-              />
-            </label>
-          </SaveForm>
+          />
         )}
         {currentModal?.kind === "balance" && (
           <SaveForm
@@ -1342,9 +1345,11 @@ function ReviewForm({
 
 function ImportForm({
   season,
+  categories,
   onSaved,
 }: {
   season: Season;
+  categories: string[];
   onSaved: () => void;
 }) {
   const [rows, setRows] = useState<ImportRow[]>([]);
@@ -1352,7 +1357,7 @@ function ImportForm({
   const [state, action, pending] = useActionState(
     async (previous: BudgetState, form: FormData) => {
       try {
-        validateImportRows(rows);
+        validateImportRows(rows, categories);
       } catch (error) {
         return { error: (error as Error).message };
       }
@@ -1431,7 +1436,7 @@ function ImportForm({
                         })
                       }
                     >
-                      {CATEGORIES.map((c) => (
+                      {categories.map((c) => (
                         <option key={c}>{c}</option>
                       ))}
                     </select>

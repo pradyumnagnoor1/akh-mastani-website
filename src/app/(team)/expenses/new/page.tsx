@@ -7,8 +7,13 @@ import "@/components/budget/budget.css";
 
 export default async function Page() {
   const { supabase, member } = await requireExpenseSubmitter();
-  const [{ data, error }, expenses] = await Promise.all([
+  const [
+    { data, error },
+    { data: categories, error: categoriesError },
+    expenses,
+  ] = await Promise.all([
     supabase.rpc("budget_submission_season"),
+    supabase.rpc("budget_submission_categories"),
     collectPages((from, to) =>
       supabase
         .from("budget_expenses")
@@ -18,12 +23,14 @@ export default async function Page() {
         .range(from, to),
     ),
   ]);
-  if (error) throw new Error("Expense submission is unavailable right now.");
+  if (error || categoriesError)
+    throw new Error("Expense submission is unavailable right now.");
   return (
     <ExpenseSubmission
       seasonId={data as string | null}
       draftId={randomUUID()}
       expenses={expenses as Expense[]}
+      categories={categories as string[]}
     />
   );
 }
