@@ -11,3 +11,6 @@
 - Live migration0022 applied in authenticated Supabase SQL Editor; result `Success. No rows returned`. No financial records were created or changed.
 - Browser tests use synthetic local identities. Real ordinary-exec and Captain/Finance sessions have not yet been exercised live; no season budget is configured in production.
 - Genesis Q&A: user delegated the first two design/edge-case decisions to best judgment and explicitly answered correction-flow question: ordinary execs should be able to edit their own submissions.
+
+## Production release
+- Commit `0cdba33` fast-forwarded to `main` and pushed after migration0022 succeeded. Vercel reported deployment success; canonical `/api/health` returned 200. Owner signed-in Add Expense page still renders setup pending because no production season is configured.
