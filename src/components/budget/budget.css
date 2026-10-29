@@ -2,6 +2,36 @@
   display: grid;
   gap: 24px;
 }
+.budget-submit-page {
+  max-width: 760px;
+}
+.budget-submit-card {
+  padding: clamp(20px, 4vw, 32px);
+}
+.budget-submit-intro {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.budget-submit-intro h2,
+.budget-submit-success h2 {
+  margin: 0;
+}
+.budget-submit-intro p {
+  margin: 4px 0 0;
+}
+.budget-submit-success {
+  display: grid;
+  justify-items: start;
+  gap: 16px;
+}
+.budget-submit-success > svg {
+  color: #a99cff;
+}
+.budget-submit-success p {
+  margin: 0;
+}
 .budget-workspace .page-heading {
   margin: 0;
 }

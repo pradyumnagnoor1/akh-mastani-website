@@ -84,27 +84,29 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
   await login(execContext, request, "exec");
   const execPage = await execContext.newPage();
   await execPage.goto("http://127.0.0.1:3102/budget");
+  await expect(execPage).toHaveURL(/\/home$/);
+  await expect(execPage.getByRole("link", { name: "Budget" })).toHaveCount(0);
+  await execPage.goto("http://127.0.0.1:3102/expenses/new");
   await expect(
-    execPage.getByRole("button", { name: "View queue" }),
-  ).toHaveCount(0);
-  await execPage
-    .getByRole("button", { name: "Add expense", exact: true })
-    .click();
-  const ed = execPage.getByRole("dialog");
-  await ed
+    execPage.getByRole("heading", { name: "Add expense" }),
+  ).toBeVisible();
+  await expect(execPage.getByText("Team funds")).toHaveCount(0);
+  await expect(execPage.getByText("Allocated Budget")).toHaveCount(0);
+  const form = execPage.locator(".budget-submit-card form");
+  await form
     .getByLabel("What’s the expense?", { exact: true })
     .fill(`Hotel ${info.project.name}`);
-  await ed.getByLabel("Total cost (USD)", { exact: true }).fill("500");
-  await ed.getByRole("combobox", { name: /Category/ }).selectOption("Mix");
+  await form.getByLabel("Total cost (USD)", { exact: true }).fill("500");
+  await form.getByRole("combobox", { name: /Category/ }).selectOption("Mix");
   await expect(
-    ed.getByLabel("Pay from").locator('option[value="goodbull"]'),
+    form.getByLabel("Pay from").locator('option[value="goodbull"]'),
   ).toHaveCount(0);
-  await ed.getByRole("combobox", { name: /Category/ }).selectOption("Hotel");
-  await ed.getByLabel("Partially paid", { exact: true }).check();
-  await ed.getByLabel("Amount paid (USD)", { exact: true }).fill("100");
-  await ed.getByLabel("Pay from").selectOption("goodbull");
-  await ed.locator(".budget-optional summary").click();
-  await ed.getByLabel(/Receipt \(PDF/).setInputFiles({
+  await form.getByRole("combobox", { name: /Category/ }).selectOption("Hotel");
+  await form.getByLabel("Partially paid", { exact: true }).check();
+  await form.getByLabel("Amount paid (USD)", { exact: true }).fill("100");
+  await form.getByLabel("Pay from").selectOption("goodbull");
+  await form.locator(".budget-optional summary").click();
+  await form.getByLabel(/Receipt \(PDF/).setInputFiles({
     name: "receipt.pdf",
     mimeType: "application/pdf",
     buffer: Buffer.from("%PDF-1.4\nreceipt fixture"),
@@ -113,8 +115,12 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
     path: info.outputPath("add-expense.png"),
     fullPage: true,
   });
-  await ed.getByRole("button", { name: "Submit expense", exact: true }).click();
-  await expect(ed).not.toBeVisible();
+  await form
+    .getByRole("button", { name: "Submit expense for approval", exact: true })
+    .click();
+  await expect(
+    execPage.getByRole("heading", { name: "Expense sent for review" }),
+  ).toBeVisible();
   const captainContext = await browser.newContext({
     viewport: page.viewportSize()!,
   });
@@ -144,16 +150,18 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
     path: info.outputPath("funds.png"),
     fullPage: true,
   });
-  await execPage.reload();
-  await execPage.getByRole("button", { name: "Expenses", exact: true }).click();
-  const ei = execPage.locator(".budget-expense").filter({
-    has: execPage.getByText(`Hotel ${info.project.name}`, { exact: true }),
+  await page.reload();
+  await page.getByRole("button", { name: "Expenses", exact: true }).click();
+  const ei = page.locator(".budget-expense").filter({
+    has: page.getByText(`Hotel ${info.project.name}`, { exact: true }),
   });
   await ei.locator("summary").first().click();
   await ei.getByRole("button", { name: "Record payment" }).click();
-  await ed.getByLabel("Payment amount (USD)", { exact: true }).fill("400");
-  await ed.getByRole("button", { name: "Submit payment for approval" }).click();
-  await expect(ed).not.toBeVisible();
+  await dialog.getByLabel("Payment amount (USD)", { exact: true }).fill("400");
+  await dialog
+    .getByRole("button", { name: "Submit payment for approval" })
+    .click();
+  await expect(dialog).not.toBeVisible();
   await captain.reload();
   await captain.getByRole("button", { name: "View queue" }).click();
   await item.locator("summary").first().click();
@@ -187,6 +195,8 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
   await login(dancerContext, request, "dancer");
   const dancer = await dancerContext.newPage();
   await dancer.goto("http://127.0.0.1:3102/budget");
+  await expect(dancer).toHaveURL(/\/home$/);
+  await dancer.goto("http://127.0.0.1:3102/expenses/new");
   await expect(dancer).toHaveURL(/\/home$/);
   await dancerContext.close();
   await execContext.close();

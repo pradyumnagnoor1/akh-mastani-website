@@ -10,6 +10,7 @@ import {
   Layers,
   Film,
   Wallet,
+  ReceiptText,
   Users,
   Settings2,
   Menu,
@@ -37,7 +38,7 @@ const navigation = [
   { label: "Set Design", href: "/segments", icon: Layers },
   { label: "Choreo", href: "/choreo", icon: Film },
   { label: "Payments", href: "/payments", icon: Wallet },
-  { label: "Budget", href: "/budget", icon: Wallet },
+  { label: "Add Expense", href: "/expenses/new", icon: ReceiptText },
   { label: "Roster", href: "/roster", icon: Users },
 ];
 const mobileNavigation = [
@@ -87,7 +88,7 @@ export function AppShell({
         {navigation
           .filter(
             (item) =>
-              item.href !== "/budget" ||
+              item.href !== "/expenses/new" ||
               (member.budget_role && member.budget_role !== "none"),
           )
           .map(({ label, href, icon: Icon }) => (
@@ -117,6 +118,20 @@ export function AppShell({
               Admin
               <NavigationHint />
             </Link>
+            {(member.budget_role === "finance" ||
+              member.budget_role === "captain" ||
+              member.budget_role === "owner") && (
+              <Link
+                href="/budget"
+                className={`nav-item ${isCurrent(path, "/budget") ? "selected" : ""}`}
+                onNavigate={close}
+                aria-current={isCurrent(path, "/budget") ? "page" : undefined}
+              >
+                <Wallet size={19} aria-hidden="true" />
+                Budget
+                <NavigationHint />
+              </Link>
+            )}
           </>
         )}
       </nav>
@@ -189,9 +204,12 @@ export function AppShell({
         <div className="topbar">
           <span>
             TEAM HUB <span className="slash">/</span>{" "}
-            {navigation.find(
-              (item) => path === item.href || path.startsWith(`${item.href}/`),
-            )?.label ?? "Admin"}
+            {isCurrent(path, "/budget")
+              ? "Budget"
+              : (navigation.find(
+                  (item) =>
+                    path === item.href || path.startsWith(`${item.href}/`),
+                )?.label ?? "Admin")}
           </span>
           <span className="badge">Texas A&M University</span>
         </div>

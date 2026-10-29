@@ -1,6 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { requireBudget } from "./queries";
+import { requireBudget, requireExpenseSubmitter } from "./queries";
 import { cents } from "./policy";
 import { CATEGORIES, type BudgetState } from "./types";
 import { validateImportRows, type ImportRow } from "./import";
@@ -10,7 +10,11 @@ export async function mutateBudget(
   _state: BudgetState,
   form: FormData,
 ): Promise<BudgetState> {
-  const { supabase } = await requireBudget();
+  const isNewExpense =
+    value(form, "operation") === "submit" && value(form, "version") === "0";
+  const { supabase, role } = isNewExpense
+    ? await requireExpenseSubmitter()
+    : await requireBudget();
   try {
     const operation = value(form, "operation"),
       id = value(form, "id"),
@@ -105,7 +109,13 @@ export async function mutateBudget(
     };
   }
   revalidatePath("/budget");
-  return { success: "Saved. Budget and funds are up to date." };
+  if (isNewExpense) revalidatePath("/expenses/new");
+  return {
+    success:
+      role === "exec"
+        ? "Expense sent to Captains and Logistics & Finance for review."
+        : "Saved. Budget and funds are up to date.",
+  };
 }
 export async function importBudget(
   _state: BudgetState,

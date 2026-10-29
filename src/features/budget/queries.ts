@@ -11,6 +11,14 @@ export async function requireBudget() {
     throw new Error(
       "Budget setup is unavailable. Please try again after setup is complete.",
     );
+  if (data !== "finance" && data !== "captain" && data !== "owner")
+    redirect("/home");
+  return { ...context, role: data as BudgetRole };
+}
+export async function requireExpenseSubmitter() {
+  const context = await requireMember();
+  const { data, error } = await context.supabase.rpc("budget_role");
+  if (error) throw new Error("Expense submission is unavailable right now.");
   if (!data || data === "none") redirect("/home");
   return { ...context, role: data as BudgetRole };
 }

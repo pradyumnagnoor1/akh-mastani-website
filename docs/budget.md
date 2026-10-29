@@ -1,6 +1,6 @@
 # Budget
 
-Budget has three connected views: Funds, Allocated Budget, and Expenses. Active exec members can view and submit. A Captain or Logistics & Finance member can review another person's expense. Finance and the verified owner can set limits and reconcile fund balances. The owner can also review, but never an expense they created or submitted. Direct table writes are denied; the database enforces permission and transitions in `0020_budget.sql`.
+Budget has three connected views: Funds, Allocated Budget, and Expenses. Only Captains, Logistics & Finance, and the verified owner can open Budget or read its financial records. Other active execs see Add Expense instead; they can submit a new expense but cannot view budgets, balances, ledgers, receipts, other expenses, or edit a submitted expense. A Captain or Logistics & Finance member can review another person's expense. Finance and the verified owner can set limits and reconcile fund balances. The owner can also review, but never an expense they created or submitted. Direct table writes are denied; the database enforces permission and transitions in `0020_budget.sql` and `0021_private_budget.sql`.
 
 ## Money and approvals
 
@@ -18,6 +18,6 @@ Finance or the owner can import the previous AKH CSV layout into a chosen season
 
 ## Release and verification
 
-Apply migration `0020_budget.sql` before deploying the matching app code. The migration grants owner Budget access only to the existing active, verified Google account `pradyumnagnoor@tamu.edu` with the completed `Pradyumn Agnoor` profile and manually granted admin permission. It does not use display names to authorize the other execs; their existing `exec_roles` grant their access. Check that the role list still matches the intended six people before release. No fund balances or spending limits are seeded from last year's sheet.
+Migration `0020_budget.sql` is already live. Apply `0021_private_budget.sql` before deploying this privacy update; it restricts existing financial table reads to Finance, Captains and owner, and limits other execs to new submissions. Migration 0020 grants owner Budget access only to the existing active, verified Google account `pradyumnagnoor@tamu.edu` with the completed `Pradyumn Agnoor` profile and manually granted admin permission. It does not use display names to authorize the other execs; their existing `exec_roles` grant their access. Check that the role list still matches the intended six people before release. No fund balances or spending limits are seeded from last year's sheet.
 
 Local checks: `npm run check`, `npx vitest run tests/budget*.test.ts`, and `npx playwright test --config=playwright.budget.config.ts`. Browser tests use synthetic local identities and do not prove live TAMU sign-in or production database permissions. After applying the migration, verify the owner and one Captain/Finance account, and confirm an ordinary dancer is denied. Do not use a production account balance as a synthetic test value.
