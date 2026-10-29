@@ -1,6 +1,7 @@
 import { expect, it } from "vitest";
 import {
   parseBudgetSetup,
+  parseFundBalances,
   parsePlannedExpenses,
 } from "../src/features/budget/setup";
 import { CATEGORIES } from "../src/features/budget/types";
@@ -89,4 +90,23 @@ it("rejects invalid names, duplicate categories, nonnumeric amounts and oversize
       base().map((entry) => ({ ...entry, amount: "200,000.00" })),
     ),
   ).toThrow(/cannot exceed/);
+});
+
+it("accepts optional formatted fund snapshots and rejects duplicate or invalid funds", () => {
+  const funds = [
+    { fund_id: "venmo", amount: "1,250.50", version: 1 },
+    { fund_id: "goodbull", amount: "", version: 2 },
+    { fund_id: "sofc", amount: "0.00", version: 1 },
+  ];
+  expect(parseFundBalances(funds)).toEqual([
+    { fund_id: "venmo", amount_cents: 125050, version: 1 },
+    { fund_id: "goodbull", amount_cents: null, version: 2 },
+    { fund_id: "sofc", amount_cents: 0, version: 1 },
+  ]);
+  expect(() => parseFundBalances([funds[0], funds[0], funds[2]])).toThrow(
+    /Check the fund/,
+  );
+  expect(() =>
+    parseFundBalances([{ ...funds[0], amount: "1x" }, funds[1], funds[2]]),
+  ).toThrow(/dollar amount/);
 });

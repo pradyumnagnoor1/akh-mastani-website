@@ -11,6 +11,11 @@ export type PlannedEntry = {
   fund_id: string;
   included_in_balance: boolean;
 };
+export type FundBalanceEntry = {
+  fund_id: string;
+  amount: string;
+  version: number;
+};
 const NAME = /^[\p{L}\p{N}][\p{L}\p{N} &/'().,\-–]*$/u;
 export const tidyName = (value: string) => value.trim().replace(/\s+/g, " ");
 export function validBudgetName(
@@ -139,4 +144,29 @@ export function parseBudgetSetup(
   if (totalCents > 100000000)
     throw new Error("The total budget cannot exceed $1,000,000.");
   return { name, allocations, totalCents };
+}
+export function parseFundBalances(entries: FundBalanceEntry[]) {
+  if (!Array.isArray(entries) || entries.length !== 3)
+    throw new Error("Include Venmo, Good Bull and Main SOFC.");
+  const seen = new Set<string>();
+  return entries.map((entry) => {
+    if (
+      !entry ||
+      !["venmo", "goodbull", "sofc"].includes(entry.fund_id) ||
+      seen.has(entry.fund_id) ||
+      !Number.isInteger(entry.version) ||
+      entry.version < 1 ||
+      typeof entry.amount !== "string"
+    )
+      throw new Error("Check the fund balances and refresh if they changed.");
+    seen.add(entry.fund_id);
+    return {
+      fund_id: entry.fund_id,
+      version: entry.version,
+      amount_cents:
+        entry.amount.trim() === ""
+          ? null
+          : cents(entry.amount.replaceAll(",", "")),
+    };
+  });
 }

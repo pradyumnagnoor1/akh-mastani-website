@@ -5,15 +5,19 @@ import { mutateBudget } from "@/features/budget/actions";
 import { eligibleFund, money } from "@/features/budget/policy";
 import {
   parseBudgetSetup,
+  parseFundBalances,
   parsePlannedExpenses,
   validBudgetName,
   type AllocationEntry,
+  type FundBalanceEntry,
   type PlannedEntry,
 } from "@/features/budget/setup";
 import {
   CATEGORIES,
   type Allocation,
   type BudgetState,
+  type Expense,
+  type Fund,
   type PlannedExpense,
   type Season,
 } from "@/features/budget/types";
@@ -21,6 +25,7 @@ import { DraftConflict, useDraftRevision } from "@/components/draft-revision";
 
 type Row = AllocationEntry & { id: string; existing: boolean };
 type PlannedRow = PlannedEntry & { locked: boolean };
+type FundRow = FundBalanceEntry & { name: string };
 const FUNDS = [
   { id: "venmo", label: "Venmo" },
   { id: "goodbull", label: "SOFC Good Bull · Hotel/Travel only" },
@@ -41,13 +46,19 @@ export function SeasonQuestionnaire({
   id,
   season,
   allocations,
+  funds,
   plannedExpenses,
+  expenses,
+  onRemoveLinked,
   onSaved,
 }: {
   id: string;
   season?: Season;
   allocations: Allocation[];
+  funds: Fund[];
   plannedExpenses: PlannedExpense[];
+  expenses: Expense[];
+  onRemoveLinked: (expense: Expense) => void;
   onSaved: () => void;
 }) {
   const draft = useDraftRevision(id, season?.version ?? 0);
@@ -88,6 +99,17 @@ export function SeasonQuestionnaire({
         included_in_balance: item.included_in_balance,
         locked: item.request_deduction,
       })),
+  );
+  const [fundRows, setFundRows] = useState<FundRow[]>(() =>
+    funds.map((fund) => ({
+      fund_id: fund.id,
+      name: fund.name,
+      amount:
+        fund.updated_at && fund.balance_cents >= 0
+          ? displayed(fund.balance_cents)
+          : "",
+      version: fund.version,
+    })),
   );
   const [note, setNote] = useState("");
   const [clientError, setClientError] = useState("");
@@ -136,10 +158,11 @@ export function SeasonQuestionnaire({
       if (step === 0) validBudgetName(name, "budget");
       else {
         const setup = parseBudgetSetup(name, rows);
-        if (step === 2) parsePlannedExpenses(plans, setup.allocations);
+        if (step === 2) parseFundBalances(fundRows);
+        if (step === 3) parsePlannedExpenses(plans, setup.allocations);
       }
       setClientError("");
-      setStep((current) => Math.min(current + 1, 3));
+      setStep((current) => Math.min(current + 1, 4));
     } catch (error) {
       setClientError((error as Error).message);
     }
@@ -174,7 +197,7 @@ export function SeasonQuestionnaire({
       className="budget-form budget-questionnaire"
       data-refresh-busy={pending}
       onSubmit={(event) => {
-        if (step < 3) {
+        if (step < 4) {
           event.preventDefault();
           next();
         }
@@ -190,25 +213,38 @@ export function SeasonQuestionnaire({
         name="planned_expenses"
         value={JSON.stringify(plannedChoices)}
       />
+      <input
+        type="hidden"
+        name="fund_balances"
+        value={JSON.stringify(
+          fundRows.map(({ fund_id, amount, version }) => ({
+            fund_id,
+            amount: numberValue(amount),
+            version,
+          })),
+        )}
+      />
       <input type="hidden" name="note" value={note} />
       <nav className="budget-setup-steps" aria-label="Budget setup progress">
-        {["Name", "Allocate", "Planned costs", "Review"].map((label, index) => (
-          <span
-            key={label}
-            className={
-              index === step ? "active" : index < step ? "complete" : ""
-            }
-            aria-current={index === step ? "step" : undefined}
-          >
-            {index + 1}. {label}
-          </span>
-        ))}
+        {["Name", "Allocate", "Funds", "Planned costs", "Review"].map(
+          (label, index) => (
+            <span
+              key={label}
+              className={
+                index === step ? "active" : index < step ? "complete" : ""
+              }
+              aria-current={index === step ? "step" : undefined}
+            >
+              {index + 1}. {label}
+            </span>
+          ),
+        )}
       </nav>
       <DraftConflict changed={draft.changed} />
       <fieldset disabled={pending || draft.changed}>
         {step === 0 && (
           <div className="budget-setup-screen">
-            <span className="eyebrow">STEP 1 OF 4</span>
+            <span className="eyebrow">STEP 1 OF 5</span>
             <h3>What should this budget be called?</h3>
             <p className="muted">
               Choose a name your team will recognize, such as “2026–2027
@@ -233,7 +269,7 @@ export function SeasonQuestionnaire({
         )}
         {step === 1 && (
           <div className="budget-setup-screen">
-            <span className="eyebrow">STEP 2 OF 4</span>
+            <span className="eyebrow">STEP 2 OF 5</span>
             <h3>How much will each category get?</h3>
             <p className="muted">
               Enter an amount for each category. Leave unused categories at $0.
@@ -324,7 +360,69 @@ export function SeasonQuestionnaire({
         )}
         {step === 2 && (
           <div className="budget-setup-screen">
-            <span className="eyebrow">STEP 3 OF 4</span>
+            <span className="eyebrow">STEP 3 OF 5</span>
+            <h3>What is in each fund right now?</h3>
+            <p className="muted">
+              Enter each account’s current balance, not money you plan to spend.
+              Leave an unknown balance blank and add it later in Funds.
+            </p>
+            <div className="budget-setup-categories">
+              {fundRows.map((fund) => (
+                <div className="budget-setup-row" key={fund.fund_id}>
+                  <span className="budget-setup-category-name">
+                    {fund.name}
+                  </span>
+                  <label className="budget-setup-amount">
+                    Current balance for {fund.name}
+                    <span className="budget-money-field">
+                      <span aria-hidden="true">$</span>
+                      <input
+                        aria-label={`${fund.name} current balance (USD)`}
+                        inputMode="decimal"
+                        placeholder="Not entered"
+                        value={fund.amount}
+                        onChange={(event) => {
+                          const amount = amountFromInput(event.target.value);
+                          if (amount !== null)
+                            setFundRows((current) =>
+                              current.map((row) =>
+                                row.fund_id === fund.fund_id
+                                  ? { ...row, amount }
+                                  : row,
+                              ),
+                            );
+                        }}
+                        onBlur={() => {
+                          if (!fund.amount) return;
+                          const value = Number(numberValue(fund.amount));
+                          if (Number.isFinite(value))
+                            setFundRows((current) =>
+                              current.map((row) =>
+                                row.fund_id === fund.fund_id
+                                  ? {
+                                      ...row,
+                                      amount: withCommas(value.toFixed(2)),
+                                    }
+                                  : row,
+                              ),
+                            );
+                        }}
+                      />
+                    </span>
+                  </label>
+                </div>
+              ))}
+            </div>
+            <p className="small muted">
+              These are recorded balances, separate from your category budget. A
+              change is saved in each fund’s balance history. Good Bull may only
+              pay for Hotel and Travel.
+            </p>
+          </div>
+        )}
+        {step === 3 && (
+          <div className="budget-setup-screen">
+            <span className="eyebrow">STEP 4 OF 5</span>
             <h3>Which expenses are already known?</h3>
             <p className="muted">
               Add competition fees, mix fees, or other known costs. They are
@@ -483,10 +581,22 @@ export function SeasonQuestionnaire({
                     )}
                   </fieldset>
                   {plan.locked ? (
-                    <p className="small muted">
-                      Deduction request already saved. Edit or cancel its
-                      expense in the Expenses section.
-                    </p>
+                    <button
+                      type="button"
+                      className="button secondary"
+                      onClick={() => {
+                        const linked = expenses.find(
+                          (expense) => expense.id === plan.id,
+                        );
+                        if (linked) onRemoveLinked(linked);
+                        else
+                          setClientError(
+                            "The linked expense changed. Refresh and try again.",
+                          );
+                      }}
+                    >
+                      Remove planned expense and cancel its payment
+                    </button>
                   ) : (
                     <button
                       type="button"
@@ -527,9 +637,9 @@ export function SeasonQuestionnaire({
             </div>
           </div>
         )}
-        {step === 3 && (
+        {step === 4 && (
           <div className="budget-setup-screen">
-            <span className="eyebrow">STEP 4 OF 4</span>
+            <span className="eyebrow">STEP 5 OF 5</span>
             <h3>Review your budget</h3>
             <p className="muted">
               Check the category amounts before saving. The total below is
@@ -551,6 +661,21 @@ export function SeasonQuestionnaire({
             <div className="budget-setup-total">
               <span>Total budget</span>
               <strong>{money(Math.round(total * 100))}</strong>
+            </div>
+            <div className="budget-setup-review">
+              <strong>Current fund balances</strong>
+              {fundRows.map((fund) => (
+                <div key={fund.fund_id}>
+                  <span>{fund.name}</span>
+                  <b>
+                    {fund.amount
+                      ? money(
+                          Math.round(Number(numberValue(fund.amount)) * 100),
+                        )
+                      : "Not entered"}
+                  </b>
+                </div>
+              ))}
             </div>
             {plans.length > 0 && (
               <div className="budget-setup-review">
@@ -613,11 +738,11 @@ export function SeasonQuestionnaire({
           type="button"
           className="button primary"
           disabled={pending || draft.changed}
-          onClick={() => (step < 3 ? next() : formRef.current?.requestSubmit())}
+          onClick={() => (step < 4 ? next() : formRef.current?.requestSubmit())}
         >
           {pending
             ? "Saving…"
-            : step < 3
+            : step < 4
               ? "Continue"
               : season
                 ? "Save revised budget"

@@ -37,6 +37,7 @@ import { SeasonQuestionnaire } from "./season-questionnaire";
 type Modal =
   | { kind: "expense"; id: string; expense?: Expense }
   | { kind: "season"; id: string; season?: Season }
+  | { kind: "season-delete"; id: string; season: Season }
   | { kind: "balance"; id: string; fund: Fund }
   | { kind: "import"; id: string }
   | {
@@ -119,6 +120,63 @@ function BudgetBar({
           <i className="budget-bar-pending" />
           Awaiting review <b>{money(t.pending)}</b>
         </span>
+      </div>
+    </div>
+  );
+}
+function BudgetCircle({
+  limit,
+  expenses,
+}: {
+  limit: number;
+  expenses: Expense[];
+}) {
+  const t = totals(expenses);
+  const paid = Math.max(0, t.paid);
+  const approved = Math.max(0, t.reserved - t.pending);
+  const pending = Math.max(0, t.pending);
+  const used = paid + approved + pending;
+  const remaining = Math.max(0, limit - used);
+  const scale = Math.max(limit, used, 1);
+  const p1 = (paid / scale) * 100;
+  const p2 = ((paid + approved) / scale) * 100;
+  const p3 = (used / scale) * 100;
+  return (
+    <div className="budget-circle-layout">
+      <div
+        className="budget-circle"
+        role="img"
+        aria-label={`Paid ${money(t.paid)}, approved commitments ${money(approved)}, awaiting review ${money(pending)}, remaining ${money(limit - used)}`}
+        style={{
+          background: `conic-gradient(var(--budget-paid) 0 ${p1}%, var(--budget-committed) ${p1}% ${p2}%, var(--budget-pending) ${p2}% ${p3}%, var(--budget-remaining) ${p3}% 100%)`,
+        }}
+      >
+        <div className="budget-circle-center">
+          <span>Remaining to spend</span>
+          <strong>{money(Math.abs(limit - used))}</strong>
+          {used > limit && <small>over budget</small>}
+        </div>
+      </div>
+      <div className="budget-circle-details">
+        <strong>{money(limit)} allocated</strong>
+        <div className="budget-legend">
+          <span>
+            <i className="budget-bar-paid" />
+            Paid <b>{money(t.paid)}</b>
+          </span>
+          <span>
+            <i className="budget-bar-committed" />
+            Approved commitments <b>{money(approved)}</b>
+          </span>
+          <span>
+            <i className="budget-bar-pending" />
+            Awaiting review <b>{money(pending)}</b>
+          </span>
+          <span>
+            <i className="budget-bar-remaining" />
+            Remaining <b>{money(remaining)}</b>
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -413,6 +471,7 @@ export function BudgetWorkspace({
     )[0]?.id ?? "",
   );
   const [category, setCategory] = useState("all");
+  const [allChart, setAllChart] = useState<"bar" | "circle">("bar");
   const [status, setStatus] = useState("all");
   const [modal, setModal] = useState<Modal | null>(null);
   const [message, setMessage] = useState("");
@@ -452,7 +511,7 @@ export function BudgetWorkspace({
   function open(value: Modal) {
     opener.current = document.activeElement as HTMLElement;
     setModal(value);
-    dialog.current?.showModal();
+    if (!dialog.current?.open) dialog.current?.showModal();
   }
   function close() {
     dialog.current?.close();
@@ -461,7 +520,15 @@ export function BudgetWorkspace({
   }
   function saved() {
     if (modal?.kind === "season") setSeasonId(modal.id);
-    setMessage("Saved. Budget and funds are up to date.");
+    if (modal?.kind === "season-delete") {
+      setSeasonId("");
+      setCategory("all");
+    }
+    setMessage(
+      modal?.kind === "season-delete"
+        ? "Budget deleted."
+        : "Saved. Budget and funds are up to date.",
+    );
     close();
   }
   function expenseRows(items: Expense[]) {
@@ -783,7 +850,9 @@ export function BudgetWorkspace({
                     </div>
                     <div className="budget-fund-balance">
                       <span className="eyebrow">
-                        Available after commitments
+                        {f.updated_at
+                          ? "Available"
+                          : "Available after commitments"}
                       </span>
                       <strong
                         className={
@@ -924,28 +993,69 @@ export function BudgetWorkspace({
                 <div className="budget-section-heading">
                   <h2>{category === "all" ? season.name : category}</h2>
                   {manager && (
-                    <button
-                      className="button"
-                      onClick={() =>
-                        open({ kind: "season", id: season.id, season })
-                      }
-                    >
-                      Edit allocations
-                    </button>
+                    <div className="budget-row-actions">
+                      <button
+                        className="button"
+                        onClick={() =>
+                          open({ kind: "season", id: season.id, season })
+                        }
+                      >
+                        Edit budget
+                      </button>
+                      <button
+                        className="button secondary"
+                        onClick={() =>
+                          open({ kind: "season-delete", id: season.id, season })
+                        }
+                      >
+                        Delete budget
+                      </button>
+                    </div>
                   )}
                 </div>
-                <BudgetBar
-                  limit={
-                    category === "all"
-                      ? season.limit_cents
-                      : (data.allocations.find(
-                          (a) =>
-                            a.season_id === season.id &&
-                            a.category === category,
-                        )?.limit_cents ?? null)
-                  }
-                  expenses={selected}
-                />
+                {category === "all" && (
+                  <div
+                    className="budget-chart-switch"
+                    role="group"
+                    aria-label="All categories chart style"
+                  >
+                    <button
+                      type="button"
+                      className={allChart === "bar" ? "active" : ""}
+                      aria-pressed={allChart === "bar"}
+                      onClick={() => setAllChart("bar")}
+                    >
+                      Bar graph
+                    </button>
+                    <button
+                      type="button"
+                      className={allChart === "circle" ? "active" : ""}
+                      aria-pressed={allChart === "circle"}
+                      onClick={() => setAllChart("circle")}
+                    >
+                      Circle graph
+                    </button>
+                  </div>
+                )}
+                {category === "all" && allChart === "circle" ? (
+                  <BudgetCircle
+                    limit={season.limit_cents}
+                    expenses={selected}
+                  />
+                ) : (
+                  <BudgetBar
+                    limit={
+                      category === "all"
+                        ? season.limit_cents
+                        : (data.allocations.find(
+                            (a) =>
+                              a.season_id === season.id &&
+                              a.category === category,
+                          )?.limit_cents ?? null)
+                    }
+                    expenses={selected}
+                  />
+                )}
                 <p className="small muted">
                   Original season budget: {money(season.original_cents)}.
                   Pending expenses count toward commitments.
@@ -1076,19 +1186,21 @@ export function BudgetWorkspace({
                 : "Add expense"
               : modal?.kind === "import"
                 ? "Import previous sheet"
-                : modal?.kind === "season"
-                  ? modal.season
-                    ? "Edit budget"
-                    : "Set up budget"
-                  : modal?.kind === "balance"
-                    ? "Update balance"
-                    : modal?.kind === "payment"
-                      ? "Record payment"
-                      : modal?.kind === "refund"
-                        ? "Record refund"
-                        : modal?.kind === "delete"
-                          ? "Cancel expense"
-                          : "Review expense"}
+                : modal?.kind === "season-delete"
+                  ? "Delete budget"
+                  : modal?.kind === "season"
+                    ? modal.season
+                      ? "Edit budget"
+                      : "Set up budget"
+                    : modal?.kind === "balance"
+                      ? "Update balance"
+                      : modal?.kind === "payment"
+                        ? "Record payment"
+                        : modal?.kind === "refund"
+                          ? "Record refund"
+                          : modal?.kind === "delete"
+                            ? "Cancel expense"
+                            : "Review expense"}
           </h2>
           <button
             type="button"
@@ -1129,9 +1241,34 @@ export function BudgetWorkspace({
             id={currentModal.id}
             season={currentModal.season}
             allocations={data.allocations}
+            funds={data.funds}
             plannedExpenses={data.plannedExpenses}
+            expenses={data.expenses}
+            onRemoveLinked={(expense) =>
+              open({ kind: "delete", id: expense.id, expense })
+            }
             onSaved={saved}
           />
+        )}
+        {currentModal?.kind === "season-delete" && (
+          <SaveForm
+            key={currentModal.id}
+            id={currentModal.id}
+            version={currentModal.season.version}
+            operation="delete_season"
+            onSaved={saved}
+            label="Delete budget"
+          >
+            <p>
+              Delete “{currentModal.season.name}” from the Budget page? This
+              keeps its history privately. Cancel any active expenses in this
+              budget first; recorded fund balances remain available.
+            </p>
+            <label>
+              Reason for deleting this budget
+              <textarea name="note" required maxLength={2000} />
+            </label>
+          </SaveForm>
         )}
         {currentModal?.kind === "balance" && (
           <SaveForm

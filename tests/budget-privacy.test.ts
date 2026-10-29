@@ -29,6 +29,10 @@ async function user(id: string) {
 }
 const mutate = (payload: Record<string, unknown>) =>
   db.query("select budget_mutate($1::jsonb)", [JSON.stringify(payload)]);
+const saveSetup = (payload: Record<string, unknown>) =>
+  db.query("select budget_save_setup($1::jsonb)", [JSON.stringify(payload)]);
+const deleteSeason = (payload: Record<string, unknown>) =>
+  db.query("select budget_delete_season($1::jsonb)", [JSON.stringify(payload)]);
 const submission = (overrides: Record<string, unknown> = {}) => ({
   operation: "submit",
   id: expense,
@@ -61,6 +65,9 @@ beforeAll(async () => {
   );
   await db.exec(
     readFileSync("supabase/migrations/0023_budget_questionnaire.sql", "utf8"),
+  );
+  await db.exec(
+    readFileSync("supabase/migrations/0024_budget_setup_controls.sql", "utf8"),
   );
 });
 afterAll(async () => {
@@ -481,4 +488,80 @@ it("keeps planned costs within allocations and queues requested fund deductions 
     allocations: baseAllocations,
     planned_expenses: [],
   });
+});
+
+it("records initial fund balances atomically and hides a deleted unused budget", async () => {
+  await user(owner);
+  const second = "10000000-0000-4000-8000-000000000004";
+  const setup = {
+    operation: "season",
+    id: second,
+    version: 0,
+    name: "Future season",
+    limit_cents: 90000,
+    allocations: categories.map((category) => ({
+      category,
+      limit_cents: 10000,
+    })),
+    planned_expenses: [],
+    fund_balances: [
+      { fund_id: "venmo", amount_cents: 25000, version: 1 },
+      { fund_id: "goodbull", amount_cents: 50000, version: 1 },
+      { fund_id: "sofc", amount_cents: null, version: 1 },
+    ],
+  };
+  await expect(
+    saveSetup({
+      ...setup,
+      fund_balances: [{ fund_id: "venmo", amount_cents: 25000, version: 1 }],
+    }),
+  ).rejects.toThrow(/all three/);
+  expect(
+    (await db.query("select id from budget_seasons where id=$1", [second]))
+      .rows,
+  ).toHaveLength(0);
+  await saveSetup(setup);
+  expect(
+    (
+      await db.query<{ balance_cents: number }>(
+        "select balance_cents,updated_at from budget_funds where id='venmo'",
+      )
+    ).rows[0].balance_cents,
+  ).toBe(25000);
+  await user(exec);
+  expect(
+    (await db.query<{ id: string }>("select budget_submission_season() as id"))
+      .rows[0].id,
+  ).toBe(second);
+  await mutate(submission({ season_id: second }));
+  await user(owner);
+  await expect(
+    deleteSeason({ id: second, version: 1, note: "Too soon" }),
+  ).rejects.toThrow(/active expenses/);
+  await mutate({
+    operation: "delete",
+    id: expense,
+    version: 1,
+    note: "Cancel test expense",
+  });
+  await deleteSeason({ id: second, version: 1, note: "Created by mistake" });
+  expect(
+    (
+      await db.query<{ deleted_at: Date | null }>(
+        "select deleted_at from budget_seasons where id=$1",
+        [second],
+      )
+    ).rows[0].deleted_at,
+  ).not.toBeNull();
+  await expect(
+    saveSetup({ ...setup, version: 2, note: "Reopen" }),
+  ).rejects.toThrow(/deleted/);
+  await user(exec);
+  expect(
+    (await db.query<{ id: string }>("select budget_submission_season() as id"))
+      .rows[0].id,
+  ).toBe(season);
+  await expect(mutate(submission({ season_id: second }))).rejects.toThrow(
+    /deleted/,
+  );
 });

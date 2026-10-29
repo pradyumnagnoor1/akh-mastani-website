@@ -5,8 +5,10 @@ import { cents } from "./policy";
 import { type BudgetState } from "./types";
 import {
   parseBudgetSetup,
+  parseFundBalances,
   parsePlannedExpenses,
   type AllocationEntry,
+  type FundBalanceEntry,
   type PlannedEntry,
 } from "./setup";
 import { validateImportRows, type ImportRow } from "./import";
@@ -45,6 +47,9 @@ export async function mutateBudget(
         limit_cents: setup.totalCents,
         allocations: setup.allocations,
         planned_expenses: planned,
+        fund_balances: parseFundBalances(
+          JSON.parse(value(form, "fund_balances")) as FundBalanceEntry[],
+        ),
       });
     } else if (operation === "balance")
       Object.assign(payload, {
@@ -97,7 +102,13 @@ export async function mutateBudget(
         amount_cents: cents(value(form, "amount")),
         included_in_balance: form.get("included") === "on",
       });
-    const { error } = await supabase.rpc("budget_mutate", { payload });
+    const rpc =
+      operation === "season"
+        ? "budget_save_setup"
+        : operation === "delete_season"
+          ? "budget_delete_season"
+          : "budget_mutate";
+    const { error } = await supabase.rpc(rpc, { payload });
     if (error) {
       if (error.code === "23505")
         return {
@@ -120,7 +131,11 @@ export async function mutateBudget(
     };
   }
   revalidatePath("/budget");
-  if (isExpenseSubmission) revalidatePath("/expenses/new");
+  if (
+    isExpenseSubmission ||
+    ["season", "delete_season"].includes(value(form, "operation"))
+  )
+    revalidatePath("/expenses/new");
   return {
     success:
       role === "exec"
