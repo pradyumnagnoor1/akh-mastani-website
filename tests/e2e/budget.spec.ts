@@ -65,6 +65,12 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
   await dialog.getByLabel("Team meals allocation (USD)").fill("300");
   await expect(dialog.getByRole("status")).toContainText("$5,900.00");
   await dialog.getByRole("button", { name: "Continue" }).click();
+  await dialog.getByLabel("Venmo current balance (USD)").fill("2000");
+  await dialog.getByLabel("SOFC Good Bull current balance (USD)").fill("5000");
+  await dialog
+    .getByLabel("Main SOFC account current balance (USD)")
+    .fill("3000");
+  await dialog.getByRole("button", { name: "Continue" }).click();
   await dialog.getByRole("button", { name: /Competition fee/ }).click();
   const comp = dialog.locator(".budget-planned-row").first();
   await comp.getByLabel("Planned amount for Competition fee").fill("300");
@@ -73,6 +79,12 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
   await dialog.getByRole("button", { name: /Mix fee/ }).click();
   const mix = dialog.locator(".budget-planned-row").last();
   await mix.getByLabel("Planned amount for Mix fee").fill("100");
+  await dialog.getByRole("button", { name: /Other fee/ }).click();
+  await dialog
+    .locator(".budget-planned-row")
+    .last()
+    .getByRole("button", { name: "Remove planned expense" })
+    .click();
   await dialog.getByRole("button", { name: "Continue" }).click();
   await expect(dialog.getByText("Total budget", { exact: true })).toBeVisible();
   await dialog
@@ -80,6 +92,16 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
     .click();
   await expect(dialog).not.toBeVisible();
   await page.getByRole("button", { name: "Allocated Budget" }).click();
+  await page.getByRole("button", { name: "Circle graph" }).click();
+  await expect(page.locator(".budget-circle")).toBeVisible();
+  await page.screenshot({
+    path: info.outputPath("overall-circle-budget.png"),
+    fullPage: true,
+  });
+  await page.getByRole("combobox", { name: /Category/ }).selectOption("Hotel");
+  await expect(page.locator(".budget-circle")).toHaveCount(0);
+  await expect(page.locator(".budget-progress").first()).toBeVisible();
+  await page.getByRole("combobox", { name: /Category/ }).selectOption("all");
   await expect(
     page.getByRole("heading", { name: "Known expenses" }),
   ).toBeVisible();
@@ -258,6 +280,31 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
     path: info.outputPath("category-budget.png"),
     fullPage: true,
   });
+  await page
+    .getByRole("button", { name: "Allocated Budget", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Edit budget" }).click();
+  for (let step = 0; step < 3; step++)
+    await dialog.getByRole("button", { name: "Continue" }).click();
+  await dialog
+    .getByRole("button", {
+      name: "Remove planned expense and cancel its payment",
+    })
+    .click();
+  await dialog.getByLabel("Cancellation reason").fill("Planned fee canceled");
+  await dialog
+    .getByRole("button", { name: "Cancel expense", exact: true })
+    .click();
+  await expect(dialog).not.toBeVisible();
+  await page.getByRole("button", { name: "Delete budget" }).click();
+  await dialog
+    .getByLabel("Reason for deleting this budget")
+    .fill("Check active expense safeguard");
+  await dialog
+    .getByRole("button", { name: "Delete budget", exact: true })
+    .click();
+  await expect(dialog.getByRole("alert")).toContainText("active expenses");
+  await dialog.getByRole("button", { name: "Close form" }).click();
   const dancerContext = await browser.newContext();
   await login(dancerContext, request, "dancer");
   const dancer = await dancerContext.newPage();
