@@ -92,7 +92,6 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
     .click();
   await expect(dialog).not.toBeVisible();
   await page.getByRole("button", { name: "Allocated Budget" }).click();
-  await page.getByRole("button", { name: "Circle graph" }).click();
   await expect(page.locator(".budget-circle")).toBeVisible();
   await page.screenshot({
     path: info.outputPath("overall-circle-budget.png"),
@@ -101,7 +100,8 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
   await page.getByRole("combobox", { name: /Category/ }).selectOption("Hotel");
   await expect(page.locator(".budget-circle")).toHaveCount(0);
   await expect(page.locator(".budget-progress").first()).toBeVisible();
-  await page.getByRole("combobox", { name: /Category/ }).selectOption("all");
+  await expect(page.locator(".budget-category-grid")).toHaveCount(0);
+  await page.getByRole("button", { name: "All categories" }).click();
   await expect(
     page.getByRole("heading", { name: "Known expenses" }),
   ).toBeVisible();
@@ -112,6 +112,18 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
     "Fund deduction awaiting review",
   );
   await page.getByRole("button", { name: "Funds", exact: true }).click();
+  await expect(page.locator(".budget-funds-visual")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Import old sheet" }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: /Needs approval/ }),
+  ).toContainText("1");
+  const venmo = page
+    .locator(".budget-fund")
+    .filter({ has: page.getByRole("heading", { name: "Venmo", exact: true }) });
+  await venmo.locator("summary").first().click();
+  await expect(venmo).toContainText("Known expense");
   const goodbull = page.locator(".budget-fund").filter({
     has: page.getByRole("heading", { name: "SOFC Good Bull", exact: true }),
   });
@@ -177,7 +189,7 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
   await login(captainContext, request, "captain");
   const captain = await captainContext.newPage();
   await captain.goto("http://127.0.0.1:3102/budget");
-  await captain.getByRole("button", { name: "View queue" }).click();
+  await captain.getByRole("button", { name: /Needs approval/ }).click();
   const item = captain.locator(".budget-expense").filter({
     has: captain.getByText(`Hotel ${info.project.name}`, { exact: true }),
   });
@@ -219,7 +231,7 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
     execPage.getByRole("heading", { name: "Changes sent for review" }),
   ).toBeVisible();
   await captain.reload();
-  await captain.getByRole("button", { name: "View queue" }).click();
+  await captain.getByRole("button", { name: /Needs approval/ }).click();
   await item.locator("summary").first().click();
   await item.getByRole("button", { name: "Review expense" }).click();
   await captain
@@ -252,7 +264,7 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
     .click();
   await expect(dialog).not.toBeVisible();
   await captain.reload();
-  await captain.getByRole("button", { name: "View queue" }).click();
+  await captain.getByRole("button", { name: /Needs approval/ }).click();
   await item.locator("summary").first().click();
   await item.getByRole("button", { name: "Review expense" }).click();
   await captain
@@ -283,6 +295,16 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
   await page
     .getByRole("button", { name: "Allocated Budget", exact: true })
     .click();
+  await page
+    .locator(".budget-planned-overview-list > div")
+    .filter({ hasText: "Mix fee" })
+    .getByRole("button", { name: "Remove" })
+    .click();
+  await dialog.getByRole("button", { name: "Remove known expense" }).click();
+  await expect(dialog).not.toBeVisible();
+  await expect(page.locator(".budget-planned-overview-list")).not.toContainText(
+    "Mix fee",
+  );
   await page.getByRole("button", { name: "Edit budget" }).click();
   for (let step = 0; step < 3; step++)
     await dialog.getByRole("button", { name: "Continue" }).click();

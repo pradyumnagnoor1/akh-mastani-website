@@ -103,6 +103,17 @@ it("accepts optional formatted fund snapshots and rejects duplicate or invalid f
     { fund_id: "goodbull", amount_cents: null, version: 2 },
     { fund_id: "sofc", amount_cents: 0, version: 1 },
   ]);
+  expect(
+    parseFundBalances([
+      { ...funds[0], amount: "-25.50" },
+      funds[1],
+      funds[2],
+    ])[0],
+  ).toEqual({
+    fund_id: "venmo",
+    amount_cents: -2550,
+    version: 1,
+  });
   expect(() => parseFundBalances([funds[0], funds[0], funds[2]])).toThrow(
     /Check the fund/,
   );

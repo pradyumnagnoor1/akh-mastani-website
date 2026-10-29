@@ -107,7 +107,9 @@ export async function mutateBudget(
         ? "budget_save_setup"
         : operation === "delete_season"
           ? "budget_delete_season"
-          : "budget_mutate";
+          : operation === "remove_planned"
+            ? "budget_remove_planned"
+            : "budget_mutate";
     const { error } = await supabase.rpc(rpc, { payload });
     if (error) {
       if (error.code === "23505")

@@ -42,6 +42,11 @@ function amountFromInput(value: string) {
   if (!/^\d{0,7}(?:\.\d{0,2})?$/.test(plain)) return null;
   return withCommas(plain);
 }
+function fundAmountFromInput(value: string) {
+  const plain = numberValue(value);
+  if (!/^-?\d{0,7}(?:\.\d{0,2})?$/.test(plain)) return null;
+  return withCommas(plain);
+}
 export function SeasonQuestionnaire({
   id,
   season,
@@ -104,10 +109,7 @@ export function SeasonQuestionnaire({
     funds.map((fund) => ({
       fund_id: fund.id,
       name: fund.name,
-      amount:
-        fund.updated_at && fund.balance_cents >= 0
-          ? displayed(fund.balance_cents)
-          : "",
+      amount: fund.updated_at ? displayed(fund.balance_cents) : "",
       version: fund.version,
     })),
   );
@@ -382,7 +384,9 @@ export function SeasonQuestionnaire({
                         placeholder="Not entered"
                         value={fund.amount}
                         onChange={(event) => {
-                          const amount = amountFromInput(event.target.value);
+                          const amount = fundAmountFromInput(
+                            event.target.value,
+                          );
                           if (amount !== null)
                             setFundRows((current) =>
                               current.map((row) =>

@@ -166,7 +166,7 @@ export function parseFundBalances(entries: FundBalanceEntry[]) {
       amount_cents:
         entry.amount.trim() === ""
           ? null
-          : cents(entry.amount.replaceAll(",", "")),
+          : cents(entry.amount.replaceAll(",", ""), true),
     };
   });
 }
