@@ -1,5 +1,4 @@
 import { cents, eligibleFund } from "./policy";
-import { CATEGORIES } from "./types";
 
 export type AllocationEntry = { category: string; amount: string };
 export type PlannedEntry = {
@@ -107,14 +106,8 @@ export function parseBudgetSetup(
   entries: AllocationEntry[],
 ) {
   const name = validBudgetName(nameInput, "budget");
-  if (
-    !Array.isArray(entries) ||
-    entries.length < CATEGORIES.length ||
-    entries.length > 40
-  )
-    throw new Error(
-      "Include all standard categories and at most 31 custom categories.",
-    );
+  if (!Array.isArray(entries) || entries.length < 1 || entries.length > 40)
+    throw new Error("Add at least one category and at most 40 categories.");
   const seen = new Set<string>();
   let totalCents = 0;
   const allocations = entries.map((entry) => {
@@ -133,12 +126,6 @@ export function parseBudgetSetup(
     totalCents += limit_cents;
     return { category, limit_cents };
   });
-  if (
-    CATEGORIES.some(
-      (category) => !seen.has(category.toLocaleLowerCase("en-US")),
-    )
-  )
-    throw new Error("Keep all standard categories in the budget.");
   if (totalCents <= 0)
     throw new Error("Allocate an amount above $0 to at least one category.");
   if (totalCents > 100000000)

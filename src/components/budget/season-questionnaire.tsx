@@ -71,26 +71,21 @@ export function SeasonQuestionnaire({
   const existing = allocations.filter((a) => a.season_id === id);
   const [step, setStep] = useState(0);
   const [name, setName] = useState(season?.name ?? "");
-  const [rows, setRows] = useState<Row[]>(() => [
-    ...CATEGORIES.map((category) => ({
-      id: category,
-      category,
-      amount: displayed(
-        existing.find((a) => a.category === category)?.limit_cents ?? 0,
-      ),
-      existing: true,
-    })),
-    ...existing
-      .filter(
-        (a) => !CATEGORIES.includes(a.category as (typeof CATEGORIES)[number]),
-      )
-      .map((a) => ({
-        id: a.id,
-        category: a.category,
-        amount: displayed(a.limit_cents),
-        existing: true,
-      })),
-  ]);
+  const [rows, setRows] = useState<Row[]>(() =>
+    season
+      ? existing.map((allocation) => ({
+          id: allocation.id,
+          category: allocation.category,
+          amount: displayed(allocation.limit_cents),
+          existing: true,
+        }))
+      : CATEGORIES.map((category) => ({
+          id: category,
+          category,
+          amount: "0.00",
+          existing: true,
+        })),
+  );
   const [plans, setPlans] = useState<PlannedRow[]>(() =>
     plannedExpenses
       .filter((item) => item.season_id === id)
@@ -119,6 +114,9 @@ export function SeasonQuestionnaire({
     (sum, row) => sum + (Number(numberValue(row.amount)) || 0),
     0,
   );
+  const availableSuggestions = CATEGORIES.filter(
+    (suggestion) => !rows.some((row) => row.category === suggestion),
+  );
   const [state, action, pending] = useActionState(
     async (previous: BudgetState, form: FormData) => {
       const result = await mutateBudget(previous, form);
@@ -136,6 +134,25 @@ export function SeasonQuestionnaire({
   function changePlan(id: string, update: Partial<PlannedRow>) {
     setPlans((current) =>
       current.map((item) => (item.id === id ? { ...item, ...update } : item)),
+    );
+    setClientError("");
+  }
+  function removeCategory(row: Row) {
+    if (
+      plans.some((plan) => plan.category === row.category && plan.locked) ||
+      expenses.some(
+        (expense) =>
+          expense.season_id === id && expense.category === row.category,
+      )
+    ) {
+      setClientError(
+        `Remove or cancel expenses in ${row.category} before removing the category.`,
+      );
+      return;
+    }
+    setRows((current) => current.filter((item) => item.id !== row.id));
+    setPlans((current) =>
+      current.filter((plan) => plan.category !== row.category),
     );
     setClientError("");
   }
@@ -274,8 +291,9 @@ export function SeasonQuestionnaire({
             <span className="eyebrow">STEP 2 OF 5</span>
             <h3>How much will each category get?</h3>
             <p className="muted">
-              Enter an amount for each category. Leave unused categories at $0.
-              The total adds itself up.
+              Start with these suggestions, remove any you won’t use, or add
+              your own. Removing a category also removes its known costs. The
+              total adds itself up.
             </p>
             <div className="budget-setup-categories">
               {rows.map((row) => (
@@ -320,23 +338,47 @@ export function SeasonQuestionnaire({
                       />
                     </span>
                   </label>
-                  {!row.existing && (
-                    <button
-                      type="button"
-                      className="icon-button"
-                      aria-label={`Remove ${row.category || "custom category"}`}
-                      onClick={() =>
-                        setRows((current) =>
-                          current.filter((item) => item.id !== row.id),
-                        )
-                      }
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    className="icon-button"
+                    aria-label={`Remove ${row.category || "custom category"}`}
+                    onClick={() => removeCategory(row)}
+                  >
+                    <Trash2 size={18} />
+                  </button>
                 </div>
               ))}
             </div>
+            {availableSuggestions.length > 0 && (
+              <div className="budget-suggested-categories">
+                <span className="small muted">
+                  Add a suggested category back
+                </span>
+                <div>
+                  {availableSuggestions.map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      type="button"
+                      className="button secondary"
+                      onClick={() => {
+                        setRows((current) => [
+                          ...current,
+                          {
+                            id: crypto.randomUUID(),
+                            category: suggestion,
+                            amount: "0.00",
+                            existing: true,
+                          },
+                        ]);
+                        setClientError("");
+                      }}
+                    >
+                      <Plus size={15} /> {suggestion}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <button
               type="button"
               className="button secondary"
@@ -437,27 +479,24 @@ export function SeasonQuestionnaire({
               className="budget-planned-suggestions"
               aria-label="Quick add planned expense"
             >
-              <button
-                type="button"
-                className="button secondary"
-                onClick={() => addPlan("Competition fee", "Competition")}
-              >
-                + Competition fee
-              </button>
-              <button
-                type="button"
-                className="button secondary"
-                onClick={() => addPlan("Mix fee", "Mix")}
-              >
-                + Mix fee
-              </button>
-              <button
-                type="button"
-                className="button secondary"
-                onClick={() => addPlan("Other fee", "Misc.")}
-              >
-                + Other fee
-              </button>
+              {[
+                ["Competition fee", "Competition"],
+                ["Mix fee", "Mix"],
+                ["Other fee", "Misc."],
+              ]
+                .filter(([, category]) =>
+                  rows.some((row) => row.category === category),
+                )
+                .map(([label, category]) => (
+                  <button
+                    key={label}
+                    type="button"
+                    className="button secondary"
+                    onClick={() => addPlan(label, category)}
+                  >
+                    + {label}
+                  </button>
+                ))}
             </div>
             {plans.length === 0 && (
               <p className="budget-plan-empty">

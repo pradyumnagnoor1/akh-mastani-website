@@ -23,6 +23,18 @@ it("sums formatted category amounts and accepts a valid custom category", () => 
   });
 });
 
+it("allows any subset of suggested categories or a single custom category", () => {
+  expect(
+    parseBudgetSetup("Season", [{ category: "Hotel", amount: "500.00" }])
+      .allocations,
+  ).toEqual([{ category: "Hotel", limit_cents: 50000 }]);
+  expect(
+    parseBudgetSetup("Season", [{ category: "Team meals", amount: "125.00" }])
+      .totalCents,
+  ).toBe(12500);
+  expect(() => parseBudgetSetup("Season", [])).toThrow(/at least one category/);
+});
+
 it("validates known expenses against category allocations and eligible funds", () => {
   const allocation = parseBudgetSetup(
     "Season",
