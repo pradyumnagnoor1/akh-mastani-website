@@ -153,6 +153,12 @@ await db.exec(
     "utf8",
   ),
 );
+await db.exec(
+  readFileSync(
+    "supabase/migrations/0026_budget_optional_categories.sql",
+    "utf8",
+  ),
+);
 for (const person of users.values()) {
   await db.query(
     `insert into auth.users values($1,$2,now(),'{"provider":"google"}')`,

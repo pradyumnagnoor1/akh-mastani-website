@@ -52,6 +52,17 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Budget name", { exact: true }).fill(name);
   await dialog.getByRole("button", { name: "Continue" }).click();
+  await dialog.getByRole("button", { name: "Remove Security Deposit" }).click();
+  await expect(
+    dialog.getByLabel("Security Deposit allocation (USD)"),
+  ).toHaveCount(0);
+  await dialog
+    .getByRole("button", { name: "Security Deposit", exact: true })
+    .click();
+  await expect(
+    dialog.getByLabel("Security Deposit allocation (USD)"),
+  ).toBeVisible();
+  await dialog.getByRole("button", { name: "Remove Security Deposit" }).click();
   await dialog
     .getByLabel("Hotel allocation (USD)", { exact: true })
     .fill("3000");

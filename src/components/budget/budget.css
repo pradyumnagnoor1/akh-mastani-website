@@ -569,6 +569,19 @@
   gap: 0;
   border-top: 1px solid #494354;
 }
+.budget-suggested-categories {
+  display: grid;
+  gap: 10px;
+}
+.budget-suggested-categories > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.budget-suggested-categories .button {
+  min-height: 36px;
+  padding: 6px 10px;
+}
 .budget-setup-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(150px, 190px) 40px;

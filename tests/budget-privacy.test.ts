@@ -79,6 +79,12 @@ beforeAll(async () => {
       "utf8",
     ),
   );
+  await db.exec(
+    readFileSync(
+      "supabase/migrations/0026_budget_optional_categories.sql",
+      "utf8",
+    ),
+  );
 });
 afterAll(async () => {
   await db?.close();
@@ -306,21 +312,7 @@ it("derives budget total from standard and custom allocations without revealing 
           : item,
       ),
     }),
-  ).rejects.toThrow(/Existing categories must remain/);
-  await expect(
-    mutate({
-      operation: "season",
-      id: "10000000-0000-4000-8000-000000000003",
-      version: 0,
-      name: "Changed case",
-      limit_cents: 115000,
-      allocations: allocationList.map((item) =>
-        item.category === "Production"
-          ? { ...item, category: "production" }
-          : item,
-      ),
-    }),
-  ).rejects.toThrow(/standard categories/);
+  ).rejects.toThrow(/original spelling/);
   expect(
     (
       await db.query("select limit_cents from budget_seasons where id=$1", [
@@ -357,6 +349,47 @@ it("derives budget total from standard and custom allocations without revealing 
       }),
     ),
   ).rejects.toThrow(/Good Bull/);
+});
+
+it("allows one category and removes unused allocations but protects expense history", async () => {
+  await user(owner);
+  await mutate({
+    operation: "season",
+    id: "10000000-0000-4000-8000-000000000003",
+    version: 0,
+    name: "Custom only",
+    limit_cents: 25000,
+    allocations: [{ category: "Team meals", limit_cents: 25000 }],
+  });
+  await mutate({
+    operation: "season",
+    id: season,
+    version: 1,
+    name: "Current",
+    limit_cents: 100000,
+    note: "Keep only hotel",
+    allocations: [{ category: "Hotel", limit_cents: 100000 }],
+  });
+  expect(
+    (
+      await db.query(
+        "select category from budget_allocations where season_id=$1",
+        [season],
+      )
+    ).rows,
+  ).toEqual([{ category: "Hotel" }]);
+  await mutate(submission());
+  await expect(
+    mutate({
+      operation: "season",
+      id: season,
+      version: 2,
+      name: "Current",
+      limit_cents: 100000,
+      note: "Try removing hotel",
+      allocations: [{ category: "Travel", limit_cents: 100000 }],
+    }),
+  ).rejects.toThrow(/expense history cannot be removed/);
 });
 
 it("keeps planned costs within allocations and queues requested fund deductions for independent approval", async () => {
