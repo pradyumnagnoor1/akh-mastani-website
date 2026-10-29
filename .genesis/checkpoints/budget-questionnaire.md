@@ -15,3 +15,9 @@
 - G5: independent fresh-context review APPROVE after fixes for exact category-name preservation and removing canceled planned rows; regression tests pass.
 - Production database: migration 0023 applied in Supabase SQL Editor; success with no rows returned.
 - Next: publish matching application code, check Vercel and live health, then record release evidence.
+
+## Release · 2026-10-29
+- Fast-forwarded reviewed commit `275777c` to `main` and pushed to GitHub.
+- Vercel status for the commit: success (`56YiQm8x5dVjGDZe6h2Qtmv4PzaG`); canonical `/api/health` returned HTTP 200 and `{"status":"ok"}`.
+- Signed-in owner opened the live Budget page and the new four-step Set up budget questionnaire; closed it without entering any production financial records.
+- Real Captain/Finance and ordinary exec live sessions remain unverified; local RLS/browser tests cover their intended permissions.
