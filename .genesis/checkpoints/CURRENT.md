@@ -1,4 +1,5 @@
 # CURRENT
+- latest_budget_request_funding: Reviewer-selected funding, no exec fund picker, optional receipts. Independent APPROVE,458tests/check/build and desktop/mobile pass. Apply0032. See checkpoints/budget-request-funding.md.
 - latest_budget_expense_requests: General exec prior-approval requests implemented; independent APPROVE, 457 tests/check/build and desktop/mobile Budget pass. Apply0031 for database enforcement. See checkpoints/budget-expense-requests.md.
 - latest_budget_funds_controls: Collapsed expected income, bar toggle, corrected fund subtitles and additive credits; independent APPROVE, 454 tests/check/build and desktop/mobile Budget pass. Apply0030 for Add to balance. See checkpoints/budget-funds-controls.md.
 - latest_budget_expected_income: Compact Funds card with editable forecasts/custom categories, partial/full receipts and collapsed history; independent APPROVE, 453 tests/check/build and desktop/mobile Budget pass. Apply migration0029 to activate after code deployment. No existing financial records changed. See checkpoints/budget-expected-income.md.

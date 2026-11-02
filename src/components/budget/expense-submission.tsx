@@ -279,27 +279,27 @@ function SubmitForm({
               ))}
             </select>
           </label>
-          <label>
-            {requestOnly ? "Suggested funding source" : "Pay from"}
-            {!requestOnly && payment !== "unpaid" && included
-              ? " (optional)"
-              : ""}
-            <select
-              name="fund_id"
-              value={fund}
-              onChange={(e) => setFund(e.target.value)}
-              required={requestOnly || payment === "unpaid" || !included}
-            >
-              <option value="">Choose a funding source</option>
-              {FUNDS.filter((item) => eligibleFund(item.id, category)).map(
-                (item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ),
-              )}
-            </select>
-          </label>
+          {!requestOnly && (
+            <label>
+              Pay from
+              {payment !== "unpaid" && included ? " (optional)" : ""}
+              <select
+                name="fund_id"
+                value={fund}
+                onChange={(e) => setFund(e.target.value)}
+                required={payment === "unpaid" || !included}
+              >
+                <option value="">Choose a funding source</option>
+                {FUNDS.filter((item) => eligibleFund(item.id, category)).map(
+                  (item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ),
+                )}
+              </select>
+            </label>
+          )}
           {requestOnly ? (
             <input type="hidden" name="payment_status" value="unpaid" />
           ) : (
@@ -364,8 +364,8 @@ function SubmitForm({
             </summary>
             <label>
               {requestOnly
-                ? "Quote or estimate (PDF, JPEG or PNG, up to 2 MB)"
-                : "Receipt (PDF, JPEG or PNG, up to 2 MB)"}
+                ? "Receipt or quote — optional (PDF, JPEG or PNG, up to 2 MB)"
+                : "Receipt — optional (PDF, JPEG or PNG, up to 2 MB)"}
               <input
                 type="file"
                 name="receipt"

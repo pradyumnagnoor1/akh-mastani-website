@@ -307,11 +307,7 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
     .fill(`Hotel ${info.project.name}`);
   await form.getByLabel("Total cost (USD)", { exact: true }).fill("500");
   await form.getByRole("combobox", { name: /Category/ }).selectOption("Mix");
-  await expect(
-    form
-      .getByLabel("Suggested funding source")
-      .locator('option[value="goodbull"]'),
-  ).toHaveCount(0);
+  await expect(form.locator('[name="fund_id"]')).toHaveCount(0);
   await form.getByRole("combobox", { name: /Category/ }).selectOption("Hotel");
   await expect(form.getByText("Payment status", { exact: true })).toHaveCount(
     0,
@@ -319,13 +315,6 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
   await expect(
     execPage.getByText(/before spending or making a booking/),
   ).toBeVisible();
-  await form.getByLabel("Suggested funding source").selectOption("goodbull");
-  await form.locator(".budget-optional summary").click();
-  await form.getByLabel(/Quote or estimate/).setInputFiles({
-    name: "receipt.pdf",
-    mimeType: "application/pdf",
-    buffer: Buffer.from("%PDF-1.4\nreceipt fixture"),
-  });
   await execPage.screenshot({
     path: info.outputPath("add-expense.png"),
     fullPage: true,
@@ -350,7 +339,7 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
   await item.getByRole("button", { name: "Review expense" }).click();
   await captain
     .getByRole("dialog")
-    .getByRole("combobox")
+    .getByLabel("Review decision")
     .selectOption("changes");
   await captain
     .getByRole("dialog")
@@ -387,6 +376,11 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
   await captain.getByRole("button", { name: /Needs approval/ }).click();
   await item.locator("summary").first().click();
   await item.getByRole("button", { name: "Review expense" }).click();
+  if (await captain.getByRole("dialog").getByLabel("Pay from").count())
+    await captain
+      .getByRole("dialog")
+      .getByLabel("Pay from")
+      .selectOption("goodbull");
   await captain
     .getByRole("dialog")
     .getByRole("button", { name: "Approve expense", exact: true })
@@ -425,6 +419,11 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
   await captain.getByRole("button", { name: /Needs approval/ }).click();
   await item.locator("summary").first().click();
   await item.getByRole("button", { name: "Review expense" }).click();
+  if (await captain.getByRole("dialog").getByLabel("Pay from").count())
+    await captain
+      .getByRole("dialog")
+      .getByLabel("Pay from")
+      .selectOption("goodbull");
   await captain
     .getByRole("dialog")
     .getByRole("button", { name: "Approve expense", exact: true })

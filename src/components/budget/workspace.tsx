@@ -1646,6 +1646,27 @@ function ReviewForm({
           <option value="changes">Request changes</option>
         </select>
       </label>
+      {operation === "approve" &&
+        e.is_request &&
+        !e.request_approved_at &&
+        e.paid_cents === 0 && (
+          <label>
+            Pay from
+            <select name="fund_id" required defaultValue={e.fund_id ?? ""}>
+              <option value="">Choose a funding source</option>
+              {data.funds
+                .filter((fund) => eligibleFund(fund.id, e.category))
+                .map((fund) => (
+                  <option key={fund.id} value={fund.id}>
+                    {fund.name}
+                  </option>
+                ))}
+            </select>
+            <span className="small muted">
+              Used when the payment is recorded and verified.
+            </span>
+          </label>
+        )}
       <label>
         {operation === "changes"
           ? "Explain the requested changes"

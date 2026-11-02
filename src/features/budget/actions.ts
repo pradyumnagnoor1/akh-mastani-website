@@ -117,7 +117,9 @@ export async function mutateBudget(
           content: bytes.toString("base64"),
         };
       }
-    } else if (operation === "payment" || operation === "refund")
+    } else if (operation === "approve")
+      payload.fund_id = value(form, "fund_id");
+    else if (operation === "payment" || operation === "refund")
       Object.assign(payload, {
         amount_cents: cents(value(form, "amount")),
         fund_id: value(form, "fund_id"),

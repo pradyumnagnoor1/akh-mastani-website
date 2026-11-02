@@ -101,6 +101,9 @@ beforeAll(async () => {
       "utf8",
     ),
   );
+  await db.exec(
+    readFileSync("supabase/migrations/0032_budget_request_funding.sql", "utf8"),
+  );
 });
 afterAll(async () => {
   await db?.close();
@@ -164,7 +167,12 @@ it("requires execs to request approval before reporting any payment", async () =
     request_approved_at: null,
   });
   await expect(
-    mutate({ operation: "approve", id: expense, version: 1 }),
+    mutate({
+      operation: "approve",
+      fund_id: "goodbull",
+      id: expense,
+      version: 1,
+    }),
   ).rejects.toThrow();
   await expect(
     mutate({
@@ -179,7 +187,12 @@ it("requires execs to request approval before reporting any payment", async () =
   const before = (
     await db.query("select balance_cents from budget_funds where id='goodbull'")
   ).rows;
-  await mutate({ operation: "approve", id: expense, version: 1 });
+  await mutate({
+    operation: "approve",
+    fund_id: "goodbull",
+    id: expense,
+    version: 1,
+  });
   expect(
     (
       await db.query(
@@ -206,7 +219,12 @@ it("requires execs to request approval before reporting any payment", async () =
     included_in_balance: false,
   });
   await user(captain);
-  await mutate({ operation: "approve", id: expense, version: 3 });
+  await mutate({
+    operation: "approve",
+    fund_id: "goodbull",
+    id: expense,
+    version: 3,
+  });
   expect(
     (
       await db.query(
@@ -232,7 +250,12 @@ it("allows changes and resubmission while preserving the no-spending boundary", 
   await user(anotherExec);
   await expect(mutate(submission({ version: 3 }))).rejects.toThrow(/pending/);
   await user(captain);
-  await mutate({ operation: "approve", id: expense, version: 3 });
+  await mutate({
+    operation: "approve",
+    fund_id: "goodbull",
+    id: expense,
+    version: 3,
+  });
   expect(
     (
       await db.query("select status from budget_expenses where id=$1", [
@@ -253,4 +276,60 @@ it("keeps management payment reporting available and prevents exec changes to pa
   ).toEqual({ is_request: false });
   await user(exec);
   await expect(mutate(submission({ version: 1 }))).rejects.toThrow();
+});
+
+it("requires reviewer funding, ignores exec funding, and enforces restricted accounts", async () => {
+  await mutate(submission({ category: "Mix", fund_id: "venmo" }));
+  expect(
+    (
+      await db.query("select fund_id from budget_expenses where id=$1", [
+        expense,
+      ])
+    ).rows[0],
+  ).toEqual({ fund_id: null });
+  expect(
+    (await db.query("select count(*)::int as n from budget_receipts")).rows[0],
+  ).toEqual({ n: 0 });
+  await user(captain);
+  for (const fund_id of ["", "unknown", "goodbull"]) {
+    await expect(
+      mutate({ operation: "approve", id: expense, version: 1, fund_id }),
+    ).rejects.toThrow();
+  }
+  await mutate({
+    operation: "approve",
+    id: expense,
+    version: 1,
+    fund_id: "sofc",
+  });
+  expect(
+    (
+      await db.query("select fund_id from budget_expenses where id=$1", [
+        expense,
+      ])
+    ).rows[0],
+  ).toEqual({ fund_id: "sofc" });
+  await user(owner);
+  await mutate({
+    operation: "payment",
+    id: expense,
+    version: 2,
+    amount_cents: 1000,
+    included_in_balance: false,
+  });
+  await user(captain);
+  await mutate({
+    operation: "approve",
+    id: expense,
+    version: 3,
+    fund_id: "venmo",
+  });
+  expect(
+    (await db.query("select balance_cents from budget_funds where id='sofc'"))
+      .rows[0],
+  ).toEqual({ balance_cents: 99000 });
+  expect(
+    (await db.query("select balance_cents from budget_funds where id='venmo'"))
+      .rows[0],
+  ).toEqual({ balance_cents: 100000 });
 });
