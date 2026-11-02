@@ -1,10 +1,25 @@
-# AKH Mastani team hub
+# AKH Mastani
 
-Private dance-team website built with Next.js, TypeScript and Supabase, targeting Vercel.
+A private operations hub for the AKH Mastani dance team: announcements, practice planning, choreography, member payments, and role-scoped budgeting in one place.
+
+Built with Next.js 16, React 19, TypeScript, and Supabase, and hosted on Vercel.
+
+[Open the app](https://akh-mastani.vercel.app) · [Setup guide](docs/setup.md) · [Operations guide](docs/operations.md)
+
+## What the team can do
+
+- Read targeted announcements, track assigned to-dos, and use Today summaries.
+- View Google Calendar practices and team-created events, with practice-linked announcements.
+- View segment assignments and formation PDFs, browse the roster, and find choreography videos hosted in Google Drive.
+- Report member payments for admin verification.
+- Submit team expenses; eligible finance roles manage funds, category allocations, receipts, and approvals.
+- Enable optional device notifications and install the app as a PWA.
+
+Budget access is limited to Captains, Logistics & Finance, and the verified owner. Other active execs use Add Expense to submit and correct only their own pending or changes-requested entries. Expense approval requires a different eligible reviewer. See the [budget guide](docs/budget.md) for permissions and accounting behavior.
 
 ## Current status
 
-The app is deployed at [akh-mastani.vercel.app](https://akh-mastani.vercel.app), backed by Supabase. Pages: Home, Announcements, To-Dos, Practice Calendar, Set Design, Payments, Roster, Choreo, and Admin. Google Calendar supplies team schedules; Google Drive hosts Choreo videos.
+The app is deployed at [akh-mastani.vercel.app](https://akh-mastani.vercel.app), backed by Supabase. Pages include Home, Announcements, To-Dos, Practice Calendar, Set Design, Payments, Add Expense, Roster, Choreo, Admin, and management-only Budget. Google Calendar supplies team schedules; Google Drive hosts Choreo videos.
 
 Latest implementation and release evidence is recorded in [.genesis/checkpoints/CURRENT.md](.genesis/checkpoints/CURRENT.md). Reminder/edit previews and smart follow-ups are documented in [notifications](docs/notifications.md) and [digest nudges](docs/digest-nudges.md). For a new environment, start with [Supabase setup](docs/setup.md), [calendar setup](docs/calendar-setup.md), [deployment](docs/deployment.md), and [operations/handover](docs/operations.md). Apply migrations in order; retain historical migrations for clean installs and recovery. Consult the checkpoint for checks that remain unverified, including backup restoration.
 
