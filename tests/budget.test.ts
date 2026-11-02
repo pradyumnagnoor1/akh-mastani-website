@@ -6,6 +6,7 @@ import {
   totals,
   canManage,
   canReview,
+  canReviewExpense,
 } from "../src/features/budget/policy";
 import type { Expense } from "../src/features/budget/types";
 import {
@@ -62,4 +63,20 @@ it("reads partial payments from the previous sheet as a single cost and reviews 
   expect(() =>
     validateImportRows([{ ...rows[0], category: "Mix", fund_id: "goodbull" }]),
   ).toThrow();
+});
+
+it("reserves self-review for the owner and never exposes review for nonpending expenses", () => {
+  const expense = {
+    status: "pending" as const,
+    created_by: "me",
+    submitted_by: "other",
+  };
+  expect(canReviewExpense("owner", "me", expense)).toBe(true);
+  for (const role of ["captain", "finance", "exec", "none"] as const)
+    expect(canReviewExpense(role, "me", expense)).toBe(false);
+  expect(canReviewExpense("captain", "other", expense)).toBe(false);
+  expect(canReviewExpense("finance", "reviewer", expense)).toBe(true);
+  expect(
+    canReviewExpense("owner", "me", { ...expense, status: "approved" }),
+  ).toBe(false);
 });

@@ -33,3 +33,16 @@ export function totals(expenses: Expense[]) {
 }
 export const eligibleFund = (fund: string, category: string) =>
   fund !== "goodbull" || ["Hotel", "Travel"].includes(category);
+
+export function canReviewExpense(
+  role: BudgetRole,
+  memberId: string,
+  expense: Pick<Expense, "status" | "created_by" | "submitted_by">,
+) {
+  return (
+    canReview(role) &&
+    expense.status === "pending" &&
+    (role === "owner" ||
+      (expense.created_by !== memberId && expense.submitted_by !== memberId))
+  );
+}

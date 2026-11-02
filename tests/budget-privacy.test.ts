@@ -91,6 +91,12 @@ beforeAll(async () => {
       "utf8",
     ),
   );
+  await db.exec(
+    readFileSync(
+      "supabase/migrations/0028_budget_owner_self_approval.sql",
+      "utf8",
+    ),
+  );
 });
 afterAll(async () => {
   await db?.close();
@@ -785,4 +791,73 @@ it("retains second-person review and cancels source-free recorded payments witho
       )
     ).rows,
   ).toEqual(before);
+});
+
+it("allows only the verified owner to self-approve with the normal audit and balance update", async () => {
+  await user(owner);
+  await mutate(submission());
+  await mutate({ operation: "approve", id: expense, version: 1 });
+  expect(
+    (
+      await db.query(
+        "select status,reviewed_by,paid_cents from budget_expenses where id=$1",
+        [expense],
+      )
+    ).rows[0],
+  ).toEqual({ status: "approved", reviewed_by: owner, paid_cents: 2000 });
+  expect(
+    (
+      await db.query(
+        "select balance_cents from budget_funds where id='goodbull'",
+      )
+    ).rows[0],
+  ).toEqual({ balance_cents: 98000 });
+  await expect(
+    mutate({ operation: "approve", id: expense, version: 1 }),
+  ).rejects.toThrow();
+  await mutate({
+    operation: "payment",
+    id: expense,
+    version: 2,
+    amount_cents: 1000,
+    included_in_balance: true,
+  });
+  await mutate({ operation: "approve", id: expense, version: 3 });
+  expect(
+    (
+      await db.query(
+        "select actor_id from budget_events where expense_id=$1 and action='approve'",
+        [expense],
+      )
+    ).rows,
+  ).toEqual([{ actor_id: owner }, { actor_id: owner }]);
+});
+
+it("keeps Captain and Finance self-approval blocked for both creators and report submitters", async () => {
+  for (const [index, actor] of [captain, finance].entries()) {
+    const id = `30000000-0000-4000-8000-00000000000${index}`;
+    await user(actor);
+    await mutate(submission({ id }));
+    await expect(
+      mutate({ operation: "approve", id, version: 1 }),
+    ).rejects.toThrow(/Someone else/);
+    await user(owner);
+    await mutate({ operation: "approve", id, version: 1 });
+    await mutate({
+      operation: "payment",
+      id,
+      version: 2,
+      amount_cents: 1000,
+      included_in_balance: true,
+    });
+    await user(actor);
+    await expect(
+      mutate({ operation: "approve", id, version: 3 }),
+    ).rejects.toThrow(/Someone else/);
+  }
+  await user(exec);
+  await mutate(submission());
+  await expect(
+    mutate({ operation: "approve", id: expense, version: 1, role: "owner" }),
+  ).rejects.toThrow();
 });

@@ -175,6 +175,18 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
     .getByRole("button", { name: "Submit expense", exact: true })
     .click();
   await expect(dialog).not.toBeVisible();
+  await page.getByRole("button", { name: /Needs approval/ }).click();
+  const ownerExpense = page.locator(".budget-expense").filter({
+    has: page.getByText(`Recorded payment ${info.project.name}`, {
+      exact: true,
+    }),
+  });
+  await ownerExpense.locator("summary").first().click();
+  await ownerExpense.getByRole("button", { name: "Review expense" }).click();
+  await dialog
+    .getByRole("button", { name: "Approve expense", exact: true })
+    .click();
+  await expect(dialog).not.toBeVisible();
   const execContext = await browser.newContext({
     viewport: page.viewportSize()!,
   });
@@ -232,21 +244,6 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
   const captain = await captainContext.newPage();
   await captain.goto("http://127.0.0.1:3102/budget");
   await captain.getByRole("button", { name: /Needs approval/ }).click();
-  const recordedItem = captain.locator(".budget-expense").filter({
-    has: captain.getByText(`Recorded payment ${info.project.name}`, {
-      exact: true,
-    }),
-  });
-  await recordedItem.locator("summary").first().click();
-  await recordedItem.getByRole("button", { name: "Review expense" }).click();
-  await expect(captain.getByRole("dialog")).toContainText(
-    "Funding source not specified",
-  );
-  await captain
-    .getByRole("dialog")
-    .getByRole("button", { name: "Approve expense", exact: true })
-    .click();
-  await expect(captain.getByRole("dialog")).not.toBeVisible();
   const item = captain.locator(".budget-expense").filter({
     has: captain.getByText(`Hotel ${info.project.name}`, { exact: true }),
   });

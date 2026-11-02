@@ -20,6 +20,7 @@ import {
 import {
   canManage,
   canReview,
+  canReviewExpense,
   eligibleFund,
   money,
   totals,
@@ -547,11 +548,8 @@ export function BudgetWorkspace({
   const selected = seasonExpenses.filter(
     (e) => category === "all" || e.category === category,
   );
-  const reviewable = data.expenses.filter(
-    (e) =>
-      e.status === "pending" &&
-      e.submitted_by !== memberId &&
-      e.created_by !== memberId,
+  const reviewable = data.expenses.filter((e) =>
+    canReviewExpense(role, memberId, e),
   );
   const pendingCount = data.expenses.filter(
     (e) => e.status === "pending",
@@ -678,19 +676,16 @@ export function BudgetWorkspace({
                   )}
                   {e.review_note && <p className="notice">{e.review_note}</p>}
                   <div className="budget-row-actions">
-                    {reviewer &&
-                      e.status === "pending" &&
-                      e.created_by !== memberId &&
-                      e.submitted_by !== memberId && (
-                        <button
-                          className="button primary"
-                          onClick={() =>
-                            open({ kind: "review", id: e.id, expense: e })
-                          }
-                        >
-                          Review expense
-                        </button>
-                      )}
+                    {canReviewExpense(role, memberId, e) && (
+                      <button
+                        className="button primary"
+                        onClick={() =>
+                          open({ kind: "review", id: e.id, expense: e })
+                        }
+                      >
+                        Review expense
+                      </button>
+                    )}
                     {(e.created_by === memberId || role === "owner") &&
                       e.pending_refund_cents === 0 && (
                         <button
@@ -1645,8 +1640,7 @@ function ImportForm({
       <p>
         Import expense rows from the previous AKH finance sheet into{" "}
         <strong>{season.name}</strong>. Check the category, funding source and
-        amounts before submitting. Every row will await a second person’s
-        approval.
+        amounts before submitting. Every row will await approval.
       </p>
       <label>
         Previous sheet (.csv)
