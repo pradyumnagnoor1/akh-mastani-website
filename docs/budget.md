@@ -39,3 +39,9 @@ Funds includes a compact Expected income card for the currently selected budget.
 Forecasts never change account balances. Record received income with an amount and receiving account; partial receipts leave only the unpaid amount outstanding. Confirming credits the account exactly once unless Already included in the recorded account balance is checked. Only accounts with recorded balances can receive income. Fully received entries leave the outstanding list automatically. Received receipts and canceled forecasts remain in a collapsed history. Changing an expected total cannot reduce it below the amount already received; cancellation never reverses received money. Projected account funds are current recorded balances plus remaining expected income; projections are not available funds or a spending limit.
 
 Apply `0029_budget_expected_income.sql` after the existing migrations. It creates empty tables and does not import the planning sheet, alter existing balances, or create a new budget. The app preserves normal Budget access if this migration has not been applied, showing a short setup notice for income. Local validation uses synthetic records only.
+
+## Compact Funds controls
+
+Expected Income starts collapsed; its summary shows the outstanding total and count. Show/Hide expected income is a toggle button on the Funds bar. Clicking an expected segment opens the income section and focuses that entry. Main SOFC is labeled Football money; Venmo is labeled Team funds and GroupFund.
+
+Finance/owner can expand an account and choose Add to balance, enter a positive received amount and source, preview the resulting total, and save. Additions are version-checked, replay-protected credits with Funds added history; they do not replace balances or create reconciliation snapshots. Use Record received for money attached to an expected-income entry. Apply `0030_budget_add_funds.sql` to enable additive credits; display changes need no migration.

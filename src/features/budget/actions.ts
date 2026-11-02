@@ -71,10 +71,10 @@ export async function mutateBudget(
           JSON.parse(value(form, "fund_balances")) as FundBalanceEntry[],
         ),
       });
-    } else if (operation === "balance")
+    } else if (operation === "balance" || operation === "fund_add")
       Object.assign(payload, {
         fund_id: value(form, "fund_id"),
-        amount_cents: cents(value(form, "amount"), true),
+        amount_cents: cents(value(form, "amount"), operation === "balance"),
       });
     else if (operation === "submit") {
       const total = cents(value(form, "total")),
@@ -123,15 +123,18 @@ export async function mutateBudget(
         fund_id: value(form, "fund_id"),
         included_in_balance: form.get("included") === "on",
       });
-    const rpc = operation.startsWith("income_")
-      ? "budget_income_mutate"
-      : operation === "season"
-        ? "budget_save_setup"
-        : operation === "delete_season"
-          ? "budget_delete_season"
-          : operation === "remove_planned"
-            ? "budget_remove_planned"
-            : "budget_mutate";
+    const rpc =
+      operation === "fund_add"
+        ? "budget_add_funds"
+        : operation.startsWith("income_")
+          ? "budget_income_mutate"
+          : operation === "season"
+            ? "budget_save_setup"
+            : operation === "delete_season"
+              ? "budget_delete_season"
+              : operation === "remove_planned"
+                ? "budget_remove_planned"
+                : "budget_mutate";
     const { error } = await supabase.rpc(rpc, { payload });
     if (error) {
       if (error.code === "23505")

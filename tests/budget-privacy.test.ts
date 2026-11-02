@@ -100,6 +100,9 @@ beforeAll(async () => {
   await db.exec(
     readFileSync("supabase/migrations/0029_budget_expected_income.sql", "utf8"),
   );
+  await db.exec(
+    readFileSync("supabase/migrations/0030_budget_add_funds.sql", "utf8"),
+  );
 });
 afterAll(async () => {
   await db?.close();
@@ -985,4 +988,50 @@ it("rejects income overpayments, invalid accounts and receipts on deleted season
   await expect(
     incomeMutate({ ...receipt, amount_cents: 1000 }),
   ).rejects.toThrow(/deleted/);
+});
+
+it("adds funds once, rejects unauthorized or stale credits and records an additive event", async () => {
+  await db.exec("reset role;update budget_funds set updated_at=now()");
+  const payload = {
+    id: "70000000-0000-4000-8000-000000000001",
+    version: 1,
+    fund_id: "venmo",
+    amount_cents: 2500,
+    note: "Fundraiser",
+  };
+  const add = (extra: Record<string, unknown> = {}) =>
+    db.query("select budget_add_funds($1::jsonb)", [
+      JSON.stringify({ ...payload, ...extra }),
+    ]);
+  for (const actor of [exec, captain, dancer]) {
+    await user(actor);
+    await expect(add()).rejects.toThrow(/access/);
+  }
+  await user(owner);
+  const fund = (
+    await db.query<{ version: number }>(
+      "select version from budget_funds where id='venmo'",
+    )
+  ).rows[0];
+  await expect(
+    add({ version: fund.version, amount_cents: -1 }),
+  ).rejects.toThrow(/positive/);
+  await add({ version: fund.version });
+  await expect(add({ version: fund.version + 1 })).rejects.toThrow(
+    /already recorded/,
+  );
+  await expect(
+    add({ id: "70000000-0000-4000-8000-000000000002", version: fund.version }),
+  ).rejects.toThrow(/changed/);
+  expect(
+    (await db.query("select balance_cents from budget_funds where id='venmo'"))
+      .rows[0],
+  ).toEqual({ balance_cents: 102500 });
+  expect(
+    (
+      await db.query(
+        "select action,delta_cents from budget_events where action='funds_added'",
+      )
+    ).rows,
+  ).toEqual([{ action: "funds_added", delta_cents: 2500 }]);
 });

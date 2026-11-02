@@ -131,6 +131,10 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
     page.getByRole("button", { name: /Needs approval/ }),
   ).toContainText("1");
   const income = page.getByRole("region", { name: /Expected income/ });
+  await expect(
+    page.getByRole("button", { name: "Add income", exact: true }),
+  ).not.toBeVisible();
+  await income.locator("summary").first().click();
   await page.getByRole("button", { name: "Add income", exact: true }).click();
   await dialog
     .getByLabel("Income name", { exact: true })
@@ -142,7 +146,8 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
     .click();
   await expect(dialog).not.toBeVisible();
   await expect(income).toContainText("$150.00");
-  await page.getByLabel(/Include expected income/).check();
+  await income.locator("summary").first().click();
+  await page.getByRole("button", { name: /Show expected income/ }).click();
   await page
     .getByRole("button", {
       name: `Expected Fundraiser ${info.project.name}: $150.00`,
@@ -154,7 +159,7 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
       .locator(".income-row")
       .filter({ hasText: `Fundraiser ${info.project.name}` }),
   ).toBeFocused();
-  await page.getByLabel(/Include expected income/).uncheck();
+  await page.getByRole("button", { name: /Hide expected income/ }).click();
   await expect(
     page.getByRole("button", {
       name: `Expected Fundraiser ${info.project.name}: $150.00`,
@@ -213,6 +218,19 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
     .locator(".budget-fund")
     .filter({ has: page.getByRole("heading", { name: "Venmo", exact: true }) });
   await venmo.locator("summary").first().click();
+  await venmo
+    .getByRole("button", { name: "Add to balance", exact: true })
+    .click();
+  await dialog.getByLabel("Amount to add (USD)").fill("25");
+  await dialog
+    .getByLabel("What is this money from?")
+    .fill("Extra fundraiser proceeds");
+  await dialog
+    .getByRole("button", { name: "Add to balance", exact: true })
+    .click();
+  await expect(dialog).not.toBeVisible();
+  await expect(venmo).toContainText("$2,075.00");
+
   await expect(venmo).toContainText("Known expense");
   const goodbull = page.locator(".budget-fund").filter({
     has: page.getByRole("heading", { name: "SOFC Good Bull", exact: true }),

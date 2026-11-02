@@ -1036,3 +1036,35 @@
   outline-offset: 4px;
   border-radius: 8px;
 }
+.income-disclosure > summary {
+  cursor: pointer;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 44px;
+  list-style: none;
+}
+.income-disclosure > summary::before {
+  content: "▸";
+  color: var(--muted);
+}
+.income-disclosure[open] > summary::before {
+  content: "▾";
+}
+.income-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+.income-disclosure > summary > span:first-child {
+  font-weight: 600;
+}
+.income-disclosure > .budget-section-heading {
+  margin-top: 1rem;
+}
+.income-bar-toggle {
+  align-self: flex-start;
+}
+.income-bar-toggle[aria-pressed="true"] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}

@@ -43,7 +43,7 @@ type Modal =
   | { kind: "season"; id: string; season?: Season }
   | { kind: "season-delete"; id: string; season: Season }
   | { kind: "planned-delete"; id: string; plan: PlannedExpense; season: Season }
-  | { kind: "balance"; id: string; fund: Fund }
+  | { kind: "balance" | "fund-add"; id: string; fund: Fund }
   | { kind: "import"; id: string }
   | {
       kind: "review" | "payment" | "refund" | "delete";
@@ -202,6 +202,8 @@ function TeamFundsVisual({
     0,
   );
   function focusIncome(id: string) {
+    const disclosure = document.getElementById("expected-income-disclosure");
+    if (disclosure instanceof HTMLDetailsElement) disclosure.open = true;
     const row = document.getElementById(`expected-income-${id}`);
     row?.scrollIntoView({
       block: "center",
@@ -233,14 +235,15 @@ function TeamFundsVisual({
         </p>
       </div>
       {outstanding.length > 0 && (
-        <label className="budget-checkbox">
-          <input
-            type="checkbox"
-            checked={includeExpected}
-            onChange={(e) => setIncludeExpected(e.target.checked)}
-          />
-          Include expected income · {money(expected)}
-        </label>
+        <button
+          type="button"
+          className="button secondary income-bar-toggle"
+          aria-pressed={includeExpected}
+          onClick={() => setIncludeExpected((value) => !value)}
+        >
+          {includeExpected ? "Hide expected income" : "Show expected income"} ·{" "}
+          {money(expected)}
+        </button>
       )}
       {includeExpected && expected > 0 && (
         <p className="small muted">
@@ -905,8 +908,8 @@ export function BudgetWorkspace({
                           {f.id === "goodbull"
                             ? "Hotel & Travel only"
                             : f.id === "sofc"
-                              ? "Football funds and consolidated Groupfund"
-                              : "Team funds"}
+                              ? "Football money"
+                              : "Team funds and GroupFund"}
                         </span>
                       </div>
                       <ChevronDown size={19} />
@@ -967,6 +970,20 @@ export function BudgetWorkspace({
                         Update balance
                       </button>
                     )}
+                    {manager && f.updated_at && (
+                      <button
+                        className="button secondary"
+                        onClick={() =>
+                          open({
+                            kind: "fund-add",
+                            id: crypto.randomUUID(),
+                            fund: f,
+                          })
+                        }
+                      >
+                        Add to balance
+                      </button>
+                    )}
                     <h4>Expenses assigned to this account</h4>
                     {expenseRows(expenses, true)}
                     <h4>Balance history</h4>
@@ -981,9 +998,13 @@ export function BudgetWorkspace({
                             <strong>
                               {e.action === "balance_updated"
                                 ? "Balance adjustment"
-                                : (data.expenses.find(
-                                    (x) => x.id === e.expense_id,
-                                  )?.title ?? "Payment")}
+                                : e.action === "funds_added"
+                                  ? "Funds added"
+                                  : e.action === "income_received"
+                                    ? "Income received"
+                                    : (data.expenses.find(
+                                        (x) => x.id === e.expense_id,
+                                      )?.title ?? "Payment")}
                             </strong>
                             <span className="small muted">
                               {e.actor_name} · {date(e.created_at)}
@@ -1277,15 +1298,17 @@ export function BudgetWorkspace({
                       ? modal.season
                         ? "Edit budget"
                         : "Set up budget"
-                      : modal?.kind === "balance"
-                        ? "Update balance"
-                        : modal?.kind === "payment"
-                          ? "Record payment"
-                          : modal?.kind === "refund"
-                            ? "Record refund"
-                            : modal?.kind === "delete"
-                              ? "Cancel expense"
-                              : "Review expense"}
+                      : modal?.kind === "fund-add"
+                        ? "Add to balance"
+                        : modal?.kind === "balance"
+                          ? "Update balance"
+                          : modal?.kind === "payment"
+                            ? "Record payment"
+                            : modal?.kind === "refund"
+                              ? "Record refund"
+                              : modal?.kind === "delete"
+                                ? "Cancel expense"
+                                : "Review expense"}
           </h2>
           <button
             type="button"
@@ -1369,6 +1392,17 @@ export function BudgetWorkspace({
               category allocation stays the same.
             </p>
           </SaveForm>
+        )}
+        {currentModal?.kind === "fund-add" && (
+          <FundAddition
+            key={currentModal.id}
+            id={currentModal.id}
+            fund={
+              data.funds.find((f) => f.id === currentModal.fund.id) ??
+              currentModal.fund
+            }
+            onSaved={saved}
+          />
         )}
         {currentModal?.kind === "balance" && (
           <SaveForm
@@ -1765,5 +1799,69 @@ function ImportForm({
         </form>
       )}
     </div>
+  );
+}
+
+function FundAddition({
+  id,
+  fund,
+  onSaved,
+}: {
+  id: string;
+  fund: Fund;
+  onSaved: () => void;
+}) {
+  const [amount, setAmount] = useState("");
+  const [startingBalance] = useState(fund.balance_cents);
+  const parsed = Number(amount);
+  return (
+    <SaveForm
+      id={id}
+      version={fund.version}
+      operation="fund_add"
+      onSaved={onSaved}
+      label="Add to balance"
+      extra={{ fund_id: fund.id }}
+    >
+      <p>
+        <strong>{fund.name}</strong> · Recorded balance {money(startingBalance)}
+      </p>
+      <label>
+        Amount to add (USD)
+        <input
+          name="amount"
+          required
+          inputMode="decimal"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          placeholder="0.00"
+          autoFocus
+        />
+      </label>
+      <p className="small muted">
+        New balance:{" "}
+        <strong>
+          {money(
+            startingBalance +
+              (Number.isFinite(parsed) && parsed > 0
+                ? Math.round(parsed * 100)
+                : 0),
+          )}
+        </strong>
+      </p>
+      <label>
+        What is this money from?
+        <input
+          name="note"
+          required
+          maxLength={2000}
+          placeholder="Fundraiser proceeds"
+        />
+      </label>
+      <p className="small muted">
+        For money already received. If it belongs to an expected income entry,
+        use Record received there to update both together.
+      </p>
+    </SaveForm>
   );
 }

@@ -65,132 +65,142 @@ export function ExpectedIncomeSection({
     ? (items.find((i) => i.id === editor.item?.id) ?? editor.item)
     : undefined;
   return (
-    <section
-      className="panel income-section"
-      aria-labelledby="expected-income-heading"
-    >
-      <div className="budget-section-heading">
-        <div>
-          <h2 id="expected-income-heading">
-            Expected income <span className="muted">{money(expected)}</span>
-          </h2>
-          <p className="muted small">Money still to come · {season.name}</p>
+    <section className="panel income-section" aria-label="Expected income">
+      <details id="expected-income-disclosure" className="income-disclosure">
+        <summary>
+          <span>Expected income</span>
+          <strong>{money(expected)}</strong>
+          <span className="muted small">{outstanding.length} outstanding</span>
+        </summary>
+        <div className="budget-section-heading">
+          <div>
+            <h2 id="expected-income-heading">
+              Expected income <span className="muted">{money(expected)}</span>
+            </h2>
+            <p className="muted small">Money still to come · {season.name}</p>
+          </div>
+          {manager && data.incomeReady !== false && (
+            <button
+              className="button secondary"
+              disabled={refreshing}
+              onClick={() => open("edit")}
+            >
+              Add income
+            </button>
+          )}
         </div>
-        {manager && data.incomeReady !== false && (
-          <button
-            className="button secondary"
-            disabled={refreshing}
-            onClick={() => open("edit")}
-          >
-            Add income
-          </button>
-        )}
-      </div>
-      {data.incomeReady === false ? (
-        <p className="muted small">
-          Expected income will be available after the database update.
-        </p>
-      ) : (
-        <>
-          {outstanding.length === 0 ? (
-            <p className="muted small">
-              No income expected. Add an entry when you’re expecting money.
-            </p>
-          ) : (
-            <div className="income-list">
-              {outstanding.map((item) => (
-                <div
-                  className="income-row"
-                  key={item.id}
-                  id={`expected-income-${item.id}`}
-                  tabIndex={-1}
-                >
-                  <div>
-                    <strong>{item.name}</strong>
-                    <p className="muted small">
-                      {item.category}
-                      {item.due_on
-                        ? ` · Expected ${item.due_on.slice(5).replace("-", "/")}/${item.due_on.slice(0, 4)}`
-                        : ""}
-                      {item.received_cents > 0
-                        ? ` · ${money(item.received_cents)} received`
-                        : ""}
-                    </p>
-                  </div>
-                  <strong>
-                    {money(item.expected_cents - item.received_cents)}
-                  </strong>
-                  {manager && (
-                    <div className="budget-row-actions">
-                      <button
-                        className="button secondary"
-                        disabled={refreshing}
-                        onClick={() => open("receive", item)}
-                      >
-                        Record received
-                      </button>
-                      <button
-                        className="button"
-                        aria-label={`Edit ${item.name}`}
-                        disabled={refreshing}
-                        onClick={() => open("edit", item)}
-                      >
-                        Edit
-                      </button>
+        {data.incomeReady === false ? (
+          <p className="muted small">
+            Expected income will be available after the database update.
+          </p>
+        ) : (
+          <>
+            {outstanding.length === 0 ? (
+              <p className="muted small">
+                No income expected. Add an entry when you’re expecting money.
+              </p>
+            ) : (
+              <div className="income-list">
+                {outstanding.map((item) => (
+                  <div
+                    className="income-row"
+                    key={item.id}
+                    id={`expected-income-${item.id}`}
+                    tabIndex={-1}
+                  >
+                    <div>
+                      <strong>{item.name}</strong>
+                      <p className="muted small">
+                        {item.category}
+                        {item.due_on
+                          ? ` · Expected ${item.due_on.slice(5).replace("-", "/")}/${item.due_on.slice(0, 4)}`
+                          : ""}
+                        {item.received_cents > 0
+                          ? ` · ${money(item.received_cents)} received`
+                          : ""}
+                      </p>
                     </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-          {expected > 0 && (
-            <p className="muted small">
-              After expected receipts:{" "}
-              <strong>
-                {money(
-                  data.funds
-                    .filter((f) => f.updated_at)
-                    .reduce((sum, f) => sum + f.balance_cents, 0) + expected,
-                )}
-              </strong>{" "}
-              across accounts. Expected money is not available yet.
-            </p>
-          )}
-          {(history.length > 0 || items.some((i) => i.received_cents > 0)) && (
-            <details className="budget-optional">
-              <summary>Received &amp; canceled</summary>
-              {items
-                .filter((i) => i.received_cents > 0 || i.canceled)
-                .map((item) => (
-                  <div className="income-history" key={item.id}>
-                    <strong>{item.name}</strong>{" "}
-                    <span className="muted small">
-                      {item.canceled
-                        ? "Canceled remaining forecast"
-                        : item.received_cents >= item.expected_cents
-                          ? "Received"
-                          : "Partially received"}{" "}
-                      · {money(item.received_cents)}
-                    </span>
-                    {(data.incomeReceipts ?? [])
-                      .filter((r) => r.income_id === item.id)
-                      .map((r) => (
-                        <p className="muted small" key={r.id}>
-                          {money(r.amount_cents)} →{" "}
-                          {data.funds.find((f) => f.id === r.fund_id)?.name} ·{" "}
-                          {new Date(r.created_at).toLocaleDateString("en-US", {
-                            timeZone: "America/Chicago",
-                          })}{" "}
-                          · {r.actor_name}
-                          {r.included_in_balance ? " · Already in balance" : ""}
-                        </p>
-                      ))}
+                    <strong>
+                      {money(item.expected_cents - item.received_cents)}
+                    </strong>
+                    {manager && (
+                      <div className="budget-row-actions">
+                        <button
+                          className="button secondary"
+                          disabled={refreshing}
+                          onClick={() => open("receive", item)}
+                        >
+                          Record received
+                        </button>
+                        <button
+                          className="button"
+                          aria-label={`Edit ${item.name}`}
+                          disabled={refreshing}
+                          onClick={() => open("edit", item)}
+                        >
+                          Edit
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
-            </details>
-          )}
-        </>
-      )}
+              </div>
+            )}
+            {expected > 0 && (
+              <p className="muted small">
+                After expected receipts:{" "}
+                <strong>
+                  {money(
+                    data.funds
+                      .filter((f) => f.updated_at)
+                      .reduce((sum, f) => sum + f.balance_cents, 0) + expected,
+                  )}
+                </strong>{" "}
+                across accounts. Expected money is not available yet.
+              </p>
+            )}
+            {(history.length > 0 ||
+              items.some((i) => i.received_cents > 0)) && (
+              <details className="budget-optional">
+                <summary>Received &amp; canceled</summary>
+                {items
+                  .filter((i) => i.received_cents > 0 || i.canceled)
+                  .map((item) => (
+                    <div className="income-history" key={item.id}>
+                      <strong>{item.name}</strong>{" "}
+                      <span className="muted small">
+                        {item.canceled
+                          ? "Canceled remaining forecast"
+                          : item.received_cents >= item.expected_cents
+                            ? "Received"
+                            : "Partially received"}{" "}
+                        · {money(item.received_cents)}
+                      </span>
+                      {(data.incomeReceipts ?? [])
+                        .filter((r) => r.income_id === item.id)
+                        .map((r) => (
+                          <p className="muted small" key={r.id}>
+                            {money(r.amount_cents)} →{" "}
+                            {data.funds.find((f) => f.id === r.fund_id)?.name} ·{" "}
+                            {new Date(r.created_at).toLocaleDateString(
+                              "en-US",
+                              {
+                                timeZone: "America/Chicago",
+                              },
+                            )}{" "}
+                            · {r.actor_name}
+                            {r.included_in_balance
+                              ? " · Already in balance"
+                              : ""}
+                          </p>
+                        ))}
+                    </div>
+                  ))}
+              </details>
+            )}
+          </>
+        )}
+      </details>
       <dialog
         ref={dialog}
         className="budget-dialog"
