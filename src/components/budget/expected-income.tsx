@@ -99,7 +99,12 @@ export function ExpectedIncomeSection({
           ) : (
             <div className="income-list">
               {outstanding.map((item) => (
-                <div className="income-row" key={item.id}>
+                <div
+                  className="income-row"
+                  key={item.id}
+                  id={`expected-income-${item.id}`}
+                  tabIndex={-1}
+                >
                   <div>
                     <strong>{item.name}</strong>
                     <p className="muted small">

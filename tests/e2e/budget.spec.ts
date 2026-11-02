@@ -142,6 +142,26 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
     .click();
   await expect(dialog).not.toBeVisible();
   await expect(income).toContainText("$150.00");
+  await page.getByLabel(/Include expected income/).check();
+  await page
+    .getByRole("button", {
+      name: `Expected Fundraiser ${info.project.name}: $150.00`,
+      exact: true,
+    })
+    .click();
+  await expect(
+    page
+      .locator(".income-row")
+      .filter({ hasText: `Fundraiser ${info.project.name}` }),
+  ).toBeFocused();
+  await page.getByLabel(/Include expected income/).uncheck();
+  await expect(
+    page.getByRole("button", {
+      name: `Expected Fundraiser ${info.project.name}: $150.00`,
+      exact: true,
+    }),
+  ).toHaveCount(0);
+
   await page.screenshot({
     path: info.outputPath("income-outstanding.png"),
     fullPage: true,

@@ -186,13 +186,38 @@ function BudgetCircle({
     </div>
   );
 }
-function TeamFundsVisual({ funds }: { funds: Fund[] }) {
+function TeamFundsVisual({
+  funds,
+  income,
+}: {
+  funds: Fund[];
+  income: NonNullable<BudgetData["income"]>;
+}) {
+  const [includeExpected, setIncludeExpected] = useState(false);
+  const outstanding = income.filter(
+    (i) => !i.canceled && i.received_cents < i.expected_cents,
+  );
+  const expected = outstanding.reduce(
+    (sum, i) => sum + i.expected_cents - i.received_cents,
+    0,
+  );
+  function focusIncome(id: string) {
+    const row = document.getElementById(`expected-income-${id}`);
+    row?.scrollIntoView({
+      block: "center",
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "instant"
+        : "smooth",
+    });
+    row?.focus({ preventScroll: true });
+  }
   const recorded = funds.filter((fund) => !!fund.updated_at);
   const total = recorded.reduce((sum, fund) => sum + fund.balance_cents, 0);
   const positiveTotal = recorded.reduce(
     (sum, fund) => sum + Math.max(0, fund.balance_cents),
     0,
   );
+  const visualTotal = positiveTotal + (includeExpected ? expected : 0);
   return (
     <section
       className="panel budget-funds-visual"
@@ -207,9 +232,25 @@ function TeamFundsVisual({ funds }: { funds: Fund[] }) {
           Current recorded balances across {recorded.length} of three accounts.
         </p>
       </div>
+      {outstanding.length > 0 && (
+        <label className="budget-checkbox">
+          <input
+            type="checkbox"
+            checked={includeExpected}
+            onChange={(e) => setIncludeExpected(e.target.checked)}
+          />
+          Include expected income · {money(expected)}
+        </label>
+      )}
+      {includeExpected && expected > 0 && (
+        <p className="small muted">
+          Projected total: <strong>{money(total + expected)}</strong>. Striped
+          amounts are expected, not available yet. Select one to view it.
+        </p>
+      )}
       <div
         className="budget-funds-stack"
-        role="img"
+        role="group"
         aria-label={
           recorded.length
             ? recorded
@@ -223,11 +264,40 @@ function TeamFundsVisual({ funds }: { funds: Fund[] }) {
             key={fund.id}
             className={`budget-funds-stack-${fund.id}`}
             style={{
-              width: `${positiveTotal ? (Math.max(0, fund.balance_cents) / positiveTotal) * 100 : 0}%`,
+              width: `${visualTotal ? (Math.max(0, fund.balance_cents) / visualTotal) * 100 : 0}%`,
             }}
           />
         ))}
+        {includeExpected &&
+          outstanding.map((item) => (
+            <button
+              type="button"
+              key={item.id}
+              className="budget-funds-expected"
+              style={{
+                width: `${visualTotal ? ((item.expected_cents - item.received_cents) / visualTotal) * 100 : 0}%`,
+              }}
+              aria-label={`Expected ${item.name}: ${money(item.expected_cents - item.received_cents)}`}
+              title={`${item.name} · ${money(item.expected_cents - item.received_cents)} expected`}
+              onClick={() => focusIncome(item.id)}
+            />
+          ))}
       </div>
+      {includeExpected && outstanding.length > 0 && (
+        <div className="income-visual-key">
+          {outstanding.map((item) => (
+            <button
+              type="button"
+              className="button"
+              key={item.id}
+              onClick={() => focusIncome(item.id)}
+            >
+              {item.name} · {money(item.expected_cents - item.received_cents)}{" "}
+              expected
+            </button>
+          ))}
+        </div>
+      )}
       <div className="budget-funds-key">
         {funds.map((fund) => (
           <span key={fund.id}>
@@ -812,7 +882,12 @@ export function BudgetWorkspace({
               </a>
             </div>
           </div>
-          <TeamFundsVisual funds={data.funds} />
+          <TeamFundsVisual
+            funds={data.funds}
+            income={(data.income ?? []).filter(
+              (i) => i.season_id === season?.id,
+            )}
+          />
           <div className="budget-funds">
             {data.funds.map((f) => {
               const expenses = data.expenses.filter((e) => e.fund_id === f.id);

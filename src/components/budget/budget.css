@@ -1009,3 +1009,30 @@
     transition: none;
   }
 }
+.budget-funds-stack .budget-funds-expected {
+  border: 0;
+  border-left: 2px solid var(--surface);
+  border-radius: 0;
+  padding: 0;
+  min-width: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  background: repeating-linear-gradient(135deg, #b0aaff 0 4px, #514b76 4px 8px);
+}
+.budget-funds-stack .budget-funds-expected:focus-visible {
+  outline: 2px solid white;
+  outline-offset: -2px;
+}
+.income-visual-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.income-visual-key .button {
+  font-size: 0.8rem;
+}
+.income-row:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
