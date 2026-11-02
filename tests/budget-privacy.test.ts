@@ -97,13 +97,16 @@ beforeAll(async () => {
       "utf8",
     ),
   );
+  await db.exec(
+    readFileSync("supabase/migrations/0029_budget_expected_income.sql", "utf8"),
+  );
 });
 afterAll(async () => {
   await db?.close();
 });
 beforeEach(async () => {
   await db.exec(
-    "reset role;truncate budget_events,budget_receipts,budget_expenses,budget_planned_expenses,budget_allocations,budget_seasons,budget_owners;truncate auth.users cascade;insert into budget_funds(id,name,balance_cents) values ('venmo','Venmo',100000),('goodbull','SOFC Good Bull',100000),('sofc','Main SOFC',100000);",
+    "reset role;truncate budget_income_receipts,budget_income,budget_events,budget_receipts,budget_expenses,budget_planned_expenses,budget_allocations,budget_seasons,budget_owners;truncate auth.users cascade;insert into budget_funds(id,name,balance_cents) values ('venmo','Venmo',100000),('goodbull','SOFC Good Bull',100000),('sofc','Main SOFC',100000);",
   );
   for (const [id, roles] of [
     [owner, []],
@@ -860,4 +863,126 @@ it("keeps Captain and Finance self-approval blocked for both creators and report
   await expect(
     mutate({ operation: "approve", id: expense, version: 1, role: "owner" }),
   ).rejects.toThrow();
+});
+
+const incomeId = "50000000-0000-4000-8000-000000000001";
+const incomeMutate = (payload: Record<string, unknown>) =>
+  db.query("select budget_income_mutate($1::jsonb)", [JSON.stringify(payload)]);
+const incomeSave = (extra: Record<string, unknown> = {}) =>
+  incomeMutate({
+    operation: "income_save",
+    id: incomeId,
+    version: 0,
+    season_id: season,
+    name: "Football remaining",
+    category: "Football",
+    expected_cents: 50000,
+    ...extra,
+  });
+
+it("keeps forecasts separate and applies partial income receipts exactly once", async () => {
+  await user(owner);
+  await db.exec("reset role;update budget_funds set updated_at=now()");
+  await user(owner);
+  await incomeSave();
+  expect(
+    (await db.query("select balance_cents from budget_funds where id='venmo'"))
+      .rows[0],
+  ).toEqual({ balance_cents: 100000 });
+  const receipt = {
+    operation: "income_receive",
+    id: incomeId,
+    version: 1,
+    receipt_id: "60000000-0000-4000-8000-000000000001",
+    amount_cents: 20000,
+    fund_id: "venmo",
+    included_in_balance: false,
+  };
+  await incomeMutate(receipt);
+  await expect(incomeMutate(receipt)).rejects.toThrow();
+  expect(
+    (await db.query("select balance_cents from budget_funds where id='venmo'"))
+      .rows[0],
+  ).toEqual({ balance_cents: 120000 });
+  await expect(
+    incomeSave({ version: 2, expected_cents: 10000 }),
+  ).rejects.toThrow(/already received/);
+  await incomeMutate({
+    ...receipt,
+    version: 2,
+    receipt_id: "60000000-0000-4000-8000-000000000002",
+    amount_cents: 30000,
+    included_in_balance: true,
+  });
+  expect(
+    (
+      await db.query(
+        "select received_cents,expected_cents from budget_income where id=$1",
+        [incomeId],
+      )
+    ).rows[0],
+  ).toEqual({ received_cents: 50000, expected_cents: 50000 });
+  expect(
+    (await db.query("select balance_cents from budget_funds where id='venmo'"))
+      .rows[0],
+  ).toEqual({ balance_cents: 120000 });
+});
+it("limits income access, preserves received money on cancellation and supports custom categories", async () => {
+  await user(owner);
+  await db.exec("reset role;update budget_funds set updated_at=now()");
+  await user(owner);
+  await incomeSave({ category: "Custom fundraiser" });
+  for (const actor of [captain, exec, dancer]) {
+    await user(actor);
+    await expect(incomeSave()).rejects.toThrow(/access/);
+  }
+  await user(exec);
+  expect((await db.query("select * from budget_income")).rows).toHaveLength(0);
+  await expect(
+    db.exec("update budget_income set expected_cents=1"),
+  ).rejects.toThrow();
+  await user(finance);
+  await incomeMutate({
+    operation: "income_receive",
+    id: incomeId,
+    version: 1,
+    receipt_id: "60000000-0000-4000-8000-000000000001",
+    amount_cents: 10000,
+    fund_id: "venmo",
+    included_in_balance: false,
+  });
+  await incomeMutate({ operation: "income_cancel", id: incomeId, version: 2 });
+  expect(
+    (await db.query("select canceled,received_cents from budget_income"))
+      .rows[0],
+  ).toEqual({ canceled: true, received_cents: 10000 });
+  expect(
+    (await db.query("select balance_cents from budget_funds where id='venmo'"))
+      .rows[0],
+  ).toEqual({ balance_cents: 110000 });
+  await expect(incomeSave({ version: 3 })).rejects.toThrow(/changed/);
+});
+it("rejects income overpayments, invalid accounts and receipts on deleted seasons", async () => {
+  await user(owner);
+  await incomeSave();
+  const receipt = {
+    operation: "income_receive",
+    id: incomeId,
+    version: 1,
+    receipt_id: "60000000-0000-4000-8000-000000000001",
+    amount_cents: 50001,
+    fund_id: "venmo",
+    included_in_balance: false,
+  };
+  await expect(incomeMutate(receipt)).rejects.toThrow(/outstanding/);
+  await expect(
+    incomeMutate({ ...receipt, amount_cents: 1000 }),
+  ).rejects.toThrow(/recorded balance/);
+  await db.exec(
+    "reset role;update budget_funds set updated_at=now();update budget_seasons set deleted_at=now()",
+  );
+  await user(owner);
+  await expect(
+    incomeMutate({ ...receipt, amount_cents: 1000 }),
+  ).rejects.toThrow(/deleted/);
 });

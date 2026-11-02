@@ -62,11 +62,34 @@ export const budgetData = cache(async () => {
     events,
     receipts,
   } as unknown as BudgetData;
+  let incomeReady = true;
+  const incomeResults = await Promise.all(
+    ["budget_income", "budget_income_receipts"].map((table) =>
+      collectPages(async (from, to) => {
+        const result = await context.supabase
+          .from(table)
+          .select("*")
+          .order("id")
+          .range(from, to);
+        if (result.error && ["42P01", "PGRST205"].includes(result.error.code)) {
+          incomeReady = false;
+          return { data: [], error: null };
+        }
+        return result;
+      }),
+    ),
+  );
   const visibleSeasons = allData.seasons.filter((season) => !season.deleted_at);
   const visibleIds = new Set(visibleSeasons.map((season) => season.id));
   return {
     ...context,
     data: {
+      incomeReady,
+      income: (
+        incomeResults[0] as unknown as import("./types").ExpectedIncome[]
+      ).filter((item) => visibleIds.has(item.season_id)),
+      incomeReceipts:
+        incomeResults[1] as unknown as import("./types").IncomeReceipt[],
       funds: allData.funds,
       seasons: visibleSeasons,
       allocations: allData.allocations.filter((item) =>

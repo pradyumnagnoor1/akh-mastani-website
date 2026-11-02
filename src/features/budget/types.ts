@@ -86,7 +86,30 @@ export type BudgetEvent = {
   details: Record<string, unknown>;
   created_at: string;
 };
+export type ExpectedIncome = {
+  id: string;
+  season_id: string;
+  name: string;
+  category: string;
+  expected_cents: number;
+  received_cents: number;
+  due_on: string | null;
+  canceled: boolean;
+  version: number;
+};
+export type IncomeReceipt = {
+  id: string;
+  income_id: string;
+  fund_id: string;
+  amount_cents: number;
+  included_in_balance: boolean;
+  actor_name: string;
+  created_at: string;
+};
 export type BudgetData = {
+  income?: ExpectedIncome[];
+  incomeReceipts?: IncomeReceipt[];
+  incomeReady?: boolean;
   funds: Fund[];
   seasons: Season[];
   allocations: Allocation[];

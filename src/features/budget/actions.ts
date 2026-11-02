@@ -33,7 +33,27 @@ export async function mutateBudget(
       version,
       note: value(form, "note"),
     };
-    if (operation === "season") {
+    if (operation.startsWith("income_")) {
+      if (role !== "owner" && role !== "finance")
+        throw new Error("Finance or owner access required.");
+      Object.assign(payload, {
+        season_id: value(form, "season_id"),
+        name: value(form, "name"),
+        category: value(form, "category"),
+        due_on: value(form, "due_on"),
+        ...(operation === "income_save"
+          ? { expected_cents: cents(value(form, "expected")) }
+          : {}),
+        ...(operation === "income_receive"
+          ? {
+              amount_cents: cents(value(form, "amount")),
+              fund_id: value(form, "fund_id"),
+              receipt_id: value(form, "receipt_id"),
+              included_in_balance: form.get("included") === "on",
+            }
+          : {}),
+      });
+    } else if (operation === "season") {
       const setup = parseBudgetSetup(
         value(form, "name"),
         JSON.parse(value(form, "allocations")) as AllocationEntry[],
@@ -103,8 +123,9 @@ export async function mutateBudget(
         fund_id: value(form, "fund_id"),
         included_in_balance: form.get("included") === "on",
       });
-    const rpc =
-      operation === "season"
+    const rpc = operation.startsWith("income_")
+      ? "budget_income_mutate"
+      : operation === "season"
         ? "budget_save_setup"
         : operation === "delete_season"
           ? "budget_delete_season"

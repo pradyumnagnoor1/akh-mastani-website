@@ -130,6 +130,65 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
   await expect(
     page.getByRole("button", { name: /Needs approval/ }),
   ).toContainText("1");
+  const income = page.getByRole("region", { name: /Expected income/ });
+  await page.getByRole("button", { name: "Add income", exact: true }).click();
+  await dialog
+    .getByLabel("Income name", { exact: true })
+    .fill(`Fundraiser ${info.project.name}`);
+  await dialog.getByLabel("Category", { exact: true }).fill("Team fundraiser");
+  await dialog.getByLabel("Expected total (USD)").fill("150");
+  await dialog
+    .getByRole("button", { name: "Save income", exact: true })
+    .click();
+  await expect(dialog).not.toBeVisible();
+  await expect(income).toContainText("$150.00");
+  await page.screenshot({
+    path: info.outputPath("income-outstanding.png"),
+    fullPage: true,
+  });
+  await income
+    .getByRole("button", { name: "Record received", exact: true })
+    .click();
+  await dialog.getByLabel("Amount received (USD)").fill("50");
+  await dialog.getByLabel("Received into").selectOption("venmo");
+  await dialog
+    .getByRole("button", { name: "Confirm received", exact: true })
+    .click();
+  await expect(dialog).not.toBeVisible();
+  await expect(income).toContainText("$100.00");
+  await income
+    .getByRole("button", {
+      name: `Edit Fundraiser ${info.project.name}`,
+      exact: true,
+    })
+    .click();
+  await dialog.getByLabel("Expected total (USD)").fill("200");
+  await dialog
+    .getByRole("button", { name: "Save income", exact: true })
+    .click();
+  await expect(dialog).not.toBeVisible();
+  await expect(income.getByRole("heading")).toContainText("$150.00");
+  await income
+    .getByRole("button", { name: "Record received", exact: true })
+    .click();
+  await dialog.getByLabel("Received into").selectOption("venmo");
+  await dialog
+    .getByLabel("Already included in the recorded account balance")
+    .check();
+  await dialog
+    .getByRole("button", { name: "Confirm received", exact: true })
+    .click();
+  await expect(dialog).not.toBeVisible();
+  await expect(
+    income.getByRole("button", { name: "Record received", exact: true }),
+  ).toHaveCount(0);
+  await income.getByText("Received & canceled", { exact: true }).click();
+  await expect(income).toContainText("$200.00");
+  await expect(income).toContainText("Already in balance");
+  await page.screenshot({
+    path: info.outputPath("expected-income.png"),
+    fullPage: true,
+  });
   const venmo = page
     .locator(".budget-fund")
     .filter({ has: page.getByRole("heading", { name: "Venmo", exact: true }) });
