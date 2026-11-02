@@ -132,6 +132,9 @@ function SubmitForm({
   );
   const [category, setCategory] = useState(expense?.category ?? "");
   const [fund, setFund] = useState(expense?.fund_id ?? "");
+  const [included, setIncluded] = useState(
+    expense?.included_in_balance ?? false,
+  );
   const [payment, setPayment] = useState(
     expense?.reported_cents
       ? expense.reported_cents === expense.total_cents
@@ -231,12 +234,12 @@ function SubmitForm({
             </select>
           </label>
           <label>
-            Pay from
+            Pay from{payment !== "unpaid" && included ? " (optional)" : ""}
             <select
               name="fund_id"
               value={fund}
               onChange={(e) => setFund(e.target.value)}
-              required
+              required={payment === "unpaid" || !included}
             >
               <option value="">Choose a funding source</option>
               {FUNDS.filter((item) => eligibleFund(item.id, category)).map(
@@ -289,7 +292,8 @@ function SubmitForm({
               <input
                 type="checkbox"
                 name="included"
-                defaultChecked={expense?.included_in_balance ?? false}
+                checked={included}
+                onChange={(e) => setIncluded(e.target.checked)}
               />
               This payment is already reflected in the account balance
             </label>

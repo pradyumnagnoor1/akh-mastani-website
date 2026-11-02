@@ -314,6 +314,9 @@ function ExpenseForm({
     expense?.category ?? (category === "all" ? "" : category),
   );
   const [fund, setFund] = useState(expense?.fund_id ?? "");
+  const [included, setIncluded] = useState(
+    expense?.included_in_balance ?? false,
+  );
   const [amount, setAmount] = useState(
     expense ? String(expense.total_cents / 100) : "",
   );
@@ -424,12 +427,12 @@ function ExpenseForm({
         </label>
       )}
       <label>
-        Pay from
+        Pay from{payment !== "unpaid" && included ? " (optional)" : ""}
         <select
           name="fund_id"
           value={fund}
           onChange={(e) => setFund(e.target.value)}
-          required
+          required={payment === "unpaid" || !included}
         >
           <option value="">Choose a funding source</option>
           {data.funds
@@ -447,7 +450,8 @@ function ExpenseForm({
           <input
             type="checkbox"
             name="included"
-            defaultChecked={expense?.included_in_balance}
+            checked={included}
+            onChange={(e) => setIncluded(e.target.checked)}
           />
           This payment is already included in the recorded account balance
         </label>
@@ -607,7 +611,8 @@ export function BudgetWorkspace({
                     <strong>{e.title}</strong>
                     <span className="muted small">
                       {e.category} ·{" "}
-                      {data.funds.find((f) => f.id === e.fund_id)?.name}
+                      {data.funds.find((f) => f.id === e.fund_id)?.name ??
+                        "Funding source not specified"}
                       {inFundLedger &&
                       data.plannedExpenses.some((plan) => plan.id === e.id)
                         ? " · Known expense"
@@ -1411,6 +1416,23 @@ export function BudgetWorkspace({
               Payment amount (USD)
               <input name="amount" required inputMode="decimal" />
             </label>
+            {!currentModal.expense.fund_id && (
+              <label>
+                Funding source (required unless already included in balance)
+                <select name="fund_id" defaultValue="">
+                  <option value="">Choose a funding source</option>
+                  {data.funds
+                    .filter((f) =>
+                      eligibleFund(f.id, currentModal.expense.category),
+                    )
+                    .map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.name}
+                      </option>
+                    ))}
+                </select>
+              </label>
+            )}
             <label className="budget-checkbox">
               <input type="checkbox" name="included" />
               Already included in the current account balance
@@ -1451,6 +1473,23 @@ export function BudgetWorkspace({
                 }
               />
             </label>
+            {!currentModal.expense.fund_id && (
+              <label>
+                Funding source (required unless already included in balance)
+                <select name="fund_id" defaultValue="">
+                  <option value="">Choose a funding source</option>
+                  {data.funds
+                    .filter((f) =>
+                      eligibleFund(f.id, currentModal.expense.category),
+                    )
+                    .map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.name}
+                      </option>
+                    ))}
+                </select>
+              </label>
+            )}
             <label className="budget-checkbox">
               <input
                 type="checkbox"
@@ -1512,7 +1551,9 @@ function ReviewForm({
         <h3>{e.title}</h3>
         <strong className="metric">{money(e.total_cents)}</strong>
         <p>
-          {e.category} · {data.funds.find((f) => f.id === e.fund_id)?.name}
+          {e.category} ·{" "}
+          {data.funds.find((f) => f.id === e.fund_id)?.name ??
+            "Funding source not specified"}
         </p>
         <p>Submitted by {e.submitted_name}</p>
         <p>

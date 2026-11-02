@@ -100,6 +100,7 @@ export async function mutateBudget(
     } else if (operation === "payment" || operation === "refund")
       Object.assign(payload, {
         amount_cents: cents(value(form, "amount")),
+        fund_id: value(form, "fund_id"),
         included_in_balance: form.get("included") === "on",
       });
     const rpc =

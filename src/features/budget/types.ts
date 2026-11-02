@@ -49,7 +49,7 @@ export type Expense = {
   id: string;
   season_id: string;
   category: string;
-  fund_id: string;
+  fund_id: string | null;
   title: string;
   total_cents: number;
   paid_cents: number;

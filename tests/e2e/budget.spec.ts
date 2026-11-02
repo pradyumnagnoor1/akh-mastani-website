@@ -148,6 +148,33 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
     .fill("Checked account");
   await dialog.getByRole("button", { name: "Save", exact: true }).click();
   await expect(dialog).not.toBeVisible();
+  await page.getByRole("button", { name: "Add expense", exact: true }).click();
+  await dialog
+    .getByLabel("What’s the expense?", { exact: true })
+    .fill(`Recorded payment ${info.project.name}`);
+  await dialog.getByLabel("Total cost (USD)", { exact: true }).fill("20");
+  await dialog
+    .getByRole("combobox", { name: /Category/ })
+    .selectOption("Travel");
+  const source = dialog.getByLabel(/Pay from/);
+  await expect(source).toHaveAttribute("required", "");
+  await dialog.getByLabel("Fully paid", { exact: true }).check();
+  const included = dialog.getByLabel(
+    "This payment is already included in the recorded account balance",
+  );
+  await included.check();
+  await expect(source).not.toHaveAttribute("required", "");
+  await included.uncheck();
+  await expect(source).toHaveAttribute("required", "");
+  await included.check();
+  await dialog.getByLabel("Not paid", { exact: true }).check();
+  await expect(source).toHaveAttribute("required", "");
+  await dialog.getByLabel("Fully paid", { exact: true }).check();
+  await expect(source).toHaveValue("");
+  await dialog
+    .getByRole("button", { name: "Submit expense", exact: true })
+    .click();
+  await expect(dialog).not.toBeVisible();
   const execContext = await browser.newContext({
     viewport: page.viewportSize()!,
   });
@@ -177,6 +204,10 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
   await form.getByRole("combobox", { name: /Category/ }).selectOption("Hotel");
   await form.getByLabel("Partially paid", { exact: true }).check();
   await form.getByLabel("Amount paid (USD)", { exact: true }).fill("100");
+  await form.getByLabel(/This payment is already reflected/).check();
+  await expect(form.getByLabel(/Pay from/)).not.toHaveAttribute("required", "");
+  await form.getByLabel(/This payment is already reflected/).uncheck();
+  await expect(form.getByLabel(/Pay from/)).toHaveAttribute("required", "");
   await form.getByLabel("Pay from").selectOption("goodbull");
   await form.locator(".budget-optional summary").click();
   await form.getByLabel(/Receipt \(PDF/).setInputFiles({
@@ -201,6 +232,21 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
   const captain = await captainContext.newPage();
   await captain.goto("http://127.0.0.1:3102/budget");
   await captain.getByRole("button", { name: /Needs approval/ }).click();
+  const recordedItem = captain.locator(".budget-expense").filter({
+    has: captain.getByText(`Recorded payment ${info.project.name}`, {
+      exact: true,
+    }),
+  });
+  await recordedItem.locator("summary").first().click();
+  await recordedItem.getByRole("button", { name: "Review expense" }).click();
+  await expect(captain.getByRole("dialog")).toContainText(
+    "Funding source not specified",
+  );
+  await captain
+    .getByRole("dialog")
+    .getByRole("button", { name: "Approve expense", exact: true })
+    .click();
+  await expect(captain.getByRole("dialog")).not.toBeVisible();
   const item = captain.locator(".budget-expense").filter({
     has: captain.getByText(`Hotel ${info.project.name}`, { exact: true }),
   });

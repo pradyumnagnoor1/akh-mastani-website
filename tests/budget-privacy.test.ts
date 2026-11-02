@@ -85,6 +85,12 @@ beforeAll(async () => {
       "utf8",
     ),
   );
+  await db.exec(
+    readFileSync(
+      "supabase/migrations/0027_budget_optional_funding_source.sql",
+      "utf8",
+    ),
+  );
 });
 afterAll(async () => {
   await db?.close();
@@ -664,4 +670,119 @@ it("removes a planned-only cost from allocated budget while keeping its allocati
       )
     ).rows,
   ).toEqual([{ action: "planned_removed" }]);
+});
+
+it("accepts recorded payments without a source and approves without changing balances", async () => {
+  await user(exec);
+  await mutate(submission({ fund_id: "", included_in_balance: true }));
+  await user(captain);
+  const before = (
+    await db.query<{ id: string; balance_cents: number }>(
+      "select id,balance_cents from budget_funds order by id",
+    )
+  ).rows;
+  await mutate({ operation: "approve", id: expense, version: 1 });
+  expect(
+    (
+      await db.query<{ id: string; balance_cents: number }>(
+        "select id,balance_cents from budget_funds order by id",
+      )
+    ).rows,
+  ).toEqual(before);
+  expect(
+    (
+      await db.query(
+        "select fund_id,paid_cents from budget_expenses where id=$1",
+        [expense],
+      )
+    ).rows[0],
+  ).toEqual({ fund_id: null, paid_cents: 2000 });
+  await expect(
+    mutate({
+      operation: "payment",
+      id: expense,
+      version: 2,
+      amount_cents: 1000,
+      included_in_balance: false,
+    }),
+  ).rejects.toThrow(/funding source/);
+  await mutate({
+    operation: "payment",
+    id: expense,
+    version: 2,
+    amount_cents: 1000,
+    included_in_balance: false,
+    fund_id: "venmo",
+  });
+  await user(finance);
+  await mutate({ operation: "approve", id: expense, version: 3 });
+  const after = (
+    await db.query<{ id: string; balance_cents: number }>(
+      "select id,balance_cents from budget_funds order by id",
+    )
+  ).rows;
+  expect(after).toEqual(
+    before.map((row) =>
+      row.id === "venmo"
+        ? { ...row, balance_cents: Number(row.balance_cents) - 1000 }
+        : row,
+    ),
+  );
+});
+
+it("rejects missing funding sources for unpaid or unrecorded payments", async () => {
+  await user(exec);
+  for (const fund_id of ["", null]) {
+    await expect(mutate(submission({ fund_id }))).rejects.toThrow(
+      /funding source/,
+    );
+    await expect(
+      mutate(
+        submission({ fund_id, reported_cents: 0, included_in_balance: true }),
+      ),
+    ).rejects.toThrow(/funding source/);
+  }
+});
+
+it("retains second-person review and cancels source-free recorded payments without fund changes", async () => {
+  await user(exec);
+  await mutate(
+    submission({
+      fund_id: null,
+      reported_cents: 10000,
+      included_in_balance: true,
+    }),
+  );
+  await user(captain);
+  const before = (
+    await db.query<{ id: string; balance_cents: number }>(
+      "select id,balance_cents from budget_funds order by id",
+    )
+  ).rows;
+  await mutate({ operation: "approve", id: expense, version: 1 });
+  await mutate({
+    operation: "refund",
+    id: expense,
+    version: 2,
+    amount_cents: 1000,
+    included_in_balance: true,
+  });
+  await expect(
+    mutate({ operation: "approve", id: expense, version: 3 }),
+  ).rejects.toThrow();
+  await user(finance);
+  await mutate({ operation: "approve", id: expense, version: 3 });
+  await mutate({
+    operation: "delete",
+    id: expense,
+    version: 4,
+    note: "Cancel recorded expense",
+  });
+  expect(
+    (
+      await db.query<{ id: string; balance_cents: number }>(
+        "select id,balance_cents from budget_funds order by id",
+      )
+    ).rows,
+  ).toEqual(before);
 });
