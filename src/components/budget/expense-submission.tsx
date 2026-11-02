@@ -12,11 +12,13 @@ const FUNDS = [
 ];
 
 export function ExpenseSubmission({
+  requestOnly,
   seasonId,
   draftId,
   expenses,
   categories,
 }: {
+  requestOnly: boolean;
   seasonId: string | null;
   draftId: string;
   expenses: Expense[];
@@ -33,9 +35,19 @@ export function ExpenseSubmission({
       <div className="page-heading">
         <div>
           <span className="eyebrow">TEAM EXPENSES</span>
-          <h1>{editing ? "Edit expense" : "Add expense"}</h1>
+          <h1>
+            {requestOnly
+              ? editing
+                ? "Edit expense request"
+                : "Request an expense"
+              : editing
+                ? "Edit expense"
+                : "Add expense"}
+          </h1>
           <p className="muted">
-            Send the details to Captains and Logistics & Finance for review.
+            {requestOnly
+              ? "Request approval from FML and Captains before spending or making a booking."
+              : "Send the details to Captains and Logistics & Finance for review."}
           </p>
         </div>
       </div>
@@ -46,6 +58,7 @@ export function ExpenseSubmission({
           seasonId={editing?.season_id ?? seasonId!}
           expense={editing}
           categories={categories}
+          requestOnly={requestOnly}
           onAnother={fresh}
         />
       ) : (
@@ -57,10 +70,10 @@ export function ExpenseSubmission({
       {expenses.length > 0 && (
         <section
           className="panel budget-submit-card"
-          aria-label="Your expenses"
+          aria-label={requestOnly ? "Your requests" : "Your expenses"}
         >
           <div className="budget-section-heading">
-            <h2>Your expenses</h2>
+            <h2>{requestOnly ? "Your requests" : "Your expenses"}</h2>
           </div>
           <p className="muted">
             Your submissions and review feedback appear here. Only pending
@@ -77,6 +90,22 @@ export function ExpenseSubmission({
                       expense.fund_id}{" "}
                     · ${(expense.total_cents / 100).toFixed(2)}
                   </p>
+                  {requestOnly && (
+                    <p
+                      className={
+                        expense.request_approved_at ||
+                        (!expense.is_request && expense.status === "approved")
+                          ? "notice"
+                          : "muted"
+                      }
+                    >
+                      {expense.request_approved_at
+                        ? "Approved — you may proceed up to the approved amount. Send payment details to FML or Captains afterward."
+                        : expense.is_request
+                          ? "Wait for approval before spending or booking."
+                          : "Existing expense record. Contact FML or Captains for payment updates."}
+                    </p>
+                  )}
                   {expense.status === "changes" && expense.review_note && (
                     <p className="budget-review-feedback">
                       <strong>Changes requested:</strong> {expense.review_note}
@@ -88,21 +117,29 @@ export function ExpenseSubmission({
                     {expense.status === "changes"
                       ? "Changes requested"
                       : expense.status === "pending"
-                        ? "Pending review"
+                        ? expense.is_request && expense.request_approved_at
+                          ? "Payment review pending"
+                          : requestOnly
+                            ? "Awaiting approval"
+                            : "Pending review"
                         : "Approved"}
                   </span>
-                  {expense.status !== "approved" && (
-                    <button
-                      type="button"
-                      className="button secondary"
-                      onClick={() => {
-                        setEditing(expense);
-                        window.scrollTo({ top: 0, behavior: "smooth" });
-                      }}
-                    >
-                      Edit
-                    </button>
-                  )}
+                  {expense.status !== "approved" &&
+                    (!requestOnly ||
+                      (expense.reported_cents === 0 &&
+                        expense.paid_cents === 0 &&
+                        expense.pending_refund_cents === 0)) && (
+                      <button
+                        type="button"
+                        className="button secondary"
+                        onClick={() => {
+                          setEditing(expense);
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                        }}
+                      >
+                        Edit
+                      </button>
+                    )}
                 </div>
               </article>
             ))}
@@ -119,11 +156,13 @@ function SubmitForm({
   expense,
   categories,
   onAnother,
+  requestOnly,
 }: {
   id: string;
   seasonId: string;
   expense: Expense | null;
   categories: string[];
+  requestOnly: boolean;
   onAnother: () => void;
 }) {
   const [state, action, pending] = useActionState(
@@ -150,14 +189,19 @@ function SubmitForm({
       >
         <ShieldCheck size={34} aria-hidden="true" />
         <h2>
-          {expense ? "Changes sent for review" : "Expense sent for review"}
+          {expense
+            ? "Changes sent for review"
+            : requestOnly
+              ? "Expense request sent"
+              : "Expense sent for review"}
         </h2>
         <p>
-          Captains and Logistics & Finance can verify it before any payment
-          changes the recorded account balance.
+          {requestOnly
+            ? "Wait until your request shows Approved before spending. FML or Captains may ask for changes first."
+            : "Captains and Logistics & Finance can verify it before any payment changes the recorded account balance."}
         </p>
         <button className="button primary" onClick={onAnother}>
-          Add another expense
+          {requestOnly ? "Request another expense" : "Add another expense"}
         </button>
         {expense && (
           <button
@@ -178,7 +222,9 @@ function SubmitForm({
         <div>
           <h2>{expense ? "Update expense details" : "Expense details"}</h2>
           <p className="muted">
-            Just the essentials. You can attach a receipt too.
+            {requestOnly
+              ? "Enter the proposed cost and purpose. Attach a quote or estimate if available."
+              : "Just the essentials. You can attach a receipt too."}
           </p>
         </div>
       </div>
@@ -234,12 +280,15 @@ function SubmitForm({
             </select>
           </label>
           <label>
-            Pay from{payment !== "unpaid" && included ? " (optional)" : ""}
+            {requestOnly ? "Suggested funding source" : "Pay from"}
+            {!requestOnly && payment !== "unpaid" && included
+              ? " (optional)"
+              : ""}
             <select
               name="fund_id"
               value={fund}
               onChange={(e) => setFund(e.target.value)}
-              required={payment === "unpaid" || !included}
+              required={requestOnly || payment === "unpaid" || !included}
             >
               <option value="">Choose a funding source</option>
               {FUNDS.filter((item) => eligibleFund(item.id, category)).map(
@@ -251,60 +300,72 @@ function SubmitForm({
               )}
             </select>
           </label>
-          <fieldset className="budget-payment-choice">
-            <legend>Payment status</legend>
-            {[
-              ["unpaid", "Not paid"],
-              ["partial", "Partially paid"],
-              ["paid", "Fully paid"],
-            ].map(([value, label]) => (
-              <label
-                key={value}
-                className={payment === value ? "selected" : ""}
-              >
-                <input
-                  type="radio"
-                  name="payment_status"
-                  value={value}
-                  checked={payment === value}
-                  onChange={() => setPayment(value)}
-                />
-                {label}
-              </label>
-            ))}
-          </fieldset>
-          {payment === "partial" && (
-            <label>
-              Amount paid (USD)
-              <input
-                name="paid"
-                inputMode="decimal"
-                placeholder="0.00"
-                required
-                defaultValue={
-                  expense ? (expense.reported_cents / 100).toFixed(2) : ""
-                }
-              />
-            </label>
-          )}
-          {payment !== "unpaid" && (
-            <label className="budget-checkbox">
-              <input
-                type="checkbox"
-                name="included"
-                checked={included}
-                onChange={(e) => setIncluded(e.target.checked)}
-              />
-              This payment is already reflected in the account balance
-            </label>
+          {requestOnly ? (
+            <input type="hidden" name="payment_status" value="unpaid" />
+          ) : (
+            <>
+              <fieldset className="budget-payment-choice">
+                <legend>Payment status</legend>
+                {[
+                  ["unpaid", "Not paid"],
+                  ["partial", "Partially paid"],
+                  ["paid", "Fully paid"],
+                ].map(([value, label]) => (
+                  <label
+                    key={value}
+                    className={payment === value ? "selected" : ""}
+                  >
+                    <input
+                      type="radio"
+                      name="payment_status"
+                      value={value}
+                      checked={payment === value}
+                      onChange={() => setPayment(value)}
+                    />
+                    {label}
+                  </label>
+                ))}
+              </fieldset>
+              {payment === "partial" && (
+                <label>
+                  Amount paid (USD)
+                  <input
+                    name="paid"
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    required
+                    defaultValue={
+                      expense ? (expense.reported_cents / 100).toFixed(2) : ""
+                    }
+                  />
+                </label>
+              )}
+              {payment !== "unpaid" && (
+                <label className="budget-checkbox">
+                  <input
+                    type="checkbox"
+                    name="included"
+                    checked={included}
+                    onChange={(e) => setIncluded(e.target.checked)}
+                  />
+                  This payment is already reflected in the account balance
+                </label>
+              )}
+            </>
           )}
           <details className="budget-optional">
             <summary>
               Add details{" "}
-              <span className="muted">Receipt, due date, notes</span>
+              <span className="muted">
+                {requestOnly
+                  ? "Quote, needed-by date, notes"
+                  : "Receipt, due date, notes"}
+              </span>
             </summary>
             <label>
-              Receipt (PDF, JPEG or PNG, up to 2 MB)
+              {requestOnly
+                ? "Quote or estimate (PDF, JPEG or PNG, up to 2 MB)"
+                : "Receipt (PDF, JPEG or PNG, up to 2 MB)"}
               <input
                 type="file"
                 name="receipt"
@@ -340,7 +401,9 @@ function SubmitForm({
             ? "Sending…"
             : expense
               ? "Save changes for review"
-              : "Submit expense for approval"}
+              : requestOnly
+                ? "Send expense request"
+                : "Submit expense for approval"}
         </button>
         {expense && (
           <button

@@ -46,6 +46,8 @@ export type PlannedExpense = {
   included_in_balance: boolean;
 };
 export type Expense = {
+  is_request?: boolean;
+  request_approved_at?: string | null;
   id: string;
   season_id: string;
   category: string;

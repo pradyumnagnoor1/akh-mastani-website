@@ -294,7 +294,7 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
   await expect(execPage.getByRole("link", { name: "Budget" })).toHaveCount(0);
   await execPage.goto("http://127.0.0.1:3102/expenses/new");
   await expect(
-    execPage.getByRole("heading", { name: "Add expense" }),
+    execPage.getByRole("heading", { name: "Request an expense" }),
   ).toBeVisible();
   await expect(execPage.getByText("Team funds")).toHaveCount(0);
   await expect(execPage.getByText("Allocated Budget")).toHaveCount(0);
@@ -308,18 +308,20 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
   await form.getByLabel("Total cost (USD)", { exact: true }).fill("500");
   await form.getByRole("combobox", { name: /Category/ }).selectOption("Mix");
   await expect(
-    form.getByLabel("Pay from").locator('option[value="goodbull"]'),
+    form
+      .getByLabel("Suggested funding source")
+      .locator('option[value="goodbull"]'),
   ).toHaveCount(0);
   await form.getByRole("combobox", { name: /Category/ }).selectOption("Hotel");
-  await form.getByLabel("Partially paid", { exact: true }).check();
-  await form.getByLabel("Amount paid (USD)", { exact: true }).fill("100");
-  await form.getByLabel(/This payment is already reflected/).check();
-  await expect(form.getByLabel(/Pay from/)).not.toHaveAttribute("required", "");
-  await form.getByLabel(/This payment is already reflected/).uncheck();
-  await expect(form.getByLabel(/Pay from/)).toHaveAttribute("required", "");
-  await form.getByLabel("Pay from").selectOption("goodbull");
+  await expect(form.getByText("Payment status", { exact: true })).toHaveCount(
+    0,
+  );
+  await expect(
+    execPage.getByText(/before spending or making a booking/),
+  ).toBeVisible();
+  await form.getByLabel("Suggested funding source").selectOption("goodbull");
   await form.locator(".budget-optional summary").click();
-  await form.getByLabel(/Receipt \(PDF/).setInputFiles({
+  await form.getByLabel(/Quote or estimate/).setInputFiles({
     name: "receipt.pdf",
     mimeType: "application/pdf",
     buffer: Buffer.from("%PDF-1.4\nreceipt fixture"),
@@ -329,10 +331,10 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
     fullPage: true,
   });
   await form
-    .getByRole("button", { name: "Submit expense for approval", exact: true })
+    .getByRole("button", { name: "Send expense request", exact: true })
     .click();
   await expect(
-    execPage.getByRole("heading", { name: "Expense sent for review" }),
+    execPage.getByRole("heading", { name: "Expense request sent" }),
   ).toBeVisible();
   const captainContext = await browser.newContext({
     viewport: page.viewportSize()!,
@@ -366,7 +368,7 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
   await expect(ownExpense).toContainText("Add the booking note");
   await ownExpense.getByRole("button", { name: "Edit" }).click();
   await expect(
-    execPage.getByRole("heading", { name: "Edit expense" }),
+    execPage.getByRole("heading", { name: "Edit expense request" }),
   ).toBeVisible();
   await execPage
     .locator(".budget-submit-card form .budget-optional summary")
@@ -397,7 +399,12 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
       exact: true,
     }),
   });
-  await expect(cf).toContainText("$4,900.00");
+  await expect(cf).toContainText("$5,000.00");
+  await execPage.reload();
+  await expect(ownExpense).toContainText("Approved — you may proceed");
+  await expect(
+    ownExpense.getByRole("button", { name: "Edit", exact: true }),
+  ).toHaveCount(0);
   await captain.screenshot({
     path: info.outputPath("funds.png"),
     fullPage: true,
@@ -409,7 +416,7 @@ test("budget: season, fund reconciliation, private expense review and exact dedu
   });
   await ei.locator("summary").first().click();
   await ei.getByRole("button", { name: "Record payment" }).click();
-  await dialog.getByLabel("Payment amount (USD)", { exact: true }).fill("400");
+  await dialog.getByLabel("Payment amount (USD)", { exact: true }).fill("500");
   await dialog
     .getByRole("button", { name: "Submit payment for approval" })
     .click();

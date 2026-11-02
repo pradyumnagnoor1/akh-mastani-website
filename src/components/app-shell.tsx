@@ -100,7 +100,9 @@ export function AppShell({
               onNavigate={close}
             >
               <Icon size={19} aria-hidden="true" />
-              {label}
+              {href === "/expenses/new" && member.budget_role === "exec"
+                ? "Expense Requests"
+                : label}
               <NavigationHint />
               {isCurrent(path, href) && <span className="nav-dot" />}
             </Link>

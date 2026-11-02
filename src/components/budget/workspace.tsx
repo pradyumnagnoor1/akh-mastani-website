@@ -624,6 +624,9 @@ export function BudgetWorkspace({
                 <summary>
                   <div>
                     <strong>{e.title}</strong>
+                    {e.is_request && (
+                      <span className="muted small">Expense request</span>
+                    )}
                     <span className="muted small">
                       {e.category} ·{" "}
                       {data.funds.find((f) => f.id === e.fund_id)?.name ??
@@ -1607,6 +1610,13 @@ function ReviewForm({
             "Funding source not specified"}
         </p>
         <p>Submitted by {e.submitted_name}</p>
+        {e.is_request && !e.request_approved_at && (
+          <p className="notice">
+            Approve this request to authorize spending up to{" "}
+            {money(e.total_cents)}. No payment is deducted until it is reported
+            and verified.
+          </p>
+        )}
         <p>
           Reported paid: {money(e.reported_cents)} · Previously verified:{" "}
           {money(e.paid_cents)}

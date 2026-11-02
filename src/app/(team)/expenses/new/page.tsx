@@ -6,7 +6,7 @@ import type { Expense } from "@/features/budget/types";
 import "@/components/budget/budget.css";
 
 export default async function Page() {
-  const { supabase, member } = await requireExpenseSubmitter();
+  const { supabase, member, role } = await requireExpenseSubmitter();
   const [
     { data, error },
     { data: categories, error: categoriesError },
@@ -27,6 +27,7 @@ export default async function Page() {
     throw new Error("Expense submission is unavailable right now.");
   return (
     <ExpenseSubmission
+      requestOnly={role === "exec"}
       seasonId={data as string | null}
       draftId={randomUUID()}
       expenses={expenses as Expense[]}
