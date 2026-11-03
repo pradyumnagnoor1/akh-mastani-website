@@ -19,18 +19,18 @@ export const identity = cache(async () => {
     user.app_metadata.provider !== "google"
   )
     redirect("/login?error=domain");
-  const result = await supabase
-    .from("members")
-    .select("id,email,display_name,status,is_admin,exec_roles")
-    .eq("id", user.id)
-    .maybeSingle();
+  // Both reads depend on the verified user, not on one another.
+  const [result, budget] = await Promise.all([
+    supabase
+      .from("members")
+      .select("id,email,display_name,status,is_admin,exec_roles")
+      .eq("id", user.id)
+      .maybeSingle(),
+    supabase.rpc("budget_role"),
+  ]);
   if (result.error)
     throw new Error("Unable to load membership. Please try again.");
   const raw = result.data as Member | null;
-  // Budget permission is independent of the app's legacy broad admin permission.
-  // Missing migration hides the feature without breaking existing team pages.
-  const budget =
-    raw?.status === "active" ? await supabase.rpc("budget_role") : null;
   const member = raw
     ? {
         ...raw,
@@ -41,7 +41,7 @@ export const identity = cache(async () => {
           : ((budget?.data ?? "none") as Member["budget_role"]),
       }
     : null;
-  return { supabase, user, member };
+  return { supabase, user, member, budgetRoleError: !!budget.error };
 });
 
 export async function requireMember() {

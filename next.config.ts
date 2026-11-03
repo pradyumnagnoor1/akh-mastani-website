@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
 const config: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
-  experimental: { serverActions: { bodySizeLimit: "5mb" } },
+  experimental: {
+    serverActions: { bodySizeLimit: "5mb" },
+    // Private, in-memory router reuse. Server auth and database reads remain fresh.
+    staleTimes: { dynamic: 30, static: 30 },
+  },
   async headers() {
     return [
       {

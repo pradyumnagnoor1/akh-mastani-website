@@ -2478,15 +2478,6 @@ input[type="file"]::file-selector-button {
   .communication-form > .actions {
     bottom: calc(var(--tabbar-height) + env(safe-area-inset-bottom));
   }
-  body:has(
-      input:not([type="checkbox"]):not([type="radio"]):focus,
-      textarea:focus,
-      select:focus
-    )
-    :is(.segment-editor, .communication-form)
-    > .actions {
-    bottom: 0;
-  }
   .file-field {
     padding: var(--space-4);
   }

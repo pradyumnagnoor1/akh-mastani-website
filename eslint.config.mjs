@@ -8,6 +8,7 @@ export default defineConfig([
     ".next/**",
     ".next-e2e/**",
     ".next-e2e-segments/**",
+    ".next-e2e-speed/**",
     "node_modules/**",
     "next-env.d.ts",
     "playwright-report/**",

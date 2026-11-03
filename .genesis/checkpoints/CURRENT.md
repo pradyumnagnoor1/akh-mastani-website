@@ -1,4 +1,5 @@
 # CURRENT
+- latest_navigation_cache:30s browser router reuse, common-route and intent preloads, parallel auth/Budget reads and streaming Home. Independent APPROVE;463tests/check/build,56production browser checks and2Budget flows pass. No migration. See checkpoints/navigation-cache.md.
 - latest_budget_request_funding: Reviewer-selected funding, no exec fund picker, optional receipts. Independent APPROVE,458tests/check/build and desktop/mobile pass. Apply0032. See checkpoints/budget-request-funding.md.
 - latest_budget_expense_requests: General exec prior-approval requests implemented; independent APPROVE, 457 tests/check/build and desktop/mobile Budget pass. Apply0031 for database enforcement. See checkpoints/budget-expense-requests.md.
 - latest_budget_funds_controls: Collapsed expected income, bar toggle, corrected fund subtitles and additive credits; independent APPROVE, 454 tests/check/build and desktop/mobile Budget pass. Apply0030 for Add to balance. See checkpoints/budget-funds-controls.md.

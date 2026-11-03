@@ -95,6 +95,13 @@ export function AppShell({
             <Link
               key={href}
               href={href}
+              prefetch={
+                ["/home", "/todos", "/announcements", "/calendar"].includes(
+                  href,
+                )
+                  ? true
+                  : undefined
+              }
               className={`nav-item ${isCurrent(path, href) ? "selected" : ""}`}
               aria-current={isCurrent(path, href) ? "page" : undefined}
               onNavigate={close}
@@ -222,6 +229,11 @@ export function AppShell({
           <Link
             key={href}
             href={href}
+            prefetch={
+              ["/home", "/todos", "/announcements", "/calendar"].includes(href)
+                ? true
+                : undefined
+            }
             className={`mobile-tab ${isCurrent(path, href) ? "selected" : ""}`}
             aria-current={isCurrent(path, href) ? "page" : undefined}
           >

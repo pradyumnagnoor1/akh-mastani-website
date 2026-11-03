@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { FeaturedEvents } from "@/components/featured-events";
 import { NotificationSettings } from "@/components/notification-settings";
 import { AdminSummary } from "@/components/admin-summary";
@@ -11,6 +12,27 @@ import { TodayCard } from "@/components/today-card";
 export const maxDuration = 60;
 export default async function Home() {
   const { member } = await requireMember();
+  const firstName = member.display_name?.split(" ")[0];
+  return (
+    <>
+      <div className="page-heading">
+        <h1>Home</h1>
+        {firstName && <p className="muted">Hi, {firstName}.</p>}
+      </div>
+      <Suspense
+        fallback={
+          <section className="panel" role="status">
+            Loading your updates…
+          </section>
+        }
+      >
+        <HomeUpdates />
+      </Suspense>
+    </>
+  );
+}
+async function HomeUpdates() {
+  const { member } = await requireMember();
   const today = await digestData();
   const { segments, assignments } = today;
   const mine = segments.filter(
@@ -20,13 +42,8 @@ export default async function Home() {
         (a) => a.segment_id === s.id && a.member_id === member.id,
       ),
   );
-  const firstName = member.display_name?.split(" ")[0];
   return (
     <>
-      <div className="page-heading">
-        <h1>Home</h1>
-        {firstName && <p className="muted">Hi, {firstName}.</p>}
-      </div>
       <TodayCard
         digest={today.digest}
         unavailable={today.unavailable}

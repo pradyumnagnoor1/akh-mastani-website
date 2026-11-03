@@ -31,12 +31,15 @@
     ".next-e2e/types/**/*.ts",
     ".next-e2e/dev/types/**/*.ts",
     ".next-e2e-segments/types/**/*.ts",
-    ".next-e2e-segments/dev/types/**/*.ts"
+    ".next-e2e-segments/dev/types/**/*.ts",
+    ".next-e2e-speed/types/**/*.ts",
+    ".next-e2e-speed/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
     ".next-e2e",
     ".next-e2e-segments",
+    ".next-e2e-speed",
     ".next/**/* *.ts"
   ]
 }

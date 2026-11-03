@@ -6,8 +6,8 @@ import { collectPages } from "@/features/communication/pagination";
 import type { BudgetData, BudgetRole } from "./types";
 export async function requireBudget() {
   const context = await requireMember();
-  const { data, error } = await context.supabase.rpc("budget_role");
-  if (error)
+  const data = context.member.budget_role;
+  if (context.budgetRoleError)
     throw new Error(
       "Budget setup is unavailable. Please try again after setup is complete.",
     );
@@ -17,8 +17,9 @@ export async function requireBudget() {
 }
 export async function requireExpenseSubmitter() {
   const context = await requireMember();
-  const { data, error } = await context.supabase.rpc("budget_role");
-  if (error) throw new Error("Expense submission is unavailable right now.");
+  const data = context.member.budget_role;
+  if (context.budgetRoleError)
+    throw new Error("Expense submission is unavailable right now.");
   if (!data || data === "none") redirect("/home");
   return { ...context, role: data as BudgetRole };
 }
@@ -33,7 +34,7 @@ export const budgetData = cache(async () => {
     "budget_events",
     "budget_receipts",
   ];
-  const result = await Promise.all(
+  const resultPromise = Promise.all(
     tables.map((table) =>
       collectPages((from, to) =>
         context.supabase
@@ -44,6 +45,27 @@ export const budgetData = cache(async () => {
       ),
     ),
   );
+  let incomeReady = true;
+  const incomePromise = Promise.all(
+    ["budget_income", "budget_income_receipts"].map((table) =>
+      collectPages(async (from, to) => {
+        const result = await context.supabase
+          .from(table)
+          .select("*")
+          .order("id")
+          .range(from, to);
+        if (result.error && ["42P01", "PGRST205"].includes(result.error.code)) {
+          incomeReady = false;
+          return { data: [], error: null };
+        }
+        return result;
+      }),
+    ),
+  );
+  const [result, incomeResults] = await Promise.all([
+    resultPromise,
+    incomePromise,
+  ]);
   const [
     funds,
     seasons,
@@ -62,23 +84,6 @@ export const budgetData = cache(async () => {
     events,
     receipts,
   } as unknown as BudgetData;
-  let incomeReady = true;
-  const incomeResults = await Promise.all(
-    ["budget_income", "budget_income_receipts"].map((table) =>
-      collectPages(async (from, to) => {
-        const result = await context.supabase
-          .from(table)
-          .select("*")
-          .order("id")
-          .range(from, to);
-        if (result.error && ["42P01", "PGRST205"].includes(result.error.code)) {
-          incomeReady = false;
-          return { data: [], error: null };
-        }
-        return result;
-      }),
-    ),
-  );
   const visibleSeasons = allData.seasons.filter((season) => !season.deleted_at);
   const visibleIds = new Set(visibleSeasons.map((season) => season.id));
   return {
