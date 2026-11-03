@@ -1068,3 +1068,41 @@
   background: var(--accent-soft);
   border-color: var(--accent);
 }
+
+.budget-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.budget-toolbar .budget-tabs {
+  order: -1;
+  margin-bottom: 0;
+}
+.budget-toolbar .budget-approval-button {
+  margin: 0;
+  margin-left: auto;
+}
+.budget-funds-visual {
+  margin-top: 0;
+}
+.budget-submit-card {
+  max-width: 680px;
+}
+.budget-submit-intro {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.budget-optional {
+  background: #ffffff02;
+  border-radius: 14px;
+}
+@media (max-width: 760px) {
+  .budget-toolbar .budget-approval-button {
+    margin-left: 0;
+  }
+  .budget-toolbar {
+    gap: 10px;
+  }
+}

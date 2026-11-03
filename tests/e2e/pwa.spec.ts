@@ -79,9 +79,7 @@ test("pwa: manifest, real worker and private-page offline fallback", async ({
   ).toHaveCount(0);
   await context.setOffline(false);
   await page.getByRole("link", { name: "Try again" }).click();
-  await expect(
-    page.getByRole("heading", { name: "Home", exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 });
 
 test("pwa: notification permission is never requested on mount", async ({
@@ -153,7 +151,5 @@ test("pwa: unsupported browser still opens team hub", async ({
       "Notifications aren’t supported in this browser. You can still use the team hub.",
     ),
   ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Home", exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 });

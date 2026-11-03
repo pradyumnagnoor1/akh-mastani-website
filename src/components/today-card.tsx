@@ -38,6 +38,15 @@ export function TodayCard({
     <section className="panel today-card" aria-labelledby="today-heading">
       <div className="section-toolbar">
         <h2 id="today-heading">Today · {date}</h2>
+        {digest.items.some((item) => item.section === "Needs attention") && (
+          <span className="badge today-urgent-count">
+            {
+              digest.items.filter((item) => item.section === "Needs attention")
+                .length
+            }{" "}
+            need attention
+          </span>
+        )}
       </div>
       {!digest.schedule.length && digest.next && (
         <p className="eyebrow">NEXT UP</p>
@@ -88,7 +97,10 @@ export function TodayCard({
         (section) => {
           const items = visible.filter((i) => i.section === section);
           return items.length ? (
-            <div className="today-section" key={section}>
+            <div
+              className={`today-section ${section === "Needs attention" ? "today-urgent" : ""}`}
+              key={section}
+            >
               <h3>
                 {section === "Announcements"
                   ? "Read announcements"

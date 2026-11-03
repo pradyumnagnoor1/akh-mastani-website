@@ -203,7 +203,7 @@ test("navigation: narrow layouts keep controls accessible and dancer permissions
     const settings = await page.locator(".notification-settings").boundingBox();
     const bar = await quick.boundingBox();
     expect(settings!.y + settings!.height).toBeLessThanOrEqual(bar!.y);
-    await page.getByRole("heading", { name: "Home", exact: true }).click();
+    await page.getByRole("heading", { level: 1 }).click();
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.screenshot({
       path: info.outputPath("narrow-home.png"),
@@ -315,4 +315,24 @@ test("navigation: create, cancel, filters and back links show pending feedback",
   await expect(page).toHaveURL(/view=all/);
   await page.goto("/announcements/new");
   await delayedClick("← Announcements", /\/announcements\?/);
+});
+
+test("navigation: dropdown menus use the shared dark surface and keyboard selection", async ({
+  page,
+  context,
+  request,
+}, info) => {
+  await login(context, request);
+  await page.goto("/announcements/new");
+  const select = page.locator("select").first();
+  await select.click();
+  await page.screenshot({ path: info.outputPath("styled-dropdown.png") });
+  await page.keyboard.press("Escape");
+  await select.focus();
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+  await expect(select).toBeFocused();
+  expect(await select.evaluate((el) => getComputedStyle(el).appearance)).toBe(
+    "base-select",
+  );
 });

@@ -162,9 +162,7 @@ test("refresh: pull circle, cancellation and completed refresh", async ({
   );
   expect((await response).ok()).toBe(true);
   await expect(page.locator(".page-refresh-indicator")).toHaveCount(0);
-  await expect(
-    page.getByRole("heading", { name: "Home", exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 });
 
 test("refresh: roster search and validation-disabled forms remain refreshable", async ({

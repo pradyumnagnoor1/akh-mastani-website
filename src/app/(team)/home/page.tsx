@@ -15,9 +15,10 @@ export default async function Home() {
   const firstName = member.display_name?.split(" ")[0];
   return (
     <>
-      <div className="page-heading">
-        <h1>Home</h1>
-        {firstName && <p className="muted">Hi, {firstName}.</p>}
+      <div className="page-heading home-welcome">
+        <p className="eyebrow">YOUR TEAM. YOUR NEXT MOVE.</p>
+        <h1>{firstName ? `Hey, ${firstName}.` : "Welcome back."}</h1>
+        <p className="muted">Your day with Mastani, all in one place.</p>
       </div>
       <Suspense
         fallback={

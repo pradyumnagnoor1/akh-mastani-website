@@ -807,46 +807,48 @@ export function BudgetWorkspace({
           {message}
         </p>
       )}
-      {reviewer && (
-        <button
-          className={`budget-approval-button ${pendingCount ? "has-pending" : ""}`}
-          aria-label={`Needs approval: ${pendingCount} pending expenses${reviewable.length ? `, ${reviewable.length} ready for your review` : ""}`}
-          onClick={() => {
-            setTab("expenses");
-            setStatus("pending");
-            setCategory("all");
-          }}
-        >
-          <ShieldCheck size={18} />
-          <span>Needs approval</span>
-          {pendingCount > 0 && (
-            <b className="budget-approval-count">{pendingCount}</b>
-          )}
-          <ArrowUpRight size={15} />
-        </button>
-      )}
-      <nav className="view-tabs budget-tabs" aria-label="Budget sections">
-        {(
-          [
-            ["funds", "Funds", Wallet],
-            ["allocated", "Allocated Budget", ChartNoAxesCombined],
-            ["expenses", "Expenses", ReceiptText],
-          ] as const
-        ).map(([key, label, Icon]) => (
+      <div className="budget-toolbar">
+        {reviewer && (
           <button
-            key={key}
-            className={tab === key ? "active" : ""}
-            aria-current={tab === key ? "page" : undefined}
+            className={`budget-approval-button ${pendingCount ? "has-pending" : ""}`}
+            aria-label={`Needs approval: ${pendingCount} pending expenses${reviewable.length ? `, ${reviewable.length} ready for your review` : ""}`}
             onClick={() => {
-              setTab(key);
-              setStatus("all");
+              setTab("expenses");
+              setStatus("pending");
+              setCategory("all");
             }}
           >
-            <Icon size={18} />
-            {label}
+            <ShieldCheck size={18} />
+            <span>Needs approval</span>
+            {pendingCount > 0 && (
+              <b className="budget-approval-count">{pendingCount}</b>
+            )}
+            <ArrowUpRight size={15} />
           </button>
-        ))}
-      </nav>
+        )}
+        <nav className="view-tabs budget-tabs" aria-label="Budget sections">
+          {(
+            [
+              ["funds", "Funds", Wallet],
+              ["allocated", "Allocated Budget", ChartNoAxesCombined],
+              ["expenses", "Expenses", ReceiptText],
+            ] as const
+          ).map(([key, label, Icon]) => (
+            <button
+              key={key}
+              className={tab === key ? "active" : ""}
+              aria-current={tab === key ? "page" : undefined}
+              onClick={() => {
+                setTab(key);
+                setStatus("all");
+              }}
+            >
+              <Icon size={18} />
+              {label}
+            </button>
+          ))}
+        </nav>
+      </div>
       {!season && (
         <section className="panel budget-empty">
           <ChartNoAxesCombined />
@@ -866,9 +868,6 @@ export function BudgetWorkspace({
             <p>Logistics & Finance can set up the first season.</p>
           )}
         </section>
-      )}
-      {tab === "funds" && season && (
-        <ExpectedIncomeSection data={data} season={season} role={role} />
       )}
       {tab === "funds" && (
         <>
@@ -894,6 +893,9 @@ export function BudgetWorkspace({
               (i) => i.season_id === season?.id,
             )}
           />
+          {season && (
+            <ExpectedIncomeSection data={data} season={season} role={role} />
+          )}
           <div className="budget-funds">
             {data.funds.map((f) => {
               const expenses = data.expenses.filter((e) => e.fund_id === f.id);

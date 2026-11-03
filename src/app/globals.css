@@ -2728,3 +2728,187 @@ input[type="file"]::file-selector-button {
     width: 100%;
   }
 }
+
+/* Publik-inspired surfaces: quiet depth, clear hierarchy, focused actions. */
+:root {
+  --surface: #14141d;
+  --surface-raised: #1d1c29;
+  --line: #ffffff12;
+  --radius: 14px;
+  --radius-lg: 22px;
+}
+body {
+  background:
+    radial-gradient(ellipse at 90% 0%, #9690ff09, transparent 48%), var(--bg);
+}
+h1 {
+  font-size: clamp(32px, 4vw, 44px);
+  letter-spacing: -0.045em;
+}
+.panel {
+  background:
+    linear-gradient(145deg, #ffffff03, transparent 60%), var(--surface);
+  border-color: var(--line);
+  box-shadow: 0 8px 28px #00000016;
+}
+.metric,
+.budget-amount-input input {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.035em;
+}
+.button.primary {
+  box-shadow:
+    inset 0 1px 0 #ffffff30,
+    0 4px 16px #9690ff16;
+}
+.home-welcome {
+  padding-block: 12px 8px;
+}
+.home-welcome h1 {
+  font-size: clamp(36px, 5vw, 56px);
+  margin-bottom: 10px;
+}
+.home-welcome .eyebrow {
+  margin-bottom: 12px;
+}
+.today-card {
+  border-color: #9690ff35;
+  background:
+    radial-gradient(ellipse at 0 0, #9690ff0e, transparent 65%), var(--surface);
+}
+.today-event {
+  padding: 20px;
+  border-radius: 16px;
+  background: #9690ff0b;
+}
+.today-event strong {
+  font-size: 20px;
+}
+.today-event small {
+  line-height: 1.6;
+}
+.today-urgent {
+  border-left: 3px solid var(--warning);
+  padding-left: 16px;
+}
+.today-urgent-count {
+  color: var(--warning);
+  background: var(--warning-soft);
+}
+.view-tabs {
+  gap: 4px;
+  padding: 5px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.view-tabs > a,
+.view-tabs > button {
+  border-radius: 11px;
+}
+select {
+  appearance: none;
+  background-color: var(--field);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23b0aaff' stroke-width='1.8' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 42px;
+  border-color: #9690ff40;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 #ffffff04;
+}
+select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+select option,
+select optgroup {
+  background: #1b1a26;
+  color: var(--text);
+}
+@supports (appearance: base-select) {
+  select:not([multiple]),
+  select:not([multiple])::picker(select) {
+    appearance: base-select;
+  }
+  select:not([multiple]) {
+    background-image: none;
+    padding-right: 14px;
+    align-items: center;
+    gap: 12px;
+  }
+  select::picker-icon {
+    color: var(--accent);
+    margin-left: auto;
+    transition: transform 0.15s;
+  }
+  select:open::picker-icon {
+    transform: rotate(180deg);
+  }
+  select::picker(select) {
+    background: #1b1a26;
+    color: var(--text);
+    border: 1px solid #9690ff55;
+    border-radius: 16px;
+    padding: 6px;
+    box-shadow: 0 16px 48px #0008;
+    margin-block: 6px;
+    max-height: min(360px, 60dvh);
+  }
+  select option {
+    padding: 11px 14px;
+    border-radius: 10px;
+    min-height: 44px;
+    gap: 10px;
+  }
+  select option:hover,
+  select option:focus-visible {
+    background: #9690ff20;
+  }
+  select option:checked {
+    background: #9690ff2a;
+    color: #e0ddff;
+    font-weight: 650;
+  }
+  select option::checkmark {
+    color: var(--accent);
+  }
+}
+@media (min-width: 761px) {
+  .sidebar {
+    inset: 14px auto 14px 14px;
+    width: calc(var(--sidebar-width) - 14px);
+    border: 1px solid #ffffff13;
+    border-radius: 24px;
+    background: linear-gradient(155deg, #1c1b26, #101016 65%);
+    box-shadow:
+      0 16px 48px #0004,
+      inset 0 1px 0 #ffffff06;
+  }
+  .main-content {
+    margin-left: calc(var(--sidebar-width) + 14px);
+  }
+  .topbar {
+    border-bottom-color: transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  select::picker-icon {
+    transition: none;
+  }
+}
+@media (max-width: 760px) {
+  .nav-dialog .nav-item {
+    min-height: 40px;
+    padding-block: 8px;
+  }
+  .nav-dialog .nav-label {
+    margin-top: 12px;
+    margin-bottom: 6px;
+  }
+}
+@media (max-width: 760px) {
+  .nav-dialog .drawer-header {
+    margin-bottom: 8px;
+  }
+}
