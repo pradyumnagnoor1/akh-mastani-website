@@ -79,21 +79,30 @@ export function buildDigest(input: {
             ? "Needs attention"
             : "Your to-dos",
         title: post.title,
-        detail: !post.due_on
-          ? "To-do · no due date"
-          : post.due_on < today
-            ? `Overdue · due ${post.due_on}`
-            : post.due_on === today
-              ? "To-do · due today"
-              : `To-do · due ${post.due_on}`,
+        detail: `${post.priority ?? "normal"} priority · ${
+          !post.due_on
+            ? "To-do · no due date"
+            : post.due_on < today
+              ? `Overdue · due ${post.due_on}`
+              : post.due_on === today
+                ? "To-do · due today"
+                : `To-do · due ${post.due_on}`
+        }`,
         href: `/todos/${post.id}`,
-        priority: !post.due_on
-          ? 5
-          : post.due_on < today
-            ? 0
-            : post.due_on === today
-              ? 1
-              : 4,
+        priority:
+          post.priority === "urgent"
+            ? -2
+            : post.priority === "high"
+              ? -1
+              : post.priority === "low"
+                ? 5.5
+                : !post.due_on
+                  ? 5
+                  : post.due_on < today
+                    ? 0
+                    : post.due_on === today
+                      ? 1
+                      : 4,
         order: post.due_on ?? "",
       });
     if (post.kind === "announcement" && Date.parse(post.created_at) >= recent)

@@ -46,46 +46,20 @@ beforeEach(() => {
   mocks.calendar.mockResolvedValue({ calendar: {} });
 });
 
-it("refreshes an aged Google schedule before saving the selected practice", async () => {
-  const form = draft();
-  form.set("practice_id", "weekly@2026-11-01T00:00:00Z");
-  form.set("calendar_source", "original-source");
-  let fresh = false;
-  mocks.calendar.mockImplementation(async () => {
-    fresh = true;
-    return {
-      calendar: {
-        source: "source",
-        configured: true,
-        stale: false,
-        error: null,
-      },
-    };
-  });
-  mocks.rpc.mockImplementation(async (_name, args) => {
-    expect(fresh).toBe(true);
-    expect(args).toMatchObject({
-      practice_id: form.get("practice_id"),
-      calendar_source: "original-source",
-    });
-    return { error: null };
-  });
-  await saveCommunication({ error: null }, form);
-  expect(mocks.calendar).toHaveBeenCalledTimes(1);
-  expect(mocks.redirect).toHaveBeenCalled();
-});
-
-it("preserves the draft without publishing if calendar refresh throws", async () => {
-  const form = draft();
-  form.set("practice_id", "practice");
-  form.set("calendar_source", "source");
-  mocks.calendar.mockRejectedValue(new Error("private provider error"));
-  expect((await saveCommunication({ error: null }, form)).error).toContain(
-    "Your message has been kept",
-  );
-  expect(mocks.rpc).not.toHaveBeenCalled();
-  expect(mocks.push).not.toHaveBeenCalled();
-});
+it.each(["weekly@2026-11-01T00:00:00Z", "custom:existing"])(
+  "rejects selecting existing practice %s without Google access or writes",
+  async (id) => {
+    const form = draft();
+    form.set("practice_id", id);
+    form.set("calendar_source", "source");
+    expect((await saveCommunication({ error: null }, form)).error).toContain(
+      "Create a practice event",
+    );
+    expect(mocks.calendar).not.toHaveBeenCalled();
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    expect(mocks.push).not.toHaveBeenCalled();
+  },
+);
 
 it("does not require Google for custom practices or ordinary announcements", async () => {
   mocks.rpc.mockResolvedValue({ error: null });
@@ -125,7 +99,7 @@ it("routes an announcement and new to-do through one transactional save", async 
   mocks.rpc.mockResolvedValue({ error: null });
   await saveCommunication({ error: null }, form);
   expect(mocks.rpc).toHaveBeenCalledWith(
-    "save_announcement_with_todo",
+    "save_communication_v21",
     expect.objectContaining({
       todo_id: "00000000-0000-4000-8000-000000000021",
       todo_due: "2026-11-01",
@@ -139,106 +113,32 @@ it("routes an announcement and new to-do through one transactional save", async 
   expect(mocks.rpc).toHaveBeenCalledTimes(1);
 });
 
-it("explains expired Google authorization when SQL cannot validate the cached practice", async () => {
+it("publishes a new practice and its announcement through one atomic call without Google", async () => {
+  mocks.rpc.mockResolvedValue({ error: null });
   const form = draft();
-  form.set("practice_id", "weekly@2026-11-01T00:00:00Z");
-  form.set("calendar_source", "source");
-  mocks.calendar.mockResolvedValue({
-    calendar: { configured: true, stale: true, error: "authorization" },
-  });
-  mocks.rpc.mockResolvedValue({
-    error: {
-      message:
-        "Practice unavailable. Refresh the calendar and choose a practice",
-    },
-  });
-  const result = await saveCommunication({ error: null }, form);
-  expect(result.error).toContain(
-    "Google Calendar authorization has expired or been revoked",
-  );
-  expect(result.error).toContain("Your message has been kept");
-  expect(result.calendarReconnect).toBe(true);
-  expect(mocks.redirect).not.toHaveBeenCalled();
-  expect(mocks.push).not.toHaveBeenCalled();
-});
-
-it("keeps deletion/source-change validation errors when the calendar is healthy", async () => {
-  const form = draft();
-  form.set("practice_id", "removed");
-  form.set("calendar_source", "source");
-  mocks.calendar.mockResolvedValue({
-    calendar: { source: "source", configured: true, stale: false, error: null },
-  });
-  mocks.rpc.mockResolvedValue({
-    error: {
-      message:
-        "Practice unavailable. Refresh the calendar and choose a practice",
-    },
-  });
-  const result = await saveCommunication({ error: null }, form);
-  expect(result.error).toBe(
-    "Practice unavailable. Refresh the calendar and choose a practice",
-  );
-  expect(result.calendarReconnect).toBeUndefined();
-});
-
-it.each([
-  [{ configured: false, stale: true }, "not connected", true],
-  [
-    { configured: true, stale: true, refreshing: true },
-    "is refreshing",
-    undefined,
-  ],
-  [
-    { configured: true, stale: true, error: "timeout" },
-    "Try publishing again shortly",
-    undefined,
-  ],
-])(
-  "explains calendar recovery state %j",
-  async (calendar, message, reconnect) => {
-    const form = draft();
-    form.set("practice_id", "practice");
-    form.set("calendar_source", "source");
-    mocks.calendar.mockResolvedValue({
-      calendar: { source: "source", ...calendar },
-    });
-    mocks.rpc.mockResolvedValue({
-      error: {
-        message:
-          "Practice unavailable. Refresh the calendar and choose a practice",
-      },
-    });
-    const result = await saveCommunication({ error: null }, form);
-    expect(result.error).toContain(message);
-    expect(result.calendarReconnect).toBe(reconnect);
-    expect(mocks.push).not.toHaveBeenCalled();
-  },
-);
-
-it("returns updated choices after reconnect without silently relinking the submitted practice", async () => {
-  const form = draft();
-  form.set("practice_id", "practice");
-  form.set("calendar_source", "old-source");
-  const calendar = {
-    source: "new-source",
-    configured: true,
-    stale: false,
-    events: [],
-  };
-  mocks.calendar.mockResolvedValue({ calendar });
-  mocks.rpc.mockResolvedValue({
-    error: {
-      message:
-        "Practice unavailable. Refresh the calendar and choose a practice",
-    },
-  });
-  const result = await saveCommunication({ error: null }, form);
-  expect(result.error).toContain("Choose your practice again");
-  expect(result.practiceCalendar).toEqual(calendar);
+  for (const [key, value] of Object.entries({
+    practice_id: "__custom__",
+    calendar_source: "custom",
+    custom_id: "00000000-0000-4000-8000-000000000022",
+    custom_version: "0",
+    custom_title: "Team practice",
+    custom_date: "2027-01-20",
+    custom_start: "18:00",
+    custom_end_date: "2027-01-20",
+    custom_end: "20:00",
+    custom_location: "REC",
+  }))
+    form.set(key, value);
+  await saveCommunication({ error: null }, form);
+  expect(mocks.rpc).toHaveBeenCalledTimes(1);
   expect(mocks.rpc).toHaveBeenCalledWith(
-    "save_announcement",
-    expect.objectContaining({ calendar_source: "old-source" }),
+    "save_communication_v21",
+    expect.objectContaining({
+      post_data: expect.objectContaining({
+        custom_title: "Team practice",
+        practice_id: "__custom__",
+      }),
+    }),
   );
-  expect(mocks.push).not.toHaveBeenCalled();
+  expect(mocks.calendar).not.toHaveBeenCalled();
 });

@@ -357,3 +357,43 @@ test("communication: announcement URLs are clickable on details and list", async
     .filter({ has: page.getByRole("link", { name: title, exact: true }) });
   await expect(card.locator(".message-link").first()).toBeVisible();
 });
+test("communication: pin and priority persist with member-safe controls", async ({
+  page,
+  context,
+  request,
+  browser,
+}, info) => {
+  await login(context, request, "admin");
+  const title = `Urgent pinned task ${info.project.name}`;
+  await create(page, "task", title);
+  await page.getByLabel("Priority", { exact: true }).selectOption("urgent");
+  await page.getByRole("button", { name: "Create to-do" }).click();
+  await expect(
+    page.getByRole("heading", { name: title, exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Priority: urgent", { exact: true }),
+  ).toBeVisible();
+  await page.getByLabel("Pin to the top").check();
+  await page.getByRole("button", { name: "Save pin and priority" }).click();
+  await expect(page.getByText("Pinned", { exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel("Pin to the top")).toBeChecked();
+  const url = page.url();
+  await page.goto("/todos?view=all&priority=urgent");
+  await expect(
+    page.getByRole("heading", { name: "Pinned", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: title, exact: true }),
+  ).toBeVisible();
+  const memberContext = await browser.newContext();
+  await login(memberContext, request, "dancer");
+  const member = await memberContext.newPage();
+  await member.goto(url);
+  await expect(
+    member.getByText("Priority: urgent", { exact: true }),
+  ).toBeVisible();
+  await expect(member.getByLabel("Pin to the top")).toHaveCount(0);
+  await memberContext.close();
+});

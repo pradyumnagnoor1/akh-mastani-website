@@ -183,6 +183,18 @@ await db.exec(
 await db.exec(
   readFileSync("supabase/migrations/0032_budget_request_funding.sql", "utf8"),
 );
+await db.exec(
+  readFileSync(
+    "supabase/migrations/0019_notification_preview_labels.sql",
+    "utf8",
+  ),
+);
+await db.exec(
+  readFileSync("supabase/migrations/0033_practice_reference.sql", "utf8"),
+);
+await db.exec(
+  readFileSync("supabase/migrations/0034_communication_priority.sql", "utf8"),
+);
 for (const person of users.values()) {
   await db.query(
     `insert into auth.users values($1,$2,now(),'{"provider":"google"}')`,
@@ -598,6 +610,14 @@ createServer((req, res) => {
             "practice_location",
           ],
           delete_custom_practice: ["target_id", "expected_version"],
+          save_communication_v21: [
+            "post_data",
+            "task_priority",
+            "todo_id",
+            "todo_due",
+            "todo_mode",
+            "todo_priority",
+          ],
           save_announcement_with_todo: [
             "post_data",
             "todo_id",
@@ -741,6 +761,12 @@ createServer((req, res) => {
             "due_date",
           ],
           complete_communication: ["target_id", "expected_version"],
+          set_communication_metadata: [
+            "target_id",
+            "expected_version",
+            "pin",
+            "task_priority",
+          ],
           manage_communication: [
             "target_id",
             "expected_version",
@@ -788,7 +814,9 @@ createServer((req, res) => {
           );
         const result = await db.query(
           `select public.${name}(${functions[name].map((_, i) => "$" + (i + 1)).join(",")})`,
-          functions[name].map((key) => args[key]),
+          functions[name].map(
+            (key) => args[key] ?? (key === "todo_mode" ? "individual" : null),
+          ),
         );
         if (fault?.mode === "lost-response")
           return json(

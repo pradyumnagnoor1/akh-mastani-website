@@ -1,6 +1,6 @@
 import { calendarData } from "@/features/calendar/queries";
 import { communicationData } from "@/features/communication/queries";
-import { featuredData } from "@/features/featured-events/queries";
+import { FeaturedEvents } from "@/components/featured-events";
 import { CalendarSchedule } from "@/components/calendar-schedule";
 import Link from "@/components/app-link";
 export const maxDuration = 60;
@@ -9,20 +9,19 @@ export default async function Page({
 }: {
   searchParams: Promise<{ date?: string }>;
 }) {
-  const [{ calendar, member }, { posts }, { events }, params] =
-    await Promise.all([
-      calendarData(),
-      communicationData(),
-      featuredData(),
-      searchParams,
-    ]);
+  const [{ calendar, member }, { posts }, params] = await Promise.all([
+    calendarData(),
+    communicationData(),
+    searchParams,
+  ]);
   return (
     <>
       <div className="page-heading heading-with-action">
         <div>
           <h1>Practice calendar</h1>
           <p className="muted">
-            Your day’s practices, events and team updates.
+            Google Calendar is a reference schedule. Practice announcements
+            contain website practice events.
           </p>
         </div>
         {member.is_admin && (
@@ -31,11 +30,12 @@ export default async function Page({
           </Link>
         )}
       </div>
+      <FeaturedEvents />
       <CalendarSchedule
         key={params.date ?? "today"}
         initial={calendar}
         announcements={posts.filter((p) => p.kind === "announcement")}
-        featured={events}
+        featured={[]}
         admin={member.is_admin}
         initialDay={params.date}
         serverNow={new Date().toISOString()}

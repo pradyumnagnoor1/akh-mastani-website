@@ -1,8 +1,16 @@
 import Link from "@/components/app-link";
-import { calendarData } from "@/features/calendar/queries";
+import { customPracticeData } from "@/features/custom-practices/queries";
 import { eventWhen, syncTime } from "@/features/calendar/types";
 export async function CalendarHome() {
-  const { calendar } = await calendarData();
+  const { events: practices } = await customPracticeData();
+  const calendar = {
+    events: practices,
+    timeZone: "America/Chicago",
+    configured: true,
+    stale: false,
+    unavailable: false,
+    lastSuccessAt: null as string | null,
+  };
   const now = new Date();
   const today = new Intl.DateTimeFormat("en-CA", {
     timeZone: calendar.timeZone,

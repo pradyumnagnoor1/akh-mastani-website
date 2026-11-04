@@ -12,9 +12,10 @@ export function CustomPracticeFields({
   const [fields, setFields] = useState(() => practiceFields(event));
   return (
     <fieldset className="custom-practice-fields stack" disabled={disabled}>
-      <legend>Custom practice details</legend>
+      <legend>Practice event details</legend>
       <p className="muted small">
-        Appears on the team’s website calendar. Times are in Texas time.
+        Create a website practice event with its announcement. Times are in
+        Central time.
       </p>
       <label htmlFor="custom-title">Practice name</label>
       <input

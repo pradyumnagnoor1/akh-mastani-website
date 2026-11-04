@@ -1,6 +1,5 @@
 "use server";
 import { validateCustomPractice } from "../custom-practices/policy";
-import { calendarData } from "@/features/calendar/queries";
 import type { CalendarView } from "@/features/calendar/types";
 import { validateExpiration } from "@/features/expiration/policy";
 import { scheduleImageCleanup } from "@/features/announcement-images/cleanup";
@@ -116,23 +115,30 @@ export async function saveCommunication(
   } catch (error) {
     return { error: (error as Error).message };
   }
-  // Drafts pause page refresh and can outlive the SQL schedule's freshness window.
-  // Refresh the trusted cache before validating a Google link; SQL still checks
-  // the submitted source/occurrence, including cancellation and reconnects.
   if (
     input.kind === "announcement" &&
     value(form, "practice_id") &&
-    value(form, "practice_id") !== "__custom__" &&
-    value(form, "calendar_source") !== "custom"
+    value(form, "practice_id") !== "__custom__"
   ) {
-    try {
-      practiceCalendar = (await calendarData()).calendar;
-    } catch {
+    if (args.expected_version === 0)
       return {
         error:
-          "We could not refresh the practice calendar. Try publishing again. Your message has been kept.",
+          "Create a practice event with this announcement. Google Calendar is reference-only.",
       };
-    }
+    const prior = await supabase
+      .from("communication_posts")
+      .select("practice_event_id,practice_source")
+      .eq("id", args.target_id)
+      .single();
+    if (
+      prior.error ||
+      prior.data.practice_event_id !== value(form, "practice_id") ||
+      prior.data.practice_source !== value(form, "calendar_source")
+    )
+      return {
+        error:
+          "Create a practice event with this announcement. Google Calendar is reference-only.",
+      };
   }
   try {
     const postData = {
@@ -158,14 +164,12 @@ export async function saveCommunication(
       calendar_source: value(form, "calendar_source") || null,
       ...custom,
     };
-    const { error } = await supabase.rpc(
-      todo
-        ? "save_announcement_with_todo"
-        : custom
-          ? "save_announcement_custom"
-          : "save_announcement",
-      todo ? { post_data: postData, ...todo } : postData,
-    );
+    const { error } = await supabase.rpc("save_communication_v21", {
+      post_data: postData,
+      task_priority: value(form, "task_priority") || "normal",
+      todo_priority: value(form, "todo_priority") || "normal",
+      ...(todo ?? {}),
+    });
     if (error) {
       // A refresh can return cached data after a provider failure. Keep SQL as
       // the authority, but explain why its selected-practice check failed.

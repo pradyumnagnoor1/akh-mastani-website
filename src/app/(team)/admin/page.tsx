@@ -33,6 +33,9 @@ export default async function Admin() {
       )}
       <h2 className="section-label">Manage</h2>
       <div className="admin-link-list">
+        <Link href="/admin/updates" className="admin-shortcut">
+          Admin Updates <span>Website changes for team management</span>
+        </Link>
         <Link href="/announcements?view=all" className="admin-shortcut">
           Announcements <span>Publish and review acknowledgment</span>
         </Link>

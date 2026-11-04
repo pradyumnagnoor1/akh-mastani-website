@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import {
   House,
+  Newspaper,
   Megaphone,
   ListTodo,
   CalendarDays,
@@ -40,12 +41,13 @@ const navigation = [
   { label: "Payments", href: "/payments", icon: Wallet },
   { label: "Add Expense", href: "/expenses/new", icon: ReceiptText },
   { label: "Roster", href: "/roster", icon: Users },
+  { label: "Updates", href: "/updates", icon: Newspaper },
 ];
 const mobileNavigation = [
   { label: "Home", href: "/home", icon: House },
   { label: "To-Dos", href: "/todos", icon: ListTodo },
   { label: "Calendar", href: "/calendar", icon: CalendarDays },
-  { label: "Updates", href: "/announcements", icon: Megaphone },
+  { label: "Announcements", href: "/announcements", icon: Megaphone },
 ];
 const isCurrent = (path: string, href: string) =>
   path === href || path.startsWith(`${href}/`);
@@ -119,12 +121,24 @@ export function AppShell({
             <p className="nav-label admin-label">MANAGEMENT</p>
             <Link
               href="/admin"
-              className={`nav-item ${isCurrent(path, "/admin") ? "selected" : ""}`}
+              className={`nav-item ${path === "/admin" ? "selected" : ""}`}
               onNavigate={close}
-              aria-current={isCurrent(path, "/admin") ? "page" : undefined}
+              aria-current={path === "/admin" ? "page" : undefined}
             >
               <Settings2 size={19} />
               Admin
+              <NavigationHint />
+            </Link>
+            <Link
+              href="/admin/updates"
+              className={`nav-item ${isCurrent(path, "/admin/updates") ? "selected" : ""}`}
+              onNavigate={close}
+              aria-current={
+                isCurrent(path, "/admin/updates") ? "page" : undefined
+              }
+            >
+              <Newspaper size={19} aria-hidden="true" />
+              Admin Updates
               <NavigationHint />
             </Link>
             {(member.budget_role === "finance" ||
@@ -155,6 +169,7 @@ export function AppShell({
         <strong>{member.display_name}</strong>
         <small>{member.is_admin ? "Dancer · Admin access" : "Dancer"}</small>
         <small>{member.email}</small>
+        <small>v2.1</small>
       </div>
       <form action={signOut}>
         <button className="icon-button" aria-label="Sign out">

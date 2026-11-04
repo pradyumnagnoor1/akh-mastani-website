@@ -25,8 +25,7 @@ import type {
   FormState,
   PostKind,
 } from "@/features/communication/types";
-import { eventWhen, type CalendarView } from "@/features/calendar/types";
-import { practiceIdentity } from "@/features/calendar/day";
+import { type CalendarView } from "@/features/calendar/types";
 import type { Member } from "@/features/identity/policy";
 import type { Segment, Assignment } from "@/features/segments/policy";
 function Feedback({ state }: { state: FormState }) {
@@ -117,7 +116,6 @@ export function CommunicationForm({
   assigned = [],
   tasks = [],
   editorMember,
-  calendar,
 }: {
   id: string;
   customPracticeDraftId: string;
@@ -135,44 +133,20 @@ export function CommunicationForm({
   calendar?: CalendarView;
 }) {
   const { id, version, changed } = useDraftRevision(initialId, post?.version);
-  const [state, action] = useActionState(
-    async (previous: FormState, form: FormData) => {
-      const next = await saveCommunication({ error: null }, form);
-      return {
-        ...next,
-        practiceCalendar: next.practiceCalendar ?? previous.practiceCalendar,
-      };
-    },
-    { error: null } as FormState,
-  );
-  const practiceCalendar = state.practiceCalendar ?? calendar;
+  const [state, action] = useActionState(saveCommunication, {
+    error: null,
+  } as FormState);
   const [announcementType, setAnnouncementType] = useState(
-    post?.practice_event_id ? "practice" : "announcement",
+    post?.practice_source === "custom" ? "practice" : "announcement",
   );
-  const [practice, setPractice] = useState(post?.practice_event_id ?? "");
   const [postingRole, setPostingRole] = useState(
     post ? (post.author_exec_role ?? "") : (editorMember.exec_roles?.[0] ?? ""),
   );
-  const [practiceSource, setPracticeSource] = useState(
-    post?.practice_source ?? calendar?.source ?? "",
+  const [customPracticeId] = useState(() =>
+    post?.practice_source === "custom"
+      ? post.practice_event_id!.replace("custom:", "")
+      : customPracticeDraftId,
   );
-  const [openedAt] = useState(() => Date.now());
-  const [customPracticeId] = useState(customPracticeDraftId);
-  const practices =
-    practiceCalendar?.events.filter(
-      (e) => !e.allDay && Date.parse(e.start) > openedAt,
-    ) ?? [];
-  const selectedPractice = practiceCalendar?.events.find(
-    (e) =>
-      practiceIdentity(e) === practice &&
-      (e.source ?? practiceCalendar?.source) === practiceSource,
-  );
-  const practiceSourceChanged =
-    practice !== "__custom__" &&
-    practiceSource !== "custom" &&
-    !!practiceCalendar?.source &&
-    practiceSource !== practiceCalendar.source;
-  const custom = practice === "__custom__";
   const [createTodo, setCreateTodo] = useState(false);
   const [todoId] = useState(todoDraftId);
   const [imageBusy, setImageBusy] = useState(false);
@@ -248,6 +222,20 @@ export function CommunicationForm({
         {post && (
           <input type="hidden" name="posting_role" value={postingRole} />
         )}
+        {post?.practice_event_id && post.practice_source !== "custom" && (
+          <>
+            <input
+              type="hidden"
+              name="practice_id"
+              value={post.practice_event_id}
+            />
+            <input
+              type="hidden"
+              name="calendar_source"
+              value={post.practice_source ?? ""}
+            />
+          </>
+        )}
         {kind === "announcement" && (
           <>
             <label htmlFor="announcement-type">Announcement type</label>
@@ -255,85 +243,42 @@ export function CommunicationForm({
               id="announcement-type"
               value={announcementType}
               onChange={(e) => setAnnouncementType(e.target.value)}
-              disabled={changed}
+              disabled={changed || !!post?.practice_event_id}
             >
-              <option value="announcement">Announcement</option>
+              <option value="announcement">General announcement</option>
               <option value="practice">Practice announcement</option>
             </select>
             {announcementType === "practice" && (
               <>
-                <label htmlFor="practice-event">Practice</label>
-                <select
-                  id="practice-event"
-                  name="practice_id"
-                  required
-                  value={practiceSourceChanged ? "" : practice}
-                  disabled={changed}
-                  onChange={(e) => {
-                    setPractice(e.target.value);
-                    setPracticeSource(
-                      practiceCalendar?.events.find(
-                        (item) => practiceIdentity(item) === e.target.value,
-                      )?.source ??
-                        practiceCalendar?.source ??
-                        "",
-                    );
-                  }}
-                >
-                  <option value="">Choose an upcoming practice</option>
-                  <option value="__custom__">
-                    Custom practice (not on Google Calendar)
-                  </option>
-                  {post?.practice_event_id &&
-                    !practices.some(
-                      (e) => practiceIdentity(e) === post.practice_event_id,
-                    ) && (
-                      <option value={post.practice_event_id}>
-                        {post.practice_snapshot?.title ?? "Linked practice"} ·
-                        Previously linked
-                      </option>
-                    )}
-                  {practices.map((e) => (
-                    <option key={e.id} value={practiceIdentity(e)}>
-                      {e.title} · {eventWhen(e)}
-                      {e.location ? ` · ${e.location}` : ""}
-                    </option>
-                  ))}
-                </select>
+                <input type="hidden" name="practice_id" value="__custom__" />
+                <input type="hidden" name="calendar_source" value="custom" />
                 <input
                   type="hidden"
-                  name="calendar_source"
-                  value={practiceSource}
+                  name="custom_id"
+                  value={customPracticeId}
                 />
-                {custom && (
-                  <>
-                    <input
-                      type="hidden"
-                      name="custom_id"
-                      value={customPracticeId}
-                    />
-                    <input type="hidden" name="custom_version" value="0" />
-                    <CustomPracticeFields disabled={changed} />
-                  </>
-                )}
-                {!practices.length && !custom && (
-                  <p className="notice">
-                    No upcoming practices are available. Choose Custom practice
-                    to add one here.
-                  </p>
-                )}
+                <input
+                  type="hidden"
+                  name="custom_version"
+                  value={
+                    post?.practice_source === "custom"
+                      ? (post.practice_snapshot?.version ?? 1)
+                      : 0
+                  }
+                />
+                <CustomPracticeFields
+                  event={
+                    post?.practice_source === "custom"
+                      ? post.practice_snapshot
+                      : undefined
+                  }
+                  disabled={changed}
+                />
                 <p className="notice">
-                  This announcement shares the practice reminder, normally
-                  around one hour before practice. It will not send a separate
-                  announcement reminder. Quiet hours and notification
-                  preferences apply.
+                  Create the practice event and include your announcement below.
+                  Publish saves both together. Practice reminders follow
+                  notification preferences and quiet hours.
                 </p>
-                {selectedPractice && (
-                  <p className="muted small">
-                    {eventWhen(selectedPractice)} ·{" "}
-                    {selectedPractice.location ?? "Location to be confirmed"}
-                  </p>
-                )}
               </>
             )}
           </>
@@ -370,6 +315,18 @@ export function CommunicationForm({
         )}
         {kind === "task" && (
           <>
+            <label htmlFor="task-priority">Priority</label>
+            <select
+              id="task-priority"
+              name="task_priority"
+              defaultValue={post?.priority ?? "normal"}
+            >
+              {["low", "normal", "high", "urgent"].map((priority) => (
+                <option key={priority} value={priority}>
+                  {priority}
+                </option>
+              ))}
+            </select>
             <label htmlFor="due-on">Due date (optional)</label>
             <input
               id="due-on"
@@ -526,6 +483,18 @@ export function CommunicationForm({
           {createTodo && (
             <>
               <input type="hidden" name="todo_id" value={todoId} />
+              <label htmlFor="todo-priority">To-do priority</label>
+              <select
+                id="todo-priority"
+                name="todo_priority"
+                defaultValue="normal"
+              >
+                {["low", "normal", "high", "urgent"].map((priority) => (
+                  <option key={priority} value={priority}>
+                    {priority}
+                  </option>
+                ))}
+              </select>
               <label htmlFor="todo-due">To-do due date (optional)</label>
               <input
                 id="todo-due"

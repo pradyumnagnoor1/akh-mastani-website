@@ -3,6 +3,8 @@ export type Audience = "individual" | "selected" | "group" | "segment" | "team";
 export type CompletionMode = "individual" | "shared";
 export type CommunicationPost = {
   id: string;
+  pinned_at?: string | null;
+  priority?: "low" | "normal" | "high" | "urgent";
   title: string;
   body: string;
   kind: PostKind;

@@ -409,9 +409,9 @@ export function CalendarSchedule({
         </section>
       )}
       <p className="muted small calendar-footnote">
-        Google Calendar changes sync every five minutes. Exec members can edit
-        custom practices here. Linked practice announcements share the practice
-        reminder.
+        Google Calendar is a reference schedule and syncs every five minutes.
+        Website practice events are created with their announcements and provide
+        practice reminders.
       </p>
     </>
   );

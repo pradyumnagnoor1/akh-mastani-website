@@ -55,6 +55,7 @@ beforeAll(async () => {
     "0016_exec_role_eligibility",
     "0017_additional_exec_roles",
     "0018_announcement_todos",
+    "0034_communication_priority",
   ])
     await db.exec(readFileSync(`supabase/migrations/${name}.sql`, "utf8"));
 });
@@ -1003,4 +1004,65 @@ it("a custom practice announcement can create a shared to-do in the same transac
       [post, a],
     ),
   ).toBe(true);
+});
+
+it("pins require management and retain audience; stale metadata edits fail", async () => {
+  await announcement();
+  await role("authenticated", a);
+  await expect(
+    q("set_communication_metadata($1,1,true,'normal')", [post]),
+  ).rejects.toThrow(/access/);
+  await role();
+  await q("set_communication_metadata($1,1,true,'normal')", [post]);
+  expect(
+    await q(
+      "(select pinned_at is not null from communication_posts where id=$1)",
+      [post],
+    ),
+  ).toBe(true);
+  expect(
+    await q(
+      "(select count(*)::int from communication_recipients where post_id=$1)",
+      [post],
+    ),
+  ).toBe(1);
+  await expect(
+    q("set_communication_metadata($1,1,false,'normal')", [post]),
+  ).rejects.toThrow(/Refresh/);
+  await expect(
+    q("set_communication_metadata($1,2,true,'urgent')", [post]),
+  ).rejects.toThrow(/priority/);
+});
+it("publishes task priority atomically and rejects invalid priority without creating a post", async () => {
+  await role();
+  const data = {
+    target_id: post,
+    expected_version: 0,
+    post_kind: "task",
+    post_title: "Task",
+    post_body: "Instructions",
+    task_mode: "individual",
+    audience: "selected",
+    recipient_ids: [a],
+    image_alt: "",
+    reminder_text: "",
+  };
+  await expect(
+    q("save_communication_v21($1::jsonb,'invalid')", [JSON.stringify(data)]),
+  ).rejects.toThrow(/priority/);
+  expect(await q("(select count(*)::int from communication_posts)")).toBe(0);
+  await q("save_communication_v21($1::jsonb,'urgent')", [JSON.stringify(data)]);
+  expect(
+    await q("(select priority from communication_posts where id=$1)", [post]),
+  ).toBe("urgent");
+});
+it("metadata edits do not enqueue new publication notifications", async () => {
+  await device(a);
+  await announcement();
+  await role("postgres");
+  const before = await q<number>("(select count(*)::int from push_jobs)");
+  await role();
+  await q("set_communication_metadata($1,1,true,'normal')", [post]);
+  await role("postgres");
+  expect(await q("(select count(*)::int from push_jobs)")).toBe(before);
 });

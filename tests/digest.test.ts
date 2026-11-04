@@ -108,10 +108,10 @@ it("includes all incomplete assignments ahead of announcements, ordered by urgen
     "announcement-p",
   ]);
   expect(digest.items.map((i) => i.detail).slice(0, 4)).toEqual([
-    "Overdue · due 2026-10-11",
-    "To-do · due today",
-    "To-do · due 2026-10-14",
-    "To-do · no due date",
+    "normal priority · Overdue · due 2026-10-11",
+    "normal priority · To-do · due today",
+    "normal priority · To-do · due 2026-10-14",
+    "normal priority · To-do · no due date",
   ]);
 });
 it("uses saved shared read/completion status consistently with the detail page", () => {

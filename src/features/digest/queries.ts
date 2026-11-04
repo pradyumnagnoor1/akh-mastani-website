@@ -4,7 +4,7 @@ import { requireMember } from "@/features/identity/session";
 import { communicationData } from "@/features/communication/queries";
 import { paymentData } from "@/features/payments/queries";
 import { segmentData } from "@/features/segments/queries";
-import { calendarData } from "@/features/calendar/queries";
+import { customPracticeData } from "@/features/custom-practices/queries";
 import { featuredData } from "@/features/featured-events/queries";
 import { buildDigest } from "./policy";
 
@@ -15,7 +15,7 @@ export const digestData = cache(async () => {
     communicationData(),
     paymentData(),
     segmentData(),
-    calendarData(),
+    customPracticeData(),
     featuredData(),
   ]);
   const [communication, payments, segments, calendar, featured] = sources;
@@ -32,12 +32,6 @@ export const digestData = cache(async () => {
         ]
       : [],
   );
-  if (
-    calendar.status === "fulfilled" &&
-    calendar.value.calendar.configured &&
-    calendar.value.calendar.unavailable
-  )
-    unavailable.push("Practice calendar");
   const input = {
     memberId: member.id,
     now: new Date(),
@@ -51,8 +45,7 @@ export const digestData = cache(async () => {
     segments: segments.status === "fulfilled" ? segments.value.segments : [],
     assignments:
       segments.status === "fulfilled" ? segments.value.assignments : [],
-    calendar:
-      calendar.status === "fulfilled" ? calendar.value.calendar.events : [],
+    calendar: calendar.status === "fulfilled" ? calendar.value.events : [],
     featured: featured.status === "fulfilled" ? featured.value.events : [],
   };
   return {
@@ -60,9 +53,6 @@ export const digestData = cache(async () => {
     unavailable,
     segments: input.segments,
     assignments: input.assignments,
-    calendarStale:
-      calendar.status === "fulfilled" &&
-      calendar.value.calendar.configured &&
-      calendar.value.calendar.stale,
+    calendarStale: false,
   };
 });

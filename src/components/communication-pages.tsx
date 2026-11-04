@@ -1,4 +1,6 @@
+import { compareImportance } from "@/features/communication/importance";
 /* eslint-disable react-hooks/purity -- Server components capture request time for expiration timers. */
+import { CommunicationMetadata } from "./communication-metadata";
 import { CommunicationAttribution } from "./communication-attribution";
 import { CommunicationLink } from "./communication-link";
 import { ReadBadge } from "./read-badge";
@@ -6,7 +8,7 @@ import {
   canPostAnnouncements,
   canManagePost,
 } from "@/features/identity/policy";
-import { calendarData } from "@/features/calendar/queries";
+import { customPracticeData } from "@/features/custom-practices/queries";
 import { practiceIdentity } from "@/features/calendar/day";
 import { eventWhen } from "@/features/calendar/types";
 import { Expires } from "./expires";
@@ -47,9 +49,11 @@ function completed(
 export async function CommunicationList({
   kind,
   view,
+  priority,
 }: {
   kind: PostKind;
   view?: string;
+  priority?: string;
 }) {
   const { member, posts, recipients } = await communicationData();
   const base = baseFor(kind);
@@ -60,6 +64,7 @@ export async function CommunicationList({
   const items = posts.filter(
     (p) =>
       p.kind === kind &&
+      (!priority || (p.priority ?? "normal") === priority) &&
       !p.archived_at &&
       (tab === "all" && !member.is_admin
         ? p.created_by === member.id
@@ -68,6 +73,15 @@ export async function CommunicationList({
             (r) => r.post_id === p.id && r.member_id === member.id,
           )),
   );
+  const isPinned = (p: CommunicationPost) =>
+    !!p.pinned_at &&
+    (p.kind !== "task" ||
+      !completed(
+        p,
+        recipients.filter((r) => r.post_id === p.id),
+        member.id,
+      ));
+  items.sort((a, b) => compareImportance(a, b, isPinned));
   return (
     <>
       <div className="page-heading heading-with-action">
@@ -105,16 +119,41 @@ export async function CommunicationList({
           )}
         </div>
       )}
+      {kind === "task" && (
+        <nav className="view-tabs" aria-label="Filter by priority">
+          {["", "urgent", "high", "normal", "low"].map((level) => (
+            <Link
+              key={level}
+              className={(priority ?? "") === level ? "active" : ""}
+              href={`${base}?view=${tab}&priority=${level}`}
+            >
+              {level || "All priorities"}
+            </Link>
+          ))}
+        </nav>
+      )}
+      {items.some(isPinned) && <h2>Pinned</h2>}
       <div className="communication-list">
-        {items.map((post) => {
+        {items.map((post, index) => {
           const rows = recipients.filter((r) => r.post_id === post.id);
           const done = completed(post, rows, member.id);
           return (
             <Expires key={post.id} at={post.expires_at} serverNow={Date.now()}>
+              {index > 0 && isPinned(items[index - 1]) && !isPinned(post) && (
+                <h2>
+                  {kind === "task" ? "Other to-dos" : "Other announcements"}
+                </h2>
+              )}
               <article
                 className={`panel communication-card${tab === "mine" && done ? " is-done" : ""}`}
               >
                 <div className="communication-meta">
+                  {isPinned(post) && <span className="badge">Pinned</span>}
+                  {kind === "task" && (
+                    <span className="badge">
+                      Priority: {post.priority ?? "normal"}
+                    </span>
+                  )}
                   {tab === "mine" && (
                     <span
                       className={`badge ${done ? "success" : kind === "announcement" ? "unread" : "accent-badge"}`}
@@ -216,13 +255,12 @@ export async function CommunicationDetail({
   const done = completed(post, rows, member.id);
   const base = baseFor(kind);
   const manager = canManagePost(member, post);
-  const calendar = post.practice_event_id
-    ? (await calendarData()).calendar
-    : null;
+  const calendar =
+    post.practice_source === "custom" ? await customPracticeData() : null;
   const practice = calendar?.events.find(
     (e) =>
       practiceIdentity(e) === post.practice_event_id &&
-      (e.source ?? calendar.source) === post.practice_source,
+      e.source === post.practice_source,
   );
   const memberIds = manager ? rows.map((r) => r.member_id) : [];
   if (post.completed_by) memberIds.push(post.completed_by);
@@ -269,7 +307,11 @@ export async function CommunicationDetail({
                 cancelled, removed, or moved outside the calendar window.
               </p>
             )}
-            <p>This announcement shares the practice reminder.</p>
+            <p>
+              {post.practice_source === "custom"
+                ? "Practice details and announcement are managed together."
+                : "Historical practice details. Google Calendar is reference-only."}
+            </p>
             <Link
               href={`/calendar${practice ? `?date=${practice.allDay ? practice.start : new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(practice.start))}` : ""}`}
               className="text-button"
@@ -279,6 +321,12 @@ export async function CommunicationDetail({
           </section>
         )}
         <div className="communication-meta">
+          {post.pinned_at && (kind !== "task" || !done) && (
+            <span className="badge">Pinned</span>
+          )}
+          {kind === "task" && (
+            <span className="badge">Priority: {post.priority ?? "normal"}</span>
+          )}
           <span className="badge">
             {post.completion_mode === "shared"
               ? "One completion for everyone"
@@ -345,6 +393,7 @@ export async function CommunicationDetail({
           />
         )}
       </section>
+      {manager && <CommunicationMetadata key={post.version} post={post} />}
       {manager && (
         <section className="panel communication-management">
           <div className="section-toolbar">
@@ -429,8 +478,6 @@ export async function CommunicationEditor({
 }) {
   const editor = await communicationEditorData();
   if (kind === "task" && !editor.editorMember.is_admin) redirect("/home");
-  const calendar =
-    kind === "announcement" ? (await calendarData()).calendar : undefined;
   const data = id || kind === "announcement" ? await communicationData() : null;
   const post = data?.posts.find((p) => p.id === id && p.kind === kind);
   if (id && (!post || !canManagePost(editor.editorMember, post))) notFound();
@@ -454,7 +501,6 @@ export async function CommunicationEditor({
           customPracticeDraftId={crypto.randomUUID()}
           todoDraftId={crypto.randomUUID()}
           kind={kind}
-          calendar={calendar}
           post={post}
           tasks={
             data?.posts.filter((p) => p.kind === "task" && !p.completed_at) ??

@@ -15,7 +15,9 @@ vi.mock("@/features/communication/queries", () => ({
 }));
 vi.mock("@/features/payments/queries", () => ({ paymentData: m.payment }));
 vi.mock("@/features/segments/queries", () => ({ segmentData: m.segments }));
-vi.mock("@/features/calendar/queries", () => ({ calendarData: m.calendar }));
+vi.mock("@/features/custom-practices/queries", () => ({
+  customPracticeData: m.calendar,
+}));
 vi.mock("@/features/featured-events/queries", () => ({
   featuredData: m.featured,
 }));
@@ -26,14 +28,7 @@ beforeEach(() => {
   m.communication.mockResolvedValue({ posts: [], recipients: [] });
   m.payment.mockResolvedValue({ charges: [] });
   m.segments.mockResolvedValue({ segments: [], assignments: [] });
-  m.calendar.mockResolvedValue({
-    calendar: {
-      configured: true,
-      unavailable: false,
-      stale: false,
-      events: [],
-    },
-  });
+  m.calendar.mockResolvedValue({ events: [] });
   m.featured.mockResolvedValue({ events: [] });
 });
 it("retains successful sources and reports unavailable data instead of claiming caught up", async () => {
@@ -48,11 +43,9 @@ it("fails authentication before attempting source reads", async () => {
   await expect(digestData()).rejects.toThrow("redirect to login");
   expect(m.communication).not.toHaveBeenCalled();
 });
-it("distinguishes stale schedule from unavailable schedule", async () => {
-  m.calendar.mockResolvedValue({
-    calendar: { configured: true, unavailable: true, stale: true, events: [] },
-  });
+it("reports unavailable website practices independently of Google references", async () => {
+  m.calendar.mockRejectedValue(new Error("practice data unavailable"));
   const result = await digestData();
   expect(result.unavailable).toContain("Practice calendar");
-  expect(result.calendarStale).toBe(true);
+  expect(result.calendarStale).toBe(false);
 });
