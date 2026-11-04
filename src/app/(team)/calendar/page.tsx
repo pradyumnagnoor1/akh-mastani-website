@@ -2,7 +2,6 @@ import { calendarData } from "@/features/calendar/queries";
 import { communicationData } from "@/features/communication/queries";
 import { FeaturedEvents } from "@/components/featured-events";
 import { CalendarSchedule } from "@/components/calendar-schedule";
-import Link from "@/components/app-link";
 export const maxDuration = 60;
 export default async function Page({
   searchParams,
@@ -24,11 +23,6 @@ export default async function Page({
             contain website practice events.
           </p>
         </div>
-        {member.is_admin && (
-          <Link href="/calendar/featured/new" className="button primary">
-            Add featured event
-          </Link>
-        )}
       </div>
       <FeaturedEvents />
       <CalendarSchedule
