@@ -13,7 +13,7 @@ export async function memberUpdates(): Promise<ReleaseUpdate[]> {
   return [
     {
       version: "2.1",
-      releasedOn: null,
+      releasedOn: "2026-11-04",
       summary: "Practice events, pinned posts, and clearer task priorities.",
       changes: [
         "Create a practice event with its announcement. Google Calendar serves as a reference schedule.",
@@ -30,7 +30,7 @@ export async function adminUpdates(): Promise<ReleaseUpdate[]> {
   return [
     {
       version: "2.1",
-      releasedOn: null,
+      releasedOn: "2026-11-04",
       summary: "Changes to publishing and managing team communication.",
       changes: [
         "General announcement is the default. Choose Practice announcement to create an event and its announcement together.",

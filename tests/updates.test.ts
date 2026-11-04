@@ -22,5 +22,5 @@ it("returns separate version 2.1 notes after authorization", async () => {
   expect(member[0].version).toBe("2.1");
   expect(admin[0].version).toBe("2.1");
   expect(member[0].summary).not.toBe(admin[0].summary);
-  expect(member[0].releasedOn).toBeNull();
+  expect(member[0].releasedOn).toBe("2026-11-04");
 });

@@ -37,7 +37,7 @@ test("updates: member notes and protected admin notes", async ({
   ).toBeVisible();
   await expect(page.getByRole("heading", { name: "v2.1" })).toBeVisible();
   await expect(
-    page.getByText("Upcoming release", { exact: true }),
+    page.getByText("2026-11-04", { exact: true }),
   ).toBeVisible();
   await page.goto("/admin/updates");
   await expect(page).toHaveURL(/\/home$/);
